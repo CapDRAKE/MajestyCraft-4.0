@@ -1,0 +1,91 @@
+.jfx-toggle-button {
+	 -fx-text-fill: orange;
+     -jfx-toggle-color: #FF9F2B;
+     -jfx-untoggle-color: #FAFAFA;
+     -jfx-toggle-line-color: #FF0000;
+     -jfx-untoggle-line-color: #999999;
+     -jfx-size: 10.0;
+     -jfx-disable-visual-focus: false;
+}
+
+/*Design button*/
+.button-raised{
+    -fx-font-size: 20px;
+    -jfx-button-type: RAISED;
+        -fx-background-color: rgb(255,0,0,0.3);
+    -fx-pref-width: 269;
+    -fx-pref-height: 30;
+    -fx-text-fill: orange;
+}
+
+/*Design textfield*/
+.input{
+    -fx-pref-width: 269;
+    -fx-pref-height: 50;
+    -jfx-focus-color: red;
+    -jfx-unfocus-color: orange;
+}
+
+/*Design progress bar*/
+.jfx-progress-bar{
+	-fx-pref-width: 252;
+	-fx-pref-height: 20;
+	-fx-accent: orange;
+}
+
+.jfx-progress-bar > .track {
+    -fx-background-color: #E0E0E0;
+}
+
+.jfx-progress-bar > .bar {
+    -fx-background-color: #FF0000;
+}
+
+/*Design checkBox*/
+.custom-jfx-check-box {
+    -jfx-checked-color: RED;
+    -jfx-unchecked-color: BLACK;
+}
+
+/*Design rippler*/
+.rippler{
+	-fx-pref-width: 240;
+	-jfx-rippler-radius : 50;
+	-jfx-rippler-fill: orange;
+	-jfx-rippler-recenter: true;
+	-jfc-mask-type: CIRCLE;
+}
+
+.rippler2{
+	-fx-pref-width: 50;
+	-jfx-rippler-radius : 50;
+	-jfx-rippler-fill: red;
+	-jfx-rippler-recenter: true;
+	-jfc-mask-type: CIRCLE;
+}
+
+/* Styling the slider track */
+.jfx-slider > .track {
+     -fx-background-color: yellow;
+}
+
+/* Styling the slider thumb */
+.jfx-slider > .thumb {
+     -fx-background-color: red;
+}
+
+/* Styling the filled track */
+.jfx-slider > .colored-track {
+     -fx-background-color: red;
+}
+
+/* Styling the animated thumb */
+.jfx-slider > .animated-thumb {
+     -fx-background-color: red;
+}
+
+/* Styling the slider value text inside animated thumb */
+.jfx-slider .slider-value {
+     -fx-fill: white;
+     -fx-stroke: white;
+}
