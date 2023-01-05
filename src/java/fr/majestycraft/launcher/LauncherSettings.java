@@ -2,6 +2,7 @@ package fr.majestycraft.launcher;
 
 import animatefx.animation.*;
 import com.jfoenix.controls.*;
+
 import fr.majestycraft.*;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
@@ -187,6 +188,26 @@ public class LauncherSettings extends IScreen {
         this.versionList = new JFXComboBox<>();
         this.populateVersionList();
         this.versionList.setValue((String) pane.getConfig().getValue(EnumConfig.VERSION));
+        if (pane.getConfig().getValue(EnumConfig.VERSION) != null) {
+			this.versionList.setValue((String) pane.getConfig().getValue(EnumConfig.VERSION));
+			String verif = (String) pane.getConfig().getValue(EnumConfig.VERSION);
+			if (verif.equals("1.8") ||
+					verif.equals("1.19.1") ||
+					verif.equals("1.19.2") ||
+					verif.equals("1.19.3")){
+				LauncherSettings.useForge.setDisable(true);
+				LauncherSettings.useForge.setSelected(false);
+				LauncherSettings.useForge.setOpacity(0.3);
+				pane.getConfig().updateValue("useforge", false);
+			}
+			if (verif.equals("1.8") ||
+					verif.equals("1.19.3")) {
+				LauncherSettings.useOptifine.setDisable(true);
+				LauncherSettings.useOptifine.setSelected(false);
+				LauncherSettings.useOptifine.setOpacity(0.3);
+				pane.getConfig().updateValue("useOptifine", false);					
+			}
+		}
         this.versionList.setPrefSize(150, 20);
         this.versionList.setLayoutX(490);
         this.versionList.setLayoutY(165);
@@ -194,7 +215,8 @@ public class LauncherSettings extends IScreen {
         this.versionList.setOnAction(event -> {
             if (versionList.getValue().equals("1.8") ||
                     versionList.getValue().equals("1.19.1") ||
-                    versionList.getValue().equals("1.19.2")) { // Forge restrictions
+                    versionList.getValue().equals("1.19.2") ||
+                    versionList.getValue().equals("1.19.3")) { // Forge restrictions
                 LauncherSettings.useForge.setDisable(true);
                 LauncherSettings.useForge.setSelected(false);
                 LauncherSettings.useForge.setOpacity(0.3);
@@ -204,8 +226,7 @@ public class LauncherSettings extends IScreen {
                 LauncherSettings.useForge.setDisable(false);
             }
             if (Objects.equals(versionList.getValue(), "1.8") ||
-                    Objects.equals(versionList.getValue(), "1.19.1") ||
-                    Objects.equals(versionList.getValue(), "1.19.2")) {    //Optifine Restrictions
+                    Objects.equals(versionList.getValue(), "1.19.3")) {    //Optifine Restrictions
                 LauncherSettings.useOptifine.setDisable(true);
                 LauncherSettings.useOptifine.setSelected(false);
                 LauncherSettings.useOptifine.setOpacity(0.3);
@@ -275,10 +296,10 @@ public class LauncherSettings extends IScreen {
         microsoft.setLayoutY(465);
         microsoft.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
-//				if (!microsoft.isSelected()) {
-//					pane.getConfig().updateValue("useMicrosoft", false);
-//					pane.getConfig().updateValue("autologin", false);
-//				}
+				if (!microsoft.isSelected()) {
+					pane.getConfig().updateValue("useMicrosoft", false);
+					pane.getConfig().updateValue("autologin", false);
+				}
             }
         });
         root.getChildren().add(microsoft);
@@ -361,6 +382,7 @@ public class LauncherSettings extends IScreen {
         if (useForge.isSelected()) {
             return "/" + versionList.getValue() + "/forge/";
         } else if (useOptifine.isSelected()) {
+        	System.out.println("OK");
             return "/" + versionList.getValue() + "/";
         } else {
             return "/";
@@ -394,5 +416,6 @@ public class LauncherSettings extends IScreen {
         this.versionList.getItems().add("1.19");
         this.versionList.getItems().add("1.19.1");
         this.versionList.getItems().add("1.19.2");
+        this.versionList.getItems().add("1.19.3");
     }
 }
