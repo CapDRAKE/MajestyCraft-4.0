@@ -21,9 +21,9 @@ public class Discord {
         DiscordRichPresence presence = new DiscordRichPresence();
         presence.startTimestamp = System.currentTimeMillis() / 1000;
         presence.largeImageKey = "image";
-        presence.largeImageText = "MajestyCraft, Launcher Gratuit Crack/Premium";
-        presence.details = "Launcher MajestyCraft";
-        presence.state = "Version : 1.8 => 1.19.2";
+        presence.largeImageText = "MajestyLauncher, Launcher Gratuit Crack/Premium";
+        presence.details = "Launcher MajestyLauncher";
+        presence.state = "Version : 1.8 => 1.19.3";
 
         rpc.Discord_UpdatePresence(presence);
     }

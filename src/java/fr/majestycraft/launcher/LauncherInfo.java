@@ -5,14 +5,16 @@ import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
 import fr.trxyy.alternative.alternative_api_ui.base.*;
 import fr.trxyy.alternative.alternative_api_ui.components.*;
-import javafx.application.*;
+//import javafx.application.*;
 import javafx.event.*;
-import javafx.scene.control.*;
+//import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.*;
 import javafx.stage.*;
 
 public class LauncherInfo extends IScreen {
+	
+	private String VersionL = "Version : 3.1.1 (02/02/2023)";
 
 	private LauncherLabel titleLabel;
 	private LauncherLabel developpeur;
@@ -30,7 +32,7 @@ public class LauncherInfo extends IScreen {
 	// private LauncherLabel CHANGE5;
 	// private LauncherLabel CHANGE6;
 	private LauncherLabel changelogs;
-	private Slider volume;
+	//private Slider volume;
 
 	private LauncherRectangle topRectangle;
 
@@ -122,7 +124,7 @@ public class LauncherInfo extends IScreen {
 
 		/** ===================== changelogs 1 ===================== */
 		this.CHANGE1 = new LauncherLabel(root);
-		this.CHANGE1.setText("- Ajout de la 1.19.1 et 1.19.2");
+		this.CHANGE1.setText("- Ajout de la 1.19.3");
 		this.CHANGE1.setFont(Font.font("FontName", FontWeight.BOLD, 20d));
 		this.CHANGE1.setStyle("-fx-text-fill: white;");
 		this.CHANGE1.setPosition(engine.getWidth() / 2 - 449, engine.getHeight() / 2 - 20);
@@ -132,13 +134,13 @@ public class LauncherInfo extends IScreen {
 
 		/** ===================== changelogs 2 ===================== */
 		this.CHANGE2 = new LauncherLabel(root);
-		this.CHANGE2.setText("- Patch sur la connexion Microsoft");
+		this.CHANGE2.setText("- Optimisation importante du launcher");
 		this.CHANGE2.setFont(Font.font("FontName", FontWeight.BOLD, 20d));
 		this.CHANGE2.setStyle("-fx-text-fill: white;");
 		this.CHANGE2.setPosition(engine.getWidth() / 2 - 449, engine.getHeight() / 2 + 20);
 		this.CHANGE2.setOpacity(0.7);
 		this.CHANGE2.setSize(1000, 40);
-		this.CHANGE2.setVisible(false);
+		this.CHANGE2.setVisible(true);
 
 		/** ===================== changelogs 3 ===================== */
 		this.CHANGE3 = new LauncherLabel(root);
@@ -172,7 +174,7 @@ public class LauncherInfo extends IScreen {
 
 		/** ===================== TITRE Version actuelle ===================== */
 		this.version = new LauncherLabel(root);
-		this.version.setText("Version : 3.1.0.2 (09/08/2022)");
+		this.version.setText(VersionL);
 		this.version.setFont(Font.font("FontName", FontWeight.BOLD, 20d));
 		this.version.setStyle("-fx-text-fill: white;");
 		this.version.setPosition(engine.getWidth() / 2 - 449, engine.getHeight() / 2 + 180);

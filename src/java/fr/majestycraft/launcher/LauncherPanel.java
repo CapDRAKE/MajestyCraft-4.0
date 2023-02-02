@@ -128,119 +128,60 @@ public class LauncherPanel extends IScreen {
 
 
     private void checkAutoLogin(Pane root) {
-        if (usernameField.getText().length() > 2 && this.config.getValue(EnumConfig.AUTOLOGIN).equals(true)) {
-            Platform.runLater(() -> {
-                autoLoginTimer = new Timer();
-                TimerTask timerTask = new TimerTask() {
-                    final int waitTime = 7;
-                    int elapsed = 0;
-
-                    @Override
-
-                    public void run() {
-                        /*
-                         * ===================== VERIFICATION USEFORGE =====================
-                         */
-
-
-                        elapsed++;
-                        // S'execute ï¿½ la fin du compte ï¿½ rebours
-                        if (elapsed % waitTime == 0) {
-                            if (!engine.getGameMaintenance().isAccessBlocked()) {
-                                /*
-                                 * ===================== AUTHENTIFICATION OFFLINE (CRACK) =====================
-                                 */
-                                if (App.netIsAvailable()) {
-                                    if ((boolean) config.getValue(EnumConfig.USE_MICROSOFT)) {
-
-                                        Platform.runLater(() -> {
-                                            auth = new GameAuth(AccountType.MICROSOFT);
-                                            showMicrosoftAuth();
-                                            if (auth.isLogged()) {
-                                                config.updateValue("useMicrosoft", true);
-                                                connectAccountPremiumCO(auth.getSession().getUsername(), root);
-                                                update();
-                                            }
-                                        });
-
-                                    } else if (usernameField.getText().length() > 3
-                                            && passwordField.getText().isEmpty()) {
-                                        auth = new GameAuth(usernameField.getText(),
-                                                passwordField.getText(), AccountType.OFFLINE);
-//                                    if ((boolean) config.getValue(EnumConfig.USE_FORGE) && verif == 1) {
-//                                        update(gameAuthentication);
-//                                    } else {
-                                        update();
-//                                    }
-
-                                    } else if (usernameField.getText().length() > 3
-                                            && !passwordField.getText().isEmpty()) {
-                                        autoLoginTimer.cancel();
-                                        autoLoginLabel.setVisible(false);
-                                        autoLoginButton.setVisible(false);
-                                        autoLoginRectangle.setVisible(false);
-
-                                        auth = new GameAuth(usernameField.getText(),
-                                                passwordField.getText(), AccountType.MOJANG);
-                                        if (auth.isLogged()) {
-//                                            if ((boolean) config.getValue(EnumConfig.USE_FORGE) && verif == 1) {
-//                                                update(gameAuthentication);
-//                                            } else {
-                                            update();
-//                                            }
-                                        } else {
-                                            // Ceci est nï¿½cessaire pour ï¿½viter de faire planter. Le LauncherAlert ne
-                                            // peut s'afficher lors de l'utilisation d'un "time"
-                                            Platform.runLater(() -> new LauncherAlert("Authentification echouï¿½e!",
-                                                    "Impossible de se connecter, l'authentification semble etre une authentification 'en-ligne'"
-                                                            + " \nIl y a un probleme lors de la tentative de connexion. \n\n-Verifiez que le pseudonyme comprenne au minimum 3 caracteres. (compte non migrer)"
-                                                            + "\n-Faites bien attention aux majuscules et minuscules. \nAssurez-vous d'utiliser un compte Mojang. \nAssurez-vous de bien utiliser votre email dans le  cas d'une connexion avec un compte Mojang !"));
-                                        }
-
-                                    }
-                                    autoLoginLabel.setVisible(false);
-                                    autoLoginButton.setVisible(false);
-                                    autoLoginRectangle.setVisible(false);
-                                    autoLoginTimer.cancel();
-                                    Platform.runLater(() -> new LauncherAlert("Authentification echouï¿½e!",
-                                            "Impossible de se connecter, vous ï¿½tes en mode offline"
-                                                    + " \nMerci de vous connecter en crack."));
-
-                                } else if (usernameField.getText().length() > 3
-                                        && passwordField.getText().isEmpty()) {
-                                    auth = new GameAuth(usernameField.getText(),
-                                            passwordField.getText(), AccountType.OFFLINE);
-//                                    if ((boolean) config.getValue(EnumConfig.USE_FORGE) && verif == 1) {
-//                                        update(gameAuthentication);
-//                                    } else {
-                                    update();
-//                                    }
-
-                                } else {
-                                    autoLoginLabel.setVisible(false);
-                                    autoLoginButton.setVisible(false);
-                                    autoLoginRectangle.setVisible(false);
-                                    autoLoginTimer.cancel();
-                                    Platform.runLater(() -> new LauncherAlert("Authentification echouï¿½e!",
-                                            "Impossible de se connecter, vous Ãªtes hors ligne"
-                                                    + " \nMerci de verifier votre connexion."));
-                                }
-                            }
-                        }
-                        /* ===================== MESSAGE DE CONNEXION AUTO ===================== */
-                        else {
-                            final int time = (waitTime - (elapsed % waitTime));
-                            Platform.runLater(() -> autoLoginLabel.setText("Connexion auto dans " + time + " secondes."));
-                        }
-                    }
-                };
-                autoLoginTimer.schedule(timerTask, 0, 1000);
-                autoLoginLabel.setVisible(true);
-                autoLoginRectangle.setVisible(true);
-                autoLoginButton.setVisible(true);
-            });
-
+        if (usernameField.getText().length() <= 2) {
+            return;
         }
+
+        if (!this.config.getValue(EnumConfig.AUTOLOGIN).equals(true)) {
+            return;
+        }
+
+        boolean useMicrosoft = (boolean) config.getValue(EnumConfig.USE_MICROSOFT);
+        boolean isOnline = App.netIsAvailable();
+        String username = usernameField.getText();
+        String password = passwordField.getText();
+        boolean isPasswordEmpty = password.isEmpty();
+
+        if (isOnline && useMicrosoft) {
+            showMicrosoftAuth();
+            auth = new GameAuth(AccountType.MICROSOFT);
+
+            if (auth.isLogged()) {
+                config.updateValue("useMicrosoft", true);
+                connectAccountPremiumCO(auth.getSession().getUsername(), root);
+                update();
+                return;
+            }
+        }
+
+        if (isPasswordEmpty) {
+            auth = new GameAuth(username, "", AccountType.OFFLINE);
+            update();
+            return;
+        }
+
+        auth = new GameAuth(username, password, AccountType.MOJANG);
+
+        if (auth.isLogged()) {
+            update();
+            return;
+        }
+
+        autoLoginLabel.setVisible(false);
+        autoLoginButton.setVisible(false);
+        autoLoginRectangle.setVisible(false);
+
+        if (!isOnline) {
+            Platform.runLater(() -> new LauncherAlert("Authentification échouée!",
+                    "Impossible de se connecter, vous êtes en mode offline"
+                            + " \nMerci de vous connecter en crack."));
+            return;
+        }
+
+        Platform.runLater(() -> new LauncherAlert("Authentification échouée!",
+                "Impossible de se connecter, l'authentification semble être une authentification 'en-ligne'"
+                        + " \nIl y a un problème lors de la tentative de connexion. \n\n-Vérifiez que le pseudonyme comprenne au minimum 3 caractères. (compte non migré)"
+                        + "\n-Faites bien attention aux majuscules et minuscules. \nAssurez-vous d'utiliser un compte Mojang. \nAssurez-vous de bien utiliser votre email dans le  cas d'une connexion avec un compte Mojang !"));
     }
 
 
@@ -313,64 +254,70 @@ public class LauncherPanel extends IScreen {
     }
 
     private void initConfig(Pane root) {
+    	  boolean useDiscord = (boolean) config.getValue(EnumConfig.USE_DISCORD);
+    	  boolean useMusic = (boolean) config.getValue(EnumConfig.USE_MUSIC);
+    	  boolean useConnect = (boolean) config.getValue(EnumConfig.USE_CONNECT);
+    	  boolean rememberMe = (boolean) config.getValue(EnumConfig.REMEMBER_ME);
+    	  boolean useMicrosoft = (boolean) config.getValue(EnumConfig.USE_MICROSOFT);
+    	  boolean usePremium = (boolean) config.getValue(EnumConfig.USE_PREMIUM);
+    	  String password = (String) config.getValue(EnumConfig.PASSWORD);
+    	  String username = (String) config.getValue(EnumConfig.USERNAME);
+    	  String version = (String) config.getValue(EnumConfig.VERSION);
+    	  String email = usernameField.getText();
 
-        if ((boolean) config.getValue(EnumConfig.USE_DISCORD)) {
-            rpc.start();
-        } else {
-            rpc.stop();
-        }
+    	  if (useDiscord) {
+    	    rpc.start();
+    	  } else {
+    	    rpc.stop();
+    	  }
 
-        if ((boolean) config.getValue(EnumConfig.USE_MUSIC)) {
-            mediaPlayer.setMute(false);
-        } else {
-            mediaPlayer.setMute(true);
-        }
+    	  mediaPlayer.setMute(!useMusic);
 
-        if ((boolean) config.getValue(EnumConfig.USE_CONNECT)) {
-            engine.reg(App.GAME_CONNECT);
-        }
+    	  if (useConnect) {
+    	    engine.reg(App.GAME_CONNECT);
+    	  }
 
-        if ((boolean) config.getValue(EnumConfig.REMEMBER_ME)) {
-            passwordField.setText((String) config.getValue(EnumConfig.PASSWORD));
-        } else {
-            passwordField.setText("");
-        }
+    	  if (rememberMe) {
+    	    passwordField.setText(password);
+    	  } else {
+    	    passwordField.setText("");
+    	  }
 
-        if ((boolean) config.getValue(EnumConfig.USE_MICROSOFT)) {
-            if ((boolean) config.getValue(EnumConfig.USE_PREMIUM)) {
-                connectAccountPremiumOFF(root);
-            } else {
-                connectAccountCrack(root);
-            }
-            connectAccountPremiumCO((String) config.getValue(EnumConfig.USERNAME), root);
-        } else if (usernameField.getText().length() > 3 && usernameField.getText().contains("@")) {
-            if (!passwordField.getText().isEmpty()) {
-                GameAuth auth = new GameAuth(usernameField.getText(), passwordField.getText(), AccountType.MOJANG);
-                if (auth.isLogged()) {
+    	  if (useMicrosoft) {
+    	    connectAccountPremiumOFF(root);
+    	    if (usePremium) {
+    	      connectAccountPremium(username, root);
+    	    } else {
+    	      connectAccountCrack(root);
+    	    }
+    	    connectAccountPremiumCO(username, root);
+    	  } else if (email.length() > 3 && email.contains("@")) {
+    	    if (!passwordField.getText().isEmpty()) {
+    	      GameAuth auth = new GameAuth(email, password, AccountType.MOJANG);
+    	      if (auth.isLogged()) {
+    	        connectAccountPremium(auth.getSession().getUsername(), root);
+    	        connectAccountPremiumCO(auth.getSession().getUsername(), root);
+    	      } else {
+    	        connectAccountPremiumOFF(root);
+    	        connectAccountCrackCO(root);
+    	      }
+    	    } else {
+    	      connectAccountPremiumOFF(root);
+    	      connectAccountCrackCO(root);
+    	    }
+    	  } else if (usePremium) {
+    	    connectAccountPremiumOFF(root);
+    	    connectAccountCrackCO(root);
+    	  } else {
+    	    this.rememberMe.setSelected(false);
+    	    connectAccountCrack(root);
+    	    connectAccountCrackCO(root);
+    	  }
 
-                    connectAccountPremium(auth.getSession().getUsername(), root);
-                    connectAccountPremiumCO(auth.getSession().getUsername(), root);
-                } else {
-                    connectAccountPremiumOFF(root);
-                    connectAccountCrackCO(root);
-                }
-            } else {
-                connectAccountPremiumOFF(root);
-                connectAccountCrackCO(root);
-            }
-        } else if ((boolean) config.getValue(EnumConfig.USE_PREMIUM)) {
-            connectAccountPremiumOFF(root);
-            connectAccountCrackCO(root);
-        } else {
-            this.rememberMe.setSelected(false);
-            connectAccountCrack(root);
-            connectAccountCrackCO(root);
-        }
-        String version = (String) config.getValue(EnumConfig.VERSION);
-        GameLinks links = new GameLinks("https://majestycraft.com/minecraft" + urlModifier(version), version + ".json");
-        engine.reg(links);
-        Utils.regGameStyle(engine,config);
-    }
+    	  GameLinks links = new GameLinks("https://majestycraft.com/minecraft" + urlModifier(version), version + ".json");
+    	  engine.reg(links);
+    	  Utils.regGameStyle(engine, config);
+    	}
 
     private void setupButtons(Pane root) {
         this.infoButton = new LauncherButton(root);
@@ -407,24 +354,21 @@ public class LauncherPanel extends IScreen {
         this.microsoftButton.setGraphic(microsoftImg);
         this.microsoftButton.setPosition(engine.getWidth() / 2 - 522, engine.getHeight() / 2 - 100);
         this.microsoftButton.setSize(60, 46);
-        this.microsoftButton.setOnAction(event -> {
-            if (App.netIsAvailable()) {
-                auth = new GameAuth(AccountType.MICROSOFT);
-                showMicrosoftAuth();
-                if (auth.isLogged()) {
-                    connectAccountPremiumCO(auth.getSession().getUsername(), root);
-                    config.updateValue("useMicrosoft", true);
-                    update();
-                } else {
-                    Platform.runLater(() -> new LauncherAlert("Authentification echouï¿½e!",
-                            "Impossible de se connecter, Identifiant ou mot de passe incorrect"
-                                    + " \nMerci de vous connecter en crack."));
-                }
-            } else {
-                Platform.runLater(() -> new LauncherAlert("Authentification echouï¿½e!",
-                        "Impossible de se connecter, vous n' Ãªtes pas connecter a internet"
-                                + " \nMerci de vous connecter en crack."));
-            }
+        microsoftButton.setOnAction(event -> {
+        	  if (!App.netIsAvailable()) {
+        	    showConnectionErrorAlert();
+        	    return;
+        	  }
+        	  
+        	  auth = new GameAuth(AccountType.MICROSOFT);
+        	  showMicrosoftAuth();
+        	  if (auth.isLogged()) {
+        	    connectAccountPremiumCO(auth.getSession().getUsername(), root);
+        	    config.updateValue("useMicrosoft", true);
+        	    update();
+        	  } else {
+        	    showAuthErrorAlert();
+        	  }
         });
 
         this.settingsButton = new LauncherButton(root);
@@ -653,56 +597,48 @@ public class LauncherPanel extends IScreen {
         // this.loginButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0.4);
         // -fx-text-fill: orange");
         this.loginButton.setOnAction(event -> {
-            if (App.netIsAvailable()) {
+            if (!App.netIsAvailable()) {
+                Platform.runLater(() -> new LauncherAlert("Authentification échouée!", "Impossible de se connecter, vous êtes hors ligne. Merci de vous connecter en crack."));
+                return;
+            }
 
-//                selectVersion(engine);
+            config.updateValue("useMicrosoft", false);
 
-                config.updateValue("useMicrosoft", false);
+            String username = usernameField.getText();
+            String password = passwordField.getText();
 
-                if (usernameField.getText().length() > 3) {
-                    if (!passwordField.getText().isEmpty()) {
-                        auth = new GameAuth(usernameField.getText(), passwordField.getText(),
-                                AccountType.MOJANG);
-                        connectAccountPremiumCO(usernameField.getText(), root);
-                        if ((boolean) config.getValue(EnumConfig.REMEMBER_ME)) {
-                            config.updateValue("password", passwordField.getText());
-                        } else {
-                            config.updateValue("password", "");
-                        }
-                    } else {
-                        auth = new GameAuth(usernameField.getText(), passwordField.getText(),
-                                AccountType.OFFLINE);
-                        connectAccountCrackCO(root);
-                    }
+            if (username.length() <= 3) {
+                new LauncherAlert("Authentification échouée!",
+                                    "Impossible de se connecter, l'authentification semble être une authentification 'hors-ligne'"
+                                    + " \nIl y a un problème lors de la tentative de connexion. \n\n-Vérifiez que le pseudonyme comprenne au minimum 3 caractères.");
+                return;
+            }
 
-
-
-                    if (auth.isLogged()) {
-                        config.updateValue("username", usernameField.getText());
-//                        if ((boolean) config.getValue(EnumConfig.USE_FORGE) && verif == 1) {
-//                            update(gameAuthentication);
-//                        } else {
-                        update();
-//                        }
-
-                    } else {
-                        new LauncherAlert("Authentification echouï¿½e!",
-                                "Impossible de se connecter, l'authentification semble etre une authentification 'en-ligne'"
-                                        + " \nIl y a un probleme lors de la tentative de connexion. \n\n-Verifiez que le pseudonyme comprenne au minimum 3 caracteres. (compte non migrer)"
-                                        + "\n-Faites bien attention aux majuscules et minuscules. \nAssurez-vous d'utiliser un compte Mojang. \nAssurez-vous de bien utiliser votre email dans le  cas d'une connexion avec un compte Mojang !");
-                    }
-                } else {
-                    new LauncherAlert("Authentification echouï¿½e!",
-                            "Impossible de se connecter, l'authentification semble etre une authentification 'hors-ligne'"
-                                    + " \nIl y a un probleme lors de la tentative de connexion. \n\n-Verifiez que le pseudonyme comprenne au minimum 3 caracteres.");
-                }
+            if (password.isEmpty()) {
+                auth = new GameAuth(username, password, AccountType.OFFLINE);
+                connectAccountCrackCO(root);
             } else {
-                Platform.runLater(() -> new LauncherAlert("Authentification echouï¿½e!",
-                        "Impossible de se connecter, vous Ãªtes hors ligne"
-                                + " \nMerci de vous connecter en crack."));
+                auth = new GameAuth(username, password, AccountType.MOJANG);
+                connectAccountPremiumCO(username, root);
+                if ((boolean) config.getValue(EnumConfig.REMEMBER_ME)) {
+                    config.updateValue("password", password);
+                } else {
+                    config.updateValue("password", "");
+                }
+            }
+
+            if (auth.isLogged()) {
+                config.updateValue("username", username);
+                update();
+            } else {
+                new LauncherAlert("Authentification échouée!",
+                                        "Impossible de se connecter, l'authentification semble être une authentification 'en-ligne'"
+                                        + " \nIl y a un problème lors de la tentative de connexion. \n\n-Vérifiez que le pseudonyme comprenne au minimum 3 caractères. (compte non migré)"
+                                        + "\n-Faites bien attention aux majuscules et minuscules. \nAssurez-vous d'utiliser un compte Mojang. \nAssurez-vous de bien utiliser votre email dans le cas d'une connexion avec un compte Mojang !");
             }
         });
         root.getChildren().add(this.loginButton);
+
 
         this.autoLoginRectangle = new LauncherRectangle(root, 0, engine.getHeight() - 32, 2000,
                 engine.getHeight());
@@ -888,16 +824,16 @@ public class LauncherPanel extends IScreen {
 
     }
 
+    private double percent;
+
     public void timelineUpdate(GameEngine engine) {
         if (engine.getGameUpdater().downloadedFiles > 0) {
-            this.percentageLabel.setText(decimalFormat.format(
-                    engine.getGameUpdater().downloadedFiles * 100.0D / engine.getGameUpdater().filesToDownload) + "%");
+            this.percent = engine.getGameUpdater().downloadedFiles * 100.0D / engine.getGameUpdater().filesToDownload;
+            this.percentageLabel.setText(decimalFormat.format(percent) + "%");
         }
         this.currentFileLabel.setText(engine.getGameUpdater().getCurrentFile());
         this.currentStep.setText(engine.getGameUpdater().getCurrentInfo());
-        double percent = (engine.getGameUpdater().downloadedFiles * 100.0D / engine.getGameUpdater().filesToDownload
-                / 100.0D);
-        this.bar.setProgress(percent);
+        this.bar.setProgress(percent / 100.0D);
     }
 
     private Parent createSettingsPanel(Pane root) {
@@ -993,5 +929,13 @@ public class LauncherPanel extends IScreen {
 
     public Discord getRpc(){
         return rpc;
+    }
+    
+    private void showConnectionErrorAlert() {
+    	  Platform.runLater(() -> new LauncherAlert("Erreur d'authentification", "Impossible de se connecter, vous n'êtes pas connecté à internet."));
+    }
+
+    private void showAuthErrorAlert() {
+    	  Platform.runLater(() -> new LauncherAlert("Erreur d'authentification", "Impossible de se connecter, identifiant ou mot de passe incorrect."));
     }
 }

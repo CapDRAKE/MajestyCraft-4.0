@@ -188,53 +188,51 @@ public class LauncherSettings extends IScreen {
         this.versionList = new JFXComboBox<>();
         this.populateVersionList();
         this.versionList.setValue((String) pane.getConfig().getValue(EnumConfig.VERSION));
+        List<String> disabledForgeVersions = Arrays.asList("1.8", "1.19.1", "1.19.2", "1.19.3");
+        List<String> disabledOptifineVersions = Arrays.asList("1.8", "1.19.3");
+
         if (pane.getConfig().getValue(EnumConfig.VERSION) != null) {
-			this.versionList.setValue((String) pane.getConfig().getValue(EnumConfig.VERSION));
-			String verif = (String) pane.getConfig().getValue(EnumConfig.VERSION);
-			if (verif.equals("1.8") ||
-					verif.equals("1.19.1") ||
-					verif.equals("1.19.2") ||
-					verif.equals("1.19.3")){
-				LauncherSettings.useForge.setDisable(true);
-				LauncherSettings.useForge.setSelected(false);
-				LauncherSettings.useForge.setOpacity(0.3);
-				pane.getConfig().updateValue("useforge", false);
-			}
-			if (verif.equals("1.8") ||
-					verif.equals("1.19.3")) {
-				LauncherSettings.useOptifine.setDisable(true);
-				LauncherSettings.useOptifine.setSelected(false);
-				LauncherSettings.useOptifine.setOpacity(0.3);
-				pane.getConfig().updateValue("useOptifine", false);					
-			}
-		}
+            String verif = (String) pane.getConfig().getValue(EnumConfig.VERSION);
+            this.versionList.setValue(verif);
+
+            if (disabledForgeVersions.contains(verif)) {
+                LauncherSettings.useForge.setDisable(true);
+                LauncherSettings.useForge.setSelected(false);
+                LauncherSettings.useForge.setOpacity(0.3);
+                pane.getConfig().updateValue("useForge", false);
+            }
+
+            if (disabledOptifineVersions.contains(verif)) {
+                LauncherSettings.useOptifine.setDisable(true);
+                LauncherSettings.useOptifine.setSelected(false);
+                LauncherSettings.useOptifine.setOpacity(0.3);
+                pane.getConfig().updateValue("useOptifine", false);
+            }
+        }
         this.versionList.setPrefSize(150, 20);
         this.versionList.setLayoutX(490);
         this.versionList.setLayoutY(165);
         this.versionList.setVisibleRowCount(10);
         this.versionList.setOnAction(event -> {
-            if (versionList.getValue().equals("1.8") ||
-                    versionList.getValue().equals("1.19.1") ||
-                    versionList.getValue().equals("1.19.2") ||
-                    versionList.getValue().equals("1.19.3")) { // Forge restrictions
-                LauncherSettings.useForge.setDisable(true);
+            String version = versionList.getValue();
+            boolean isForgeRestricted = "1.8".equals(version) || "1.19.1".equals(version) || "1.19.2".equals(version) || "1.19.3".equals(version);
+            boolean isOptifineRestricted = "1.8".equals(version) || "1.19.3".equals(version);
+
+            if (!LauncherSettings.useForge.isDisabled() || isForgeRestricted) {
                 LauncherSettings.useForge.setSelected(false);
-                LauncherSettings.useForge.setOpacity(0.3);
-                pane.getConfig().updateValue("useforge", false);
-            } else {
-                LauncherSettings.useForge.setOpacity(1);
-                LauncherSettings.useForge.setDisable(false);
+                pane.getConfig().updateValue("useForge", false);
             }
-            if (Objects.equals(versionList.getValue(), "1.8") ||
-                    Objects.equals(versionList.getValue(), "1.19.3")) {    //Optifine Restrictions
-                LauncherSettings.useOptifine.setDisable(true);
+
+            LauncherSettings.useForge.setDisable(isForgeRestricted);
+            LauncherSettings.useForge.setOpacity(isForgeRestricted ? 0.3 : 1);
+
+            if (!LauncherSettings.useOptifine.isDisabled() || isOptifineRestricted) {
                 LauncherSettings.useOptifine.setSelected(false);
-                LauncherSettings.useOptifine.setOpacity(0.3);
                 pane.getConfig().updateValue("useOptifine", false);
-            } else {
-                LauncherSettings.useOptifine.setOpacity(1);
-                LauncherSettings.useOptifine.setDisable(false);
             }
+
+            LauncherSettings.useOptifine.setDisable(isOptifineRestricted);
+            LauncherSettings.useOptifine.setOpacity(isOptifineRestricted ? 0.3 : 1);
         });
         root.getChildren().add(this.versionList);
 
@@ -379,14 +377,7 @@ public class LauncherSettings extends IScreen {
 
 
     private String urlModifier() {
-        if (useForge.isSelected()) {
-            return "/" + versionList.getValue() + "/forge/";
-        } else if (useOptifine.isSelected()) {
-        	System.out.println("OK");
-            return "/" + versionList.getValue() + "/";
-        } else {
-            return "/";
-        }
+        return "/" + versionList.getValue() + (useForge.isSelected() ? "/forge/" : (useOptifine.isSelected() ? "/" : "/"));
     }
 
     private void populateSizeList() {
@@ -396,26 +387,11 @@ public class LauncherSettings extends IScreen {
     }
 
     private void populateVersionList() {
-        this.versionList.getItems().add("1.8");
-        this.versionList.getItems().add("1.9");
-        this.versionList.getItems().add("1.10.2");
-        this.versionList.getItems().add("1.11.2");
-        this.versionList.getItems().add("1.12.2");
-        this.versionList.getItems().add("1.13.2");
-        this.versionList.getItems().add("1.14.4");
-        this.versionList.getItems().add("1.15.2");
-        this.versionList.getItems().add("1.16.2");
-        this.versionList.getItems().add("1.16.3");
-        this.versionList.getItems().add("1.16.4");
-        this.versionList.getItems().add("1.16.5");
-        this.versionList.getItems().add("1.17");
-        this.versionList.getItems().add("1.17.1");
-        this.versionList.getItems().add("1.18");
-        this.versionList.getItems().add("1.18.1");
-        this.versionList.getItems().add("1.18.2");
-        this.versionList.getItems().add("1.19");
-        this.versionList.getItems().add("1.19.1");
-        this.versionList.getItems().add("1.19.2");
-        this.versionList.getItems().add("1.19.3");
+        String[] versions = new String[] {
+            "1.8", "1.9", "1.10.2", "1.11.2", "1.12.2", "1.13.2", "1.14.4", "1.15.2",
+            "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17", "1.17.1", "1.18", "1.18.1",
+            "1.18.2", "1.19", "1.19.1", "1.19.2", "1.19.3"
+        };
+        this.versionList.getItems().addAll(Arrays.asList(versions));
     }
 }

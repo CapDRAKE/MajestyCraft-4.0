@@ -1,16 +1,12 @@
 package fr.majestycraft;
 
-import animatefx.animation.*;
 import fr.majestycraft.launcher.*;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.maintenance.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
-import fr.trxyy.alternative.alternative_api.utils.config.*;
 import fr.trxyy.alternative.alternative_api_ui.*;
 import fr.trxyy.alternative.alternative_api_ui.base.*;
-import javafx.event.*;
 import javafx.scene.*;
-import javafx.scene.media.*;
 import javafx.scene.shape.*;
 import javafx.stage.*;
 
@@ -30,6 +26,7 @@ public class App extends AlternativeBase {
 
     private final GameMaintenance gameMaintenance = new GameMaintenance(Maintenance.USE, gameEngine);
     public static final GameConnect GAME_CONNECT = new GameConnect("play.majestycraft.com", "25565");
+	private LauncherPanel panel;
 
 
     public void launcher(){
@@ -38,9 +35,8 @@ public class App extends AlternativeBase {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        instance = this;
+        setInstance(this);
         createContent();
-        // Affiche ou non le statut discord
         this.gameEngine.reg(primaryStage);
         if(App.netIsAvailable()) {
             this.gameEngine.reg(this.gameMaintenance);
@@ -59,23 +55,34 @@ public class App extends AlternativeBase {
         rectangle.setArcWidth(15.0);
         contentPane.setClip(rectangle);
         contentPane.setStyle("-fx-background-color: transparent;");
-        LauncherPanel panel = new LauncherPanel(contentPane, this.gameEngine); //TODO
-//        readVersion(panel);
-
+        setPanel(new LauncherPanel(contentPane, this.gameEngine));
     }
 
     public static boolean netIsAvailable() {
         try {
-            final URL url = new URL("http://www.google.com");
-            final URLConnection conn = url.openConnection();
-            conn.connect();
-            conn.getInputStream().close();
-            return true;
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
+            final HttpURLConnection urlConnection = (HttpURLConnection) (new URL("http://www.google.com").openConnection());
+            urlConnection.setRequestMethod("HEAD");
+            urlConnection.connect();
+            return (urlConnection.getResponseCode() == HttpURLConnection.HTTP_OK);
         } catch (IOException e) {
             return false;
         }
     }
+
+	public static App getInstance() {
+		return instance;
+	}
+
+	public static void setInstance(App instance) {
+		App.instance = instance;
+	}
+
+	public LauncherPanel getPanel() {
+		return panel;
+	}
+
+	public void setPanel(LauncherPanel panel) {
+		this.panel = panel;
+	}
 
 }
