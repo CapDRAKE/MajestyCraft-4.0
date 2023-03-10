@@ -284,7 +284,6 @@ public class LauncherPanel extends IScreen {
     	  }
 
     	  if (useMicrosoft) {
-    	    connectAccountPremiumOFF(root);
     	    if (usePremium) {
     	      connectAccountPremium(username, root);
     	    } else {
