@@ -20,7 +20,7 @@ public class App extends AlternativeBase {
     private final GameFolder gameFolder = new GameFolder("majestycraft");
     private final LauncherPreferences launcherPreferences = new LauncherPreferences("MajestyLauncher Optifine + Forge", 1050,
             750, Mover.MOVE);
-    private final GameLinks gameLinks = new GameLinks("https://majestycraft.com/minecraft/", "1.19.json");
+    private final GameLinks gameLinks = new GameLinks("https://majestycraft.com/minecraft/", "1.19.3.json");
     private final GameEngine gameEngine = new GameEngine(gameFolder,gameLinks,
             this.launcherPreferences, GameStyle.VANILLA_1_19_HIGHER);
 

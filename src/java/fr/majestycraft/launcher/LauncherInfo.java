@@ -14,7 +14,7 @@ import javafx.stage.*;
 
 public class LauncherInfo extends IScreen {
 	
-	private String VersionL = "Version : 3.1.1 (02/02/2023)";
+	private String VersionL = "Version : 3.1.2 (14/03/2023)";
 
 	private LauncherLabel titleLabel;
 	private LauncherLabel developpeur;
@@ -124,7 +124,7 @@ public class LauncherInfo extends IScreen {
 
 		/** ===================== changelogs 1 ===================== */
 		this.CHANGE1 = new LauncherLabel(root);
-		this.CHANGE1.setText("- Ajout de la 1.19.3");
+		this.CHANGE1.setText("- Ajout d'Optifine sur la 1.19.3");
 		this.CHANGE1.setFont(Font.font("FontName", FontWeight.BOLD, 20d));
 		this.CHANGE1.setStyle("-fx-text-fill: white;");
 		this.CHANGE1.setPosition(engine.getWidth() / 2 - 449, engine.getHeight() / 2 - 20);
@@ -134,7 +134,7 @@ public class LauncherInfo extends IScreen {
 
 		/** ===================== changelogs 2 ===================== */
 		this.CHANGE2 = new LauncherLabel(root);
-		this.CHANGE2.setText("- Optimisation importante du launcher");
+		this.CHANGE2.setText("- Ajout de la 1.19.4");
 		this.CHANGE2.setFont(Font.font("FontName", FontWeight.BOLD, 20d));
 		this.CHANGE2.setStyle("-fx-text-fill: white;");
 		this.CHANGE2.setPosition(engine.getWidth() / 2 - 449, engine.getHeight() / 2 + 20);
@@ -144,13 +144,13 @@ public class LauncherInfo extends IScreen {
 
 		/** ===================== changelogs 3 ===================== */
 		this.CHANGE3 = new LauncherLabel(root);
-		this.CHANGE3.setText("- Le temps de connexion auto est passÃ© de 5 Ã  7 secondes");
+		this.CHANGE3.setText("- Correction du bug de la tête du joueur mal affichée");
 		this.CHANGE3.setFont(Font.font("FontName", FontWeight.BOLD, 20d));
 		this.CHANGE3.setStyle("-fx-text-fill: white;");
 		this.CHANGE3.setPosition(engine.getWidth() / 2 - 449, engine.getHeight() / 2 + 60);
 		this.CHANGE3.setOpacity(0.7);
 		this.CHANGE3.setSize(1000, 40);
-		this.CHANGE3.setVisible(false);
+		this.CHANGE3.setVisible(true);
 
 		/** ===================== changelogs 4 ===================== */
 		this.CHANGE4 = new LauncherLabel(root);

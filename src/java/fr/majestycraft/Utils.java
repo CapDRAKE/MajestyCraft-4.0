@@ -37,6 +37,8 @@ public class Utils {
 	        case "1.19":
 	        case "1.19.1":
 	        case "1.19.2":
+	        case "1.19.3":
+	        case "1.19.4":
 	            engine.setGameStyle(useForge ? GameStyle.FORGE_1_19_HIGHER : (useOptifine ? GameStyle.OPTIFINE : GameStyle.VANILLA_1_19_HIGHER));
 	            break;
 	    }

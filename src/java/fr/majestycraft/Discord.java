@@ -23,7 +23,7 @@ public class Discord {
         presence.largeImageKey = "image";
         presence.largeImageText = "MajestyLauncher, Launcher Gratuit Crack/Premium";
         presence.details = "Launcher MajestyLauncher";
-        presence.state = "Version : 1.8 => 1.19.3";
+        presence.state = "Version : 1.8 => 1.19.4";
 
         rpc.Discord_UpdatePresence(presence);
     }

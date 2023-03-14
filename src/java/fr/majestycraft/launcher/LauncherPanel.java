@@ -284,11 +284,7 @@ public class LauncherPanel extends IScreen {
     	  }
 
     	  if (useMicrosoft) {
-    	    if (usePremium) {
-    	      connectAccountPremium(username, root);
-    	    } else {
-    	      connectAccountCrack(root);
-    	    }
+    		connectAccountPremium(username, root);
     	    connectAccountPremiumCO(username, root);
     	  } else if (email.length() > 3 && email.contains("@")) {
     	    if (!passwordField.getText().isEmpty()) {
@@ -550,7 +546,7 @@ public class LauncherPanel extends IScreen {
         this.titleCrack.setSize(500, 40);
 
         JFXRippler rippler2 = new JFXRippler(this.titleCrack);
-        rippler2.setLayoutX((float) engine.getWidth() / 2 - 116);
+        rippler2.setLayoutX((float) engine.getWidth() / 2 - 72);
         rippler2.setLayoutY((float) engine.getHeight() / 2 - 130);
         rippler2.getStyleClass().add("rippler");
         root.getChildren().add(rippler2);
@@ -862,7 +858,7 @@ public class LauncherPanel extends IScreen {
 
     public void connectAccountCrack(Pane root) {
         avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png"));
-        avatar.setBounds(engine.getWidth() / 2 - 182, engine.getHeight() / 2 - 12, 50, 60);
+        avatar.setBounds(engine.getWidth() / 2 - 182, engine.getHeight() / 2 - 42, 50, 60);
     }
 
     public void connectAccountPremium(String username, Pane root) {
