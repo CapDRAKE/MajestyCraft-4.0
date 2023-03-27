@@ -17,17 +17,13 @@ public class App extends AlternativeBase {
 
     private static App instance;
     private Scene scene;
-    private final GameFolder gameFolder = new GameFolder("majestycraft");
-    private final LauncherPreferences launcherPreferences = new LauncherPreferences("MajestyLauncher Optifine + Forge", 1050,
-            750, Mover.MOVE);
-    private final GameLinks gameLinks = new GameLinks("https://majestycraft.com/minecraft/", "1.19.3.json");
-    private final GameEngine gameEngine = new GameEngine(gameFolder,gameLinks,
-            this.launcherPreferences, GameStyle.VANILLA_1_19_HIGHER);
-
-    private final GameMaintenance gameMaintenance = new GameMaintenance(Maintenance.USE, gameEngine);
+    private final GameFolder gameFolder = createGameFolder();
+    private final LauncherPreferences launcherPreferences = createLauncherPreferences();
+    private final GameLinks gameLinks = createGameLinks();
+    private final GameEngine gameEngine = createGameEngine();
+    private final GameMaintenance gameMaintenance = createGameMaintenance();
+    private LauncherPanel panel;
     public static final GameConnect GAME_CONNECT = new GameConnect("play.majestycraft.com", "25565");
-	private LauncherPanel panel;
-
 
     public void launcher(){
         launch();
@@ -38,11 +34,31 @@ public class App extends AlternativeBase {
         setInstance(this);
         createContent();
         this.gameEngine.reg(primaryStage);
-        if(App.netIsAvailable()) {
+        if(netIsAvailable()) {
             this.gameEngine.reg(this.gameMaintenance);
         }
         LauncherBase launcherBase = new LauncherBase(primaryStage, scene, StageStyle.TRANSPARENT, this.gameEngine);
         launcherBase.setIconImage(primaryStage, "launchergifpng.png");
+    }
+
+    private GameFolder createGameFolder() {
+        return new GameFolder("majestycraft");
+    }
+
+    private LauncherPreferences createLauncherPreferences() {
+        return new LauncherPreferences("MajestyLauncher Optifine + Forge", 1050, 750, Mover.MOVE);
+    }
+
+    private GameLinks createGameLinks() {
+        return new GameLinks("https://majestycraft.com/minecraft/", "1.19.3.json");
+    }
+
+    private GameEngine createGameEngine() {
+        return new GameEngine(gameFolder, gameLinks, launcherPreferences, GameStyle.VANILLA_1_19_HIGHER);
+    }
+
+    private GameMaintenance createGameMaintenance() {
+        return new GameMaintenance(Maintenance.USE, gameEngine);
     }
 
     private void createContent() throws IOException {
@@ -52,7 +68,7 @@ public class App extends AlternativeBase {
                 this.gameEngine.getLauncherPreferences().getHeight());
         this.gameEngine.reg(gameLinks);
         rectangle.setArcWidth(15.0);
-        rectangle.setArcWidth(15.0);
+        rectangle.setArcHeight(15.0);
         contentPane.setClip(rectangle);
         contentPane.setStyle("-fx-background-color: transparent;");
         setPanel(new LauncherPanel(contentPane, this.gameEngine));
@@ -65,24 +81,24 @@ public class App extends AlternativeBase {
             urlConnection.connect();
             return (urlConnection.getResponseCode() == HttpURLConnection.HTTP_OK);
         } catch (IOException e) {
+            System.err.println("Erreur lors de la vérification de la connexion Internet: " + e.getMessage());
             return false;
         }
     }
 
-	public static App getInstance() {
-		return instance;
-	}
+    public static App getInstance() {
+        return instance;
+    }
 
-	public static void setInstance(App instance) {
-		App.instance = instance;
-	}
+    private static void setInstance(App instance) {
+        App.instance = instance;
+    }
 
-	public LauncherPanel getPanel() {
-		return panel;
-	}
+    public LauncherPanel getPanel() {
+        return panel;
+    }
 
-	public void setPanel(LauncherPanel panel) {
-		this.panel = panel;
-	}
-
+    private void setPanel(LauncherPanel panel) {
+        this.panel = panel;
+    }
 }
