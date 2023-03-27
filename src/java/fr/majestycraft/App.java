@@ -50,7 +50,7 @@ public class App extends AlternativeBase {
     }
 
     private GameLinks createGameLinks() {
-        return new GameLinks("https://majestycraft.com/minecraft/", "1.19.3.json");
+        return new GameLinks("https://majestycraft.com/minecraft/", "1.19.4.json");
     }
 
     private GameEngine createGameEngine() {

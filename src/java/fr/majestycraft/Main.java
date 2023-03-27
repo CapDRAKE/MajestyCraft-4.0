@@ -14,17 +14,24 @@ public class Main {
      * @param args Les arguments de la ligne de commande
      */
     public static void main(String[] args) {
-        try {
-            LogManager.getLogManager().readConfiguration(
-                    App.class.getResourceAsStream("/logging.properties"));
-        } catch (IOException e) {
-            System.err.println("Erreur lors de la configuration du gestionnaire de journalisation: " + e.getMessage());
-        }
+        configureLogging();
     	
         try {
             new App().launcher();
         } catch (Exception e) {
             System.err.println("Une erreur est survenue lors du lancement de l'application : " + e.getMessage());
+        }
+    }
+
+    /**
+     * Configure le gestionnaire de journalisation pour supprimer les avertissements JavaFX
+     */
+    private static void configureLogging() {
+        try {
+            LogManager.getLogManager().readConfiguration(
+                    App.class.getResourceAsStream("/logging.properties"));
+        } catch (IOException e) {
+            System.err.println("Erreur lors de la configuration du gestionnaire de journalisation: " + e.getMessage());
         }
     }
 }
