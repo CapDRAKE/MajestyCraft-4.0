@@ -120,64 +120,97 @@ public class LauncherPanel extends IScreen {
             new Tada(youtubeButton).play();
         });
         animationOUVERTURE.play();
+        
+        
+        
 
-        checkAutoLogin(root);
+        
+        
+
+        if(this.config.getValue(EnumConfig.AUTOLOGIN).equals(true)) {
+        	
+        }
+
 
     }
 
 
 
     private void checkAutoLogin(Pane root) {
-        if (usernameField.getText().length() <= 2) {
+        if (!isAutoLoginEnabled()) {
             return;
         }
 
-        if (!this.config.getValue(EnumConfig.AUTOLOGIN).equals(true)) {
-            return;
-        }
-
-        boolean useMicrosoft = (boolean) config.getValue(EnumConfig.USE_MICROSOFT);
-        boolean isOnline = App.netIsAvailable();
         String username = usernameField.getText();
         String password = passwordField.getText();
         boolean isPasswordEmpty = password.isEmpty();
 
-        if (isOnline && useMicrosoft) {
-            showMicrosoftAuth();
-            auth = new GameAuth(AccountType.MICROSOFT);
+        if (isOfflineAccount(username, isPasswordEmpty)) {
+            authenticateOffline(username);
+            update();
+            return;
+        }
 
+        if (isOnlineAccount()) {
+            if (isMicrosoftAccount()) {
+                authenticateMicrosoft(root);
+            } else {
+                authenticateMojang(username, password);
+            }
+        } else {
+            showOfflineError();
+        }
+    }
+
+    private boolean isAutoLoginEnabled() {
+        return this.config.getValue(EnumConfig.AUTOLOGIN).equals(true);
+    }
+
+    private boolean isOfflineAccount(String username, boolean isPasswordEmpty) {
+        return username.length() >= 2 && isPasswordEmpty;
+    }
+
+    private boolean isOnlineAccount() {
+        return App.netIsAvailable();
+    }
+
+    private boolean isMicrosoftAccount() {
+        return (boolean) config.getValue(EnumConfig.USE_MICROSOFT);
+    }
+
+    private void authenticateOffline(String username) {
+        auth = new GameAuth(username, "", AccountType.OFFLINE);
+    }
+
+    private void authenticateMicrosoft(Pane root) {
+        Platform.runLater(() -> {
+            auth = new GameAuth(AccountType.MICROSOFT);
+            showMicrosoftAuth();
             if (auth.isLogged()) {
-                config.updateValue("useMicrosoft", true);
                 connectAccountPremiumCO(auth.getSession().getUsername(), root);
                 update();
-                return;
+            } else {
+                showAuthErrorAlert();
             }
-        }
+        });
+    }
 
-        if (isPasswordEmpty) {
-            auth = new GameAuth(username, "", AccountType.OFFLINE);
-            update();
-            return;
-        }
-
+    private void authenticateMojang(String username, String password) {
         auth = new GameAuth(username, password, AccountType.MOJANG);
-
         if (auth.isLogged()) {
             update();
-            return;
+        } else {
+            showMojangAuthError();
         }
+    }
 
-        autoLoginLabel.setVisible(false);
-        autoLoginButton.setVisible(false);
-        autoLoginRectangle.setVisible(false);
+    private void showOfflineError() {
+        Platform.runLater(() -> new LauncherAlert("Authentification échouée!",
+                "Impossible de se connecter, vous êtes en mode offline"
+                        + " \nMerci de vous connecter en crack."));
+    }
 
-        if (!isOnline) {
-            Platform.runLater(() -> new LauncherAlert("Authentification échouée!",
-                    "Impossible de se connecter, vous êtes en mode offline"
-                            + " \nMerci de vous connecter en crack."));
-            return;
-        }
-
+    private void showMojangAuthError() {
         Platform.runLater(() -> new LauncherAlert("Authentification échouée!",
                 "Impossible de se connecter, l'authentification semble être une authentification 'en-ligne'"
                         + " \nIl y a un problème lors de la tentative de connexion. \n\n-Vérifiez que le pseudonyme comprenne au minimum 3 caractères. (compte non migré)"
@@ -391,6 +424,8 @@ public class LauncherPanel extends IScreen {
         rippler4.setLayoutY((float) engine.getHeight() / 2);
         rippler4.getStyleClass().add("rippler2");
         root.getChildren().add(rippler4);
+        
+
 
         /* ===================== BOUTON easter egg 1 ===================== */
         this.lolButton = new LauncherButton(root);
@@ -667,6 +702,41 @@ public class LauncherPanel extends IScreen {
                 autoLoginRectangle.setVisible(false);
             }
         });
+        if (this.config.getValue(EnumConfig.AUTOLOGIN).equals(true)) {
+            Platform.runLater(() -> {
+                autoLoginTimer = new Timer();
+                TimerTask timerTask = new TimerTask() {
+                    final int waitTime = 7;
+                    int elapsed = 0;
+
+                    @Override
+
+                    public void run() {
+                    	elapsed++;
+                    	if (elapsed % waitTime == 0) {
+                    		if (!engine.getGameMaintenance().isAccessBlocked()) {
+                                autoLoginTimer.cancel();
+                                autoLoginLabel.setVisible(false);
+                                autoLoginButton.setVisible(false);
+                                autoLoginRectangle.setVisible(false);
+                                checkAutoLogin(root);
+                    		}
+                    	}
+                        else {
+                            final int time = (waitTime - (elapsed % waitTime));
+                            Platform.runLater(() -> autoLoginLabel.setText("Connexion auto dans " + time + " secondes."));
+                        }
+                    }
+                    
+
+                };
+                autoLoginTimer.schedule(timerTask, 0, 1000);
+                autoLoginLabel.setVisible(true);
+                autoLoginRectangle.setVisible(true);
+                autoLoginButton.setVisible(true);
+               });
+
+        }
     }
 
     private void setupUpdateGUI(Pane root) {

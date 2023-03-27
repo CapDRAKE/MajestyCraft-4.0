@@ -15,12 +15,12 @@ public class Main {
      */
     public static void main(String[] args) {
         configureLogging();
-    	
-        try {
+        new App().launcher();
+        /*try {
             new App().launcher();
         } catch (Exception e) {
             System.err.println("Une erreur est survenue lors du lancement de l'application : " + e.getMessage());
-        }
+        }*/
     }
 
     /**

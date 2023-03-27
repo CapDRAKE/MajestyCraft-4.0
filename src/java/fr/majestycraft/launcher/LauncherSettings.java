@@ -285,31 +285,13 @@ public class LauncherSettings extends IScreen {
         root.getChildren().add(autoLogin);
 
         /* ===================== MICROSOFT CHECK BOX ===================== */
-        JFXCheckBox microsoft = new JFXCheckBox();
-        microsoft.setText("Connexion auto MICROSOFT (desactiver si 'session invalide')");
-        microsoft.setSelected((Boolean) pane.getConfig().getValue(EnumConfig.USE_MICROSOFT));
-        microsoft.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        microsoft.setStyle("-fx-text-fill: white; -jfx-checked-color: RED; -jfx-unchecked-color: BLACK");
-        microsoft.setLayoutX(250);
-        microsoft.setLayoutY(465);
-        microsoft.setOnAction(new EventHandler<ActionEvent>() {
-            public void handle(ActionEvent event) {
-				if (!microsoft.isSelected()) {
-					pane.getConfig().updateValue("useMicrosoft", false);
-					pane.getConfig().updateValue("autologin", false);
-				}
-            }
-        });
-        root.getChildren().add(microsoft);
-
-        /* ===================== MICROSOFT CHECK BOX ===================== */
         this.connect = new JFXCheckBox();
         this.connect.setText("Connexion auto au serveur MajestyCraft (EXPERIMENTAL)");
         this.connect.setSelected((Boolean) pane.getConfig().getValue(EnumConfig.USE_CONNECT));
         this.connect.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
         this.connect.setStyle("-fx-text-fill: white; -jfx-checked-color: RED; -jfx-unchecked-color: BLACK");
         this.connect.setLayoutX(250);
-        this.connect.setLayoutY(495);
+        this.connect.setLayoutY(465);
         this.connect.setOnAction(event -> {
             if (connect.isSelected()) {
                 engine.reg(App.GAME_CONNECT);
