@@ -5,9 +5,7 @@ import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
 import fr.trxyy.alternative.alternative_api_ui.base.*;
 import fr.trxyy.alternative.alternative_api_ui.components.*;
-//import javafx.application.*;
 import javafx.event.*;
-//import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.*;
 import javafx.stage.*;
@@ -224,17 +222,17 @@ public class LauncherInfo extends IScreen {
 			}
 		});
 
-//		this.volume = new Slider();  TODO Fonctionne pas
-//		this.volume.setStyle("-fx-control-inner-background: rgba(46, 47, 48, 0.5);");
-//		this.volume.setMin(0.0);
-//		this.volume.setMax(10.0);
-//		this.volume.setValue(LauncherMain.getMediaPlayer().getVolume());
-//		this.volume.setLayoutX(50);
-//		this.volume.setLayoutY(210);
-//		this.volume.setPrefWidth(395);
-//		this.volume.setBlockIncrement(1);
-//
-//		Platform.runLater(() -> root.getChildren().add(volume));
-//		this.volume.setVisible(false);
+/*		this.volume = new Slider();
+		this.volume.setStyle("-fx-control-inner-background: rgba(46, 47, 48, 0.5);");
+		this.volume.setMin(0.0);
+		this.volume.setMax(10.0);
+		this.volume.setValue(LauncherMain.getMediaPlayer().getVolume());
+		this.volume.setLayoutX(50);
+		this.volume.setLayoutY(210);
+		this.volume.setPrefWidth(395);
+		this.volume.setBlockIncrement(1);
+
+		Platform.runLater(() -> root.getChildren().add(volume));
+		this.volume.setVisible(false);*/
 	}
 }
