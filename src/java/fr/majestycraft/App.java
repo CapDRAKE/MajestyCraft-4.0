@@ -101,4 +101,9 @@ public class App extends AlternativeBase {
     private void setPanel(LauncherPanel panel) {
         this.panel = panel;
     }
+
+	public static GameConnect getGameConnect() {
+		// TODO Auto-generated method stub
+		return GAME_CONNECT;
+	}
 }

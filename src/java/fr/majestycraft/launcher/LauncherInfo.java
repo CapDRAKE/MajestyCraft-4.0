@@ -23,8 +23,8 @@ public class LauncherInfo extends IScreen {
     private static final boolean CHANGE_1 = true;
     private static final String CHANGELOG_2 = "- Ajout d'Optifine sur la 1.19.4";
     private static final boolean CHANGE_2 = true;
-    private static final String CHANGELOG_3 = "- Correction du bug de la tête du joueur mal affichée";
-    private static final boolean CHANGE_3 = false;
+    private static final String CHANGELOG_3 = "- La fonction de connexion automatique au démarrage fonction de nouveau";
+    private static final boolean CHANGE_3 = true;
     private static final String CHANGELOG_4 = "- Ajout d'un bouton démarrer lors de la connexion auto";
     private static final boolean CHANGE_4 = false;
     private static final String VERSION_TITLE = "Version";

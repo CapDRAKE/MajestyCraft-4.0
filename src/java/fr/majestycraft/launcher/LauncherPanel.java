@@ -75,6 +75,7 @@ public class LauncherPanel extends IScreen {
     private LauncherRectangle autoLoginRectangle;
     private LauncherLabel autoLoginLabel;
     private LauncherButton autoLoginButton;
+    private LauncherButton autoLoginButton2;
     private Timer autoLoginTimer;
 
     private LauncherRectangle updateRectangle;
@@ -93,7 +94,7 @@ public class LauncherPanel extends IScreen {
     public LauncherPanel(Pane root, GameEngine engine) {
         this.engine = engine;
         this.drawBackgroundImage(engine, root, "heading.jpg");
-        // Dï¿½selectionne la textfield par dï¿½faut
+        // DÃ¯Â¿Â½selectionne la textfield par dÃ¯Â¿Â½faut
         Platform.runLater(root::requestFocus);
 
         this.config = new LauncherConfig(engine);
@@ -205,15 +206,15 @@ public class LauncherPanel extends IScreen {
     }
 
     private void showOfflineError() {
-        Platform.runLater(() -> new LauncherAlert("Authentification échouée!",
-                "Impossible de se connecter, vous êtes en mode offline"
+        Platform.runLater(() -> new LauncherAlert("Authentification Ã©chouÃ©e!",
+                "Impossible de se connecter, vous Ãªtes en mode offline"
                         + " \nMerci de vous connecter en crack."));
     }
 
     private void showMojangAuthError() {
-        Platform.runLater(() -> new LauncherAlert("Authentification échouée!",
-                "Impossible de se connecter, l'authentification semble être une authentification 'en-ligne'"
-                        + " \nIl y a un problème lors de la tentative de connexion. \n\n-Vérifiez que le pseudonyme comprenne au minimum 3 caractères. (compte non migré)"
+        Platform.runLater(() -> new LauncherAlert("Authentification Ã©chouÃ©e!",
+                "Impossible de se connecter, l'authentification semble Ãªtre une authentification 'en-ligne'"
+                        + " \nIl y a un problÃ¨me lors de la tentative de connexion. \n\n-VÃ©rifiez que le pseudonyme comprenne au minimum 3 caractÃ¨res. (compte non migrÃ©)"
                         + "\n-Faites bien attention aux majuscules et minuscules. \nAssurez-vous d'utiliser un compte Mojang. \nAssurez-vous de bien utiliser votre email dans le  cas d'une connexion avec un compte Mojang !"));
     }
 
@@ -226,7 +227,7 @@ public class LauncherPanel extends IScreen {
                 engine.getWidth() / 2 - 70, 40, 150, 150, root, Mover.DONT_MOVE);
 
 
-        // Titre de la fenÃ©tre
+        // Titre de la fenÃƒÂ©tre
         LauncherLabel titleLabel = new LauncherLabel(root);
         titleLabel.setText("Launcher MajestyCraft Optifine + Forge");
         titleLabel.setFont(FontLoader.loadFont("Roboto-Light.ttf", "Roboto Light", 18F));
@@ -628,7 +629,7 @@ public class LauncherPanel extends IScreen {
         // -fx-text-fill: orange");
         this.loginButton.setOnAction(event -> {
             if (!App.netIsAvailable()) {
-                Platform.runLater(() -> new LauncherAlert("Authentification échouée!", "Impossible de se connecter, vous êtes hors ligne. Merci de vous connecter en crack."));
+                Platform.runLater(() -> new LauncherAlert("Authentification Ã©chouÃ©e!", "Impossible de se connecter, vous Ãªtes hors ligne. Merci de vous connecter en crack."));
                 return;
             }
 
@@ -638,9 +639,9 @@ public class LauncherPanel extends IScreen {
             String password = passwordField.getText();
 
             if (username.length() <= 3) {
-                new LauncherAlert("Authentification échouée!",
-                                    "Impossible de se connecter, l'authentification semble être une authentification 'hors-ligne'"
-                                    + " \nIl y a un problème lors de la tentative de connexion. \n\n-Vérifiez que le pseudonyme comprenne au minimum 3 caractères.");
+                new LauncherAlert("Authentification Ã©chouÃ©e!",
+                                    "Impossible de se connecter, l'authentification semble Ãªtre une authentification 'hors-ligne'"
+                                    + " \nIl y a un problÃ¨me lors de la tentative de connexion. \n\n-VÃ©rifiez que le pseudonyme comprenne au minimum 3 caractÃ¨res.");
                 return;
             }
 
@@ -661,9 +662,9 @@ public class LauncherPanel extends IScreen {
                 config.updateValue("username", username);
                 update();
             } else {
-                new LauncherAlert("Authentification échouée!",
-                                        "Impossible de se connecter, l'authentification semble être une authentification 'en-ligne'"
-                                        + " \nIl y a un problème lors de la tentative de connexion. \n\n-Vérifiez que le pseudonyme comprenne au minimum 3 caractères. (compte non migré)"
+                new LauncherAlert("Authentification Ã©chouÃ©e!",
+                                        "Impossible de se connecter, l'authentification semble Ãªtre une authentification 'en-ligne'"
+                                        + " \nIl y a un problÃ¨me lors de la tentative de connexion. \n\n-VÃ©rifiez que le pseudonyme comprenne au minimum 3 caractÃ¨res. (compte non migrÃ©)"
                                         + "\n-Faites bien attention aux majuscules et minuscules. \nAssurez-vous d'utiliser un compte Mojang. \nAssurez-vous de bien utiliser votre email dans le cas d'une connexion avec un compte Mojang !");
             }
         });
@@ -702,6 +703,29 @@ public class LauncherPanel extends IScreen {
                 autoLoginRectangle.setVisible(false);
             }
         });
+        
+        /* ===================== ANNULER AUTOLOGIN ===================== */
+        this.autoLoginButton2 = new LauncherButton(root);
+        this.autoLoginButton2.setText("DÃ©marrer");
+        this.autoLoginButton2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        this.autoLoginButton2.setPosition(engine.getWidth() / 2 + 170, engine.getHeight() - 30);
+        this.autoLoginButton2.setSize(100, 20);
+        this.autoLoginButton2.setStyle("-fx-background-color: rgba(15, 209, 70, 0.4); -fx-text-fill: black;");
+        this.autoLoginButton2.setVisible(false);
+        this.autoLoginButton2.setOnAction(event -> {
+        	if (!engine.getGameMaintenance().isAccessBlocked()) {
+                autoLoginTimer.cancel();
+                autoLoginLabel.setVisible(false);
+                autoLoginButton.setVisible(false);
+                autoLoginRectangle.setVisible(false);
+                autoLoginButton2.setVisible(false);
+                if ((boolean) config.getValue(EnumConfig.USE_CONNECT)) {
+                    engine.reg(App.getGameConnect());
+                }
+                checkAutoLogin(root);
+        	}
+        });
+        
         if (this.config.getValue(EnumConfig.AUTOLOGIN).equals(true)) {
             Platform.runLater(() -> {
                 autoLoginTimer = new Timer();
@@ -719,6 +743,7 @@ public class LauncherPanel extends IScreen {
                                 autoLoginLabel.setVisible(false);
                                 autoLoginButton.setVisible(false);
                                 autoLoginRectangle.setVisible(false);
+                                autoLoginButton2.setVisible(false);
                                 checkAutoLogin(root);
                     		}
                     	}
@@ -734,6 +759,7 @@ public class LauncherPanel extends IScreen {
                 autoLoginLabel.setVisible(true);
                 autoLoginRectangle.setVisible(true);
                 autoLoginButton.setVisible(true);
+                autoLoginButton2.setVisible(true);
                });
 
         }
@@ -997,7 +1023,7 @@ public class LauncherPanel extends IScreen {
     }
     
     private void showConnectionErrorAlert() {
-    	  Platform.runLater(() -> new LauncherAlert("Erreur d'authentification", "Impossible de se connecter, vous n'êtes pas connecté à internet."));
+    	  Platform.runLater(() -> new LauncherAlert("Erreur d'authentification", "Impossible de se connecter, vous n'Ãªtes pas connectÃ© Ã  internet."));
     }
 
     private void showAuthErrorAlert() {
