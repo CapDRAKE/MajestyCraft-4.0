@@ -701,6 +701,7 @@ public class LauncherPanel extends IScreen {
                 autoLoginLabel.setVisible(false);
                 autoLoginButton.setVisible(false);
                 autoLoginRectangle.setVisible(false);
+                autoLoginButton2.setVisible(false);
             }
         });
         
