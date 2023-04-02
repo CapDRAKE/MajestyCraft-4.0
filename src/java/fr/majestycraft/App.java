@@ -6,6 +6,7 @@ import fr.trxyy.alternative.alternative_api.maintenance.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
 import fr.trxyy.alternative.alternative_api_ui.*;
 import fr.trxyy.alternative.alternative_api_ui.base.*;
+import javafx.application.Platform;
 import javafx.scene.*;
 import javafx.scene.shape.*;
 import javafx.stage.*;
@@ -39,6 +40,7 @@ public class App extends AlternativeBase {
         }
         LauncherBase launcherBase = new LauncherBase(primaryStage, scene, StageStyle.TRANSPARENT, this.gameEngine);
         launcherBase.setIconImage(primaryStage, "launchergifpng.png");
+        Platform.runLater(() -> Main.showStartupPopup());
     }
 
     private GameFolder createGameFolder() {
