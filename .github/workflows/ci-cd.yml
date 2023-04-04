@@ -24,14 +24,16 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ~/javafx-sdk
-        key: ${{ runner.os }}-javafx-${{ env.JAVAFX_VERSION }}
+        key: ${{ runner.os }}-javafx-17.0.1
 
     - name: Download JavaFX
+      env:
+        JAVAFX_VERSION: 17.0.1
       run: |
         if [ ! -d ~/javafx-sdk ]; then
           mkdir -p ~/javafx-sdk
-          wget -q https://gluonhq.com/download/javafx-${{ env.JAVAFX_VERSION }}-sdk-linux -O javafx-sdk.zip
-          unzip -q javafx-sdk.zip -d ~/javafx-sdk
+          wget -q https://download2.gluonhq.com/openjfx/${JAVAFX_VERSION}/openjfx-${JAVAFX_VERSION}_sdk-linux-x64_bin.tar.gz -O javafx-sdk.tar.gz
+          tar -xzf javafx-sdk.tar.gz -C ~/javafx-sdk --strip-components=1
         fi
 
     - name: Build and test with Maven
