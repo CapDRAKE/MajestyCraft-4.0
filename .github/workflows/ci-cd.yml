@@ -20,12 +20,10 @@ jobs:
         java-version: '11'
         distribution: 'adopt'
 
-    - name: Download and set up JavaFX SDK
+    - name: Install JavaFX dependencies with Maven
       run: |
-        if [ ! -d ~/javafx-sdk ]; then
-          mkdir -p ~/javafx-sdk
-          wget -q https://download2.gluonhq.com/openjfx/${JAVAFX_VERSION}/openjfx-${JAVAFX_VERSION}_sdk-linux-x64_bin.tar.gz -O javafx-sdk.tar.gz
-          tar -xzf javafx-sdk.tar.gz -C ~/javafx-sdk --strip-components=1
-        fi
+        mvn -B dependency:get -DgroupId=org.openjfx -DartifactId=javafx-sdk -Dversion=${JAVAFX_VERSION} -Dclassifier=linux-x64_bin -Dtransitive=false -Ddest=.
+        mkdir -p ~/javafx-sdk
+        tar -xzf javafx-sdk-${JAVAFX_VERSION}-linux-x64_bin.tar.gz -C ~/javafx-sdk --strip-components=1
       env:
         JAVAFX_VERSION: 17.0.1
