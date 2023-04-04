@@ -34,4 +34,4 @@ jobs:
       run: |
         find src -name "*.java" > sources.txt
         echo $PATH_TO_FX
-        javac --module-path $PATH_TO_FX --add-modules javafx.controls,javafx.fxml -d out @sources.txt
+        javac --module-path $PATH_TO_FX --add-modules javafx.controls,javafx.fxml -d out $(find src -name "*.java")
