@@ -23,7 +23,7 @@ jobs:
     - name: Download and extract JavaFX SDK
       run: |
         mkdir -p ~/javafx-sdk
-        wget -q https://download2.gluonhq.com/openjfx/20/openjfx-20_linux-aarch64_bin-sdk.zip -O javafx-sdk.zip
+        wget -q https://download2.gluonhq.com/openjfx/17.0.6/openjfx-17.0.6_linux-aarch64_bin-sdk.zip -O javafx-sdk.zip
         unzip -q javafx-sdk.zip -d ~/javafx-sdk
 
     - name: Set up environment variables
