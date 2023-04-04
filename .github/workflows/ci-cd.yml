@@ -20,7 +20,7 @@ jobs:
         java-version: '11'
         distribution: 'adopt'
 
-    - name: Download and extract JavaFX SDK
+    - name: Download and set up JavaFX SDK
       run: |
         if [ ! -d ~/javafx-sdk ]; then
           mkdir -p ~/javafx-sdk
@@ -29,15 +29,3 @@ jobs:
         fi
       env:
         JAVAFX_VERSION: 17.0.1
-
-    - name: Compile Java files
-      run: |
-        export PATH_TO_FX=~/javafx-sdk/lib
-        find . -name "*.java" > sources.txt
-        javac --module-path $PATH_TO_FX --add-modules javafx.controls,javafx.fxml -encoding UTF-8 -d out @sources.txt
-
-    - name: Create JAR file
-      run: |
-        cd out
-        echo "Main-Class: fr.majestycraft.Main" > manifest.txt
-        jar cvfm MajestyCraft.jar manifest.txt *
