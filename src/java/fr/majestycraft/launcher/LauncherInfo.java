@@ -221,18 +221,5 @@ public class LauncherInfo extends IScreen {
 				animation.play();
 			}
 		});
-
-/*		this.volume = new Slider();
-		this.volume.setStyle("-fx-control-inner-background: rgba(46, 47, 48, 0.5);");
-		this.volume.setMin(0.0);
-		this.volume.setMax(10.0);
-		this.volume.setValue(LauncherMain.getMediaPlayer().getVolume());
-		this.volume.setLayoutX(50);
-		this.volume.setLayoutY(210);
-		this.volume.setPrefWidth(395);
-		this.volume.setBlockIncrement(1);
-
-		Platform.runLater(() -> root.getChildren().add(volume));
-		this.volume.setVisible(false);*/
 	}
 }
