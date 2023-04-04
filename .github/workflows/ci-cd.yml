@@ -20,24 +20,6 @@ jobs:
         java-version: '11'
         distribution: 'adopt'
 
-    - name: Cache JavaFX
-      uses: actions/cache@v2
-      with:
-        path: ~/javafx-sdk
-        key: ${{ runner.os }}-javafx-17.0.1
-
-    - name: Download JavaFX
-      env:
-        JAVAFX_VERSION: 17.0.1
-        JAVA_HOME: /opt/hostedtoolcache/Java_Adopt_jdk/11.0.18-10/x64
-      run: |
-        if [ ! -d ~/javafx-sdk ]; then
-          mkdir -p ~/javafx-sdk
-          wget -q https://download2.gluonhq.com/openjfx/${JAVAFX_VERSION}/openjfx-${JAVAFX_VERSION}_sdk-linux-x64_bin.tar.gz -O javafx-sdk.tar.gz
-          tar -xzf javafx-sdk.tar.gz -C ~/javafx-sdk --strip-components=1
-        fi
-      shell: /usr/bin/bash -e {0}
-
     - name: Build and test with Maven
       run: |
         export PATH_TO_FX=~/javafx-sdk/lib
