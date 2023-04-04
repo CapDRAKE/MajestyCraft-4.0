@@ -29,6 +29,7 @@ jobs:
     - name: Download JavaFX
       env:
         JAVAFX_VERSION: 17.0.1
+        JAVA_HOME: /opt/hostedtoolcache/Java_Adopt_jdk/11.0.18-10/x64
       run: |
         if [ ! -d ~/javafx-sdk ]; then
           mkdir -p ~/javafx-sdk
@@ -36,9 +37,6 @@ jobs:
           tar -xzf javafx-sdk.tar.gz -C ~/javafx-sdk --strip-components=1
         fi
       shell: /usr/bin/bash -e {0}
-      env:
-        JAVA_HOME: /opt/hostedtoolcache/Java_Adopt_jdk/11.0.18-10/x64
-        JAVAFX_VERSION: 17.0.1
 
     - name: Build and test with Maven
       run: |
