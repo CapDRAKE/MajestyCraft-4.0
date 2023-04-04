@@ -35,6 +35,10 @@ jobs:
           wget -q https://download2.gluonhq.com/openjfx/${JAVAFX_VERSION}/openjfx-${JAVAFX_VERSION}_sdk-linux-x64_bin.tar.gz -O javafx-sdk.tar.gz
           tar -xzf javafx-sdk.tar.gz -C ~/javafx-sdk --strip-components=1
         fi
+      shell: /usr/bin/bash -e {0}
+      env:
+        JAVA_HOME: /opt/hostedtoolcache/Java_Adopt_jdk/11.0.18-10/x64
+        JAVAFX_VERSION: 17.0.1
 
     - name: Build and test with Maven
       run: |
