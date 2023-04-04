@@ -22,9 +22,8 @@ jobs:
         
     - name: Install JavaFX
       run: |
-        JAVAFX_VERSION=17.0.1
         if [ ! -d ~/javafx-sdk ]; then
           mkdir -p ~/javafx-sdk
-          wget -q https://download2.gluonhq.com/openjfx/${JAVAFX_VERSION}/openjfx-${JAVAFX_VERSION}_sdk-linux-x64_bin.tar.gz -O javafx-sdk.tar.gz
+          wget -q https://download2.gluonhq.com/openjfx/17.0.1/openjfx-17.0.1_sdk-linux-x64_bin.tar.gz -O javafx-sdk.tar.gz
           tar -xzf javafx-sdk.tar.gz -C ~/javafx-sdk --strip-components=1
         fi
