@@ -20,10 +20,8 @@ jobs:
         java-version: '11'
         distribution: 'adopt'
         
-    - name: Install JavaFX
+    - name: Download and extract JavaFX SDK
       run: |
-        if [ ! -d ~/javafx-sdk ]; then
-          mkdir -p ~/javafx-sdk
-          wget -q https://download2.gluonhq.com/openjfx/17.0.1/openjfx-17.0.1_sdk-linux-x64_bin.tar.gz -O javafx-sdk.tar.gz
-          tar -xzf javafx-sdk.tar.gz -C ~/javafx-sdk --strip-components=1
-        fi
+        mkdir -p ~/javafx-sdk
+        wget -q https://download2.gluonhq.com/openjfx/20/openjfx-20_linux-aarch64_bin-sdk.zip -O javafx-sdk.zip
+        unzip -q javafx-sdk.zip -d ~/javafx-sdk
