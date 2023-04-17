@@ -41,7 +41,7 @@ public class LauncherPacks extends IScreen {
     Stage stage;
 	private LauncherButton quit;
     private static final String QUITTER_BUTTON_TEXT = "Retour";
-
+    
     public LauncherPacks(final Pane root, final GameEngine engine, final LauncherPanel pane) {
 
         this.drawBackgroundImage(engine, root, "background.png");
