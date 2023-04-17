@@ -41,7 +41,6 @@ public class LauncherSettings extends IScreen {
     Stage stage; // Le stage qu'on voudra faire bouger (ici notre menu des paramètres)
 
     public LauncherSettings(final Pane root, final GameEngine engine, final LauncherPanel pane) {
-        // String version = (String) pane.config.getValue(EnumConfig.VERSION);
         /* ===================== BOUGER LE MENU PARAMETRE ===================== */
         // Cet évent nous permet de récupérer les valeurs en x et en y initiales.
         root.setOnMousePressed(event -> {
@@ -72,7 +71,7 @@ public class LauncherSettings extends IScreen {
 
         /* ===================== MC SIZE LABEL ===================== */
         LauncherLabel windowsSizeLabel = new LauncherLabel(root);
-        windowsSizeLabel.setText("Taille de la fenêtre:");
+        windowsSizeLabel.setText("Taille de la fen�tre:");
         windowsSizeLabel.setOpacity(1.0);
         windowsSizeLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
         windowsSizeLabel.setStyle("-fx-text-fill: white;");
@@ -94,7 +93,7 @@ public class LauncherSettings extends IScreen {
 
         /* ===================== SLIDER RAM LABEL ===================== */
         LauncherLabel sliderLabel = new LauncherLabel(root);
-        sliderLabel.setText("RAM Allouée:");
+        sliderLabel.setText("RAM Allou�e:");
         sliderLabel.setOpacity(1.0);
         sliderLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
         sliderLabel.setStyle("-fx-text-fill: white;");
