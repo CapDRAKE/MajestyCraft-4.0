@@ -19,16 +19,16 @@ public class LauncherInfo extends IScreen {
     private static final String REMARQUE_INFO_1 = "1 => Si une version ne démarre pas, allez dans votre %appdata% et ";
     private static final String REMARQUE_INFO_2 = "supprimez les fichiers 'Launcher_config.json' et '.majestycraft'";
     private static final String CHANGELOGS_TITLE = "Changelogs";
-    private static final String CHANGELOG_1 = "- La connexion automatique des comptes microsoft est entièrement fonctionnelles";
+    private static final String CHANGELOG_1 = "- Ajout d'un bouton permettant d'ouvrir le répertoire du jeu";
     private static final boolean CHANGE_1 = true;
-    private static final String CHANGELOG_2 = "- Ajout d'Optifine sur la 1.19.4";
+    private static final String CHANGELOG_2 = "- Ajout d'un bouton permettant de gérer les packs de ressources";
     private static final boolean CHANGE_2 = true;
-    private static final String CHANGELOG_3 = "- La fonction de connexion automatique au démarrage fonction de nouveau";
+    private static final String CHANGELOG_3 = "- Correction d'un bug sur l'écriture pour certains OS";
     private static final boolean CHANGE_3 = true;
     private static final String CHANGELOG_4 = "- Ajout d'un bouton démarrer lors de la connexion auto";
     private static final boolean CHANGE_4 = false;
     private static final String VERSION_TITLE = "Version";
-    private static final String VERSION_INFO = "Version : 3.2 (27/03/2023)";
+    private static final String VERSION_INFO = "Version : 3.3 (17/04/2023)";
     private static final String QUITTER_BUTTON_TEXT = "Retour";
 
 	private LauncherLabel titleLabel;

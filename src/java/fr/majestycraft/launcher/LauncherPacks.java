@@ -8,6 +8,7 @@ import fr.trxyy.alternative.alternative_api_ui.components.LauncherLabel;
 import fr.trxyy.alternative.alternative_api_ui.components.LauncherRectangle;
 import javafx.scene.control.ListView;
 import javafx.scene.layout.Pane;
+import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import java.io.File;
@@ -19,14 +20,19 @@ import javafx.event.EventHandler;
 import javafx.scene.control.ListCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.text.Font;
 
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import com.jfoenix.controls.JFXButton;
 
 import animatefx.animation.ZoomOutDown;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 
 public class LauncherPacks extends IScreen {
     private ListView<ResourcePackItem> resourcePacksList;
@@ -60,6 +66,7 @@ public class LauncherPacks extends IScreen {
         resourcePacksList.setStyle("-fx-background-color: rgba(0, 0, 0, 0); -fx-control-inner-background: rgba(0, 0, 0, 0);");
         root.getChildren().add(resourcePacksList);
         // Configure the ListView to display ResourcePackItems
+        resourcePacksDir = new File("./resourcepacks");
         configureResourcePacksList();
         /* ===================== BOUTON AJOUTER ===================== */
         addButton = new JFXButton("Ajouter un pack");
@@ -146,7 +153,14 @@ public class LauncherPacks extends IScreen {
     
     private void configureResourcePacksList() {
         resourcePacksList.setCellFactory(param -> new ListCell<ResourcePackItem>() {
-            private ImageView imageView = new ImageView();
+            private ImageView packImageView = new ImageView();
+            private ImageView deleteImageView = new ImageView(getClass().getResource("/resources/delete_icon.png").toExternalForm());
+            {
+            	deleteImageView.setFitWidth(16);
+            	deleteImageView.setFitHeight(16);
+            }
+            private Button deleteButton = new Button();
+            private HBox hbox = new HBox(10, packImageView, new Label(), deleteButton); // Add spacing between elements
 
             @Override
             protected void updateItem(ResourcePackItem item, boolean empty) {
@@ -156,16 +170,51 @@ public class LauncherPacks extends IScreen {
                     setText(null);
                     setGraphic(null);
                 } else {
-                    imageView.setImage(item.getIcon());
-                    imageView.setFitWidth(50);
-                    imageView.setFitHeight(50);
-                    setText(item.getName());
-                    setFont(Font.font("Arial", 16));
-                    setGraphic(imageView);
+                    // Configure pack image view
+                    packImageView.setImage(item.getIcon());
+                    packImageView.setFitWidth(50);
+                    packImageView.setFitHeight(50);
+
+                    // Configure pack name label
+                    Label nameLabel = (Label) hbox.getChildren().get(1);
+                    nameLabel.setText(item.getName());
+                    nameLabel.setFont(Font.font("Arial", 16));
+
+                    // Configure delete button
+                    deleteButton.setGraphic(deleteImageView);
+                    deleteButton.setOnAction(event -> {
+                        if (showConfirmationDialog("Confirmation de la suppression", "Êtes-vous sûr de vouloir supprimer ce pack de ressources ?")) {
+                            File packFile = new File(resourcePacksDir, item.getName() + ".zip");
+                            if (packFile.delete()) {
+                                resourcePacksList.getItems().remove(item);
+                            } else {
+                                showErrorDialog("Erreur de suppression", "Impossible de supprimer le pack de ressources.");
+                            }
+                        }
+                    });
+
+                    setGraphic(hbox);
                 }
             }
         });
     }
+    
+    private void showErrorDialog(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
 
+    private boolean showConfirmationDialog(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
+    }
     
 }
