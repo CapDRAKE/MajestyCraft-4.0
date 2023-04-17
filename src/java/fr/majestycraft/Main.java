@@ -12,6 +12,8 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.layout.VBox;
 import java.util.prefs.Preferences;
 
+import javax.swing.JOptionPane;
+
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import java.io.BufferedReader;
@@ -28,6 +30,10 @@ public class Main {
      */
     public static void main(String[] args) {
         configureLogging();
+        if (!isJavaInstalled()) {
+            showJavaNotInstalledPopup();
+            return;
+        }
         if (isJavaFXAvailable()) {
             launchApp();
         } else {
@@ -158,5 +164,25 @@ public class Main {
             alert.showAndWait();
             System.exit(0);
         });
+    }
+    
+    private static boolean isJavaInstalled() {
+        try {
+            Process process = Runtime.getRuntime().exec("java -version");
+            process.waitFor();
+            return process.exitValue() == 0;
+        } catch (IOException | InterruptedException e) {
+            return false;
+        }
+    }
+
+    private static void showJavaNotInstalledPopup() {
+        String message = "Java n'est pas installé sur votre ordinateur.\n\n" +
+                "Pour installer Java, veuillez suivre les instructions ci-dessous :\n\n" +
+                "Windows : Rendez-vous sur https://www.java.com/fr/download/ et téléchargez l'installeur Java.\n" +
+                "macOS : Rendez-vous sur https://www.oracle.com/java/technologies/javase-jdk8-downloads.html et téléchargez le JDK 8.\n" +
+                "Linux : Utilisez le gestionnaire de paquets de votre distribution pour installer OpenJDK 8.\n\n" +
+                "Une fois Java installé, relancez le launcher.";
+        JOptionPane.showMessageDialog(null, message, "Java non installé", JOptionPane.ERROR_MESSAGE);
     }
 }
