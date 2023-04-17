@@ -54,6 +54,7 @@ public class LauncherPanel extends IScreen {
     private LauncherButton microsoftButton;
 
     private LauncherButton settingsButton;
+    private LauncherButton packsButton;
     private LauncherButton minestratorButton;
     private LauncherButton twitterButton;
     private LauncherButton tiktokButton;
@@ -61,7 +62,6 @@ public class LauncherPanel extends IScreen {
     private LauncherButton siteButton;
     private LauncherButton voteButton;
     private LauncherButton boutiqueButton;
-    private LauncherButton lolButton;
     private LauncherButton lolButton2;
     private LauncherButton deadButton;
 
@@ -426,17 +426,32 @@ public class LauncherPanel extends IScreen {
         rippler4.getStyleClass().add("rippler2");
         root.getChildren().add(rippler4);
         
-
-
-        /* ===================== BOUTON easter egg 1 ===================== */
-        this.lolButton = new LauncherButton(root);
-        this.lolButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0); -fx-text-fill: orange");
-        settingsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "LOL.png"));
+        
+        this.packsButton = new LauncherButton(root);
+        this.packsButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0); -fx-text-fill: orange");
+        settingsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "pack.png"));
         settingsImg.setSize(27, 27);
-        this.lolButton.setGraphic(settingsImg);
-        this.lolButton.setPosition(engine.getWidth() / 2 - 522, engine.getHeight() / 2 + 50);
-        this.lolButton.setSize(60, 46);
-        this.lolButton.setOnAction(event -> openLink("https://www.youtube.com/watch?v=dQw4w9WgXcQ"));
+        this.packsButton.setGraphic(settingsImg);
+        this.packsButton.setPosition(engine.getWidth() / 2 - 522, engine.getHeight() / 2+100);
+        this.packsButton.setSize(60, 46);
+        this.packsButton.setOnAction(event -> {
+            Scene scene = new Scene(createPacksPanel(root));
+            Stage stage = new Stage();
+            scene.setFill(Color.TRANSPARENT);
+            stage.setResizable(false);
+            stage.initStyle(StageStyle.TRANSPARENT);
+            stage.setTitle("Parametres Launcher");
+            stage.setWidth(900);
+            stage.setHeight(600);
+            stage.setScene(scene);
+            stage.showAndWait();
+        });
+
+        JFXRippler rippler5 = new JFXRippler(this.packsButton);
+        rippler5.setLayoutX((float) engine.getWidth() / 2 - 515);
+        rippler5.setLayoutY((float) engine.getHeight() / 2 + 50 );
+        rippler5.getStyleClass().add("rippler2");
+        root.getChildren().add(rippler5);
 
         /* ===================== BOUTON easter egg 2 ===================== */
         this.deadButton = new LauncherButton(root);
@@ -462,7 +477,6 @@ public class LauncherPanel extends IScreen {
                 new Hinge(microsoftButton).setResetOnFinished(true).play();
                 new Hinge(infoButton).setResetOnFinished(true).play();
                 new Hinge(settingsButton).setResetOnFinished(true).play();
-                new Hinge(lolButton).setResetOnFinished(true).play();
                 new Hinge(boutiqueButton).setResetOnFinished(true).play();
                 new Hinge(avatar).setResetOnFinished(true).play();
                 new Hinge(minestratorButton).setResetOnFinished(true).play();
@@ -849,7 +863,6 @@ public class LauncherPanel extends IScreen {
         new ZoomOutDown(this.siteButton).setResetOnFinished(false).play();
         new ZoomOutDown(this.voteButton).setResetOnFinished(false).play();
         new ZoomOutDown(this.connexionRectangle).setResetOnFinished(false).play();
-        new ZoomOutDown(this.lolButton).setResetOnFinished(false).play();
         new ZoomOutDown(this.lolButton2).setResetOnFinished(false).play();
 
         this.usernameField.setDisable(true);
@@ -950,6 +963,18 @@ public class LauncherPanel extends IScreen {
         root.setStyle("-fx-background-color: transparent;");
         new LauncherInfo(root, engine, this);
         new ZoomInLeft(rect).setResetOnFinished(true).play();
+        return root;
+    }
+    
+    private Parent createPacksPanel(Pane root) {
+        root = new LauncherPane(engine);
+        Rectangle rect = new Rectangle(1000, 750);
+        rect.setArcHeight(15.0);
+        rect.setArcWidth(15.0);
+        root.setClip(rect);
+        root.setStyle("-fx-background-color: transparent;");
+        new LauncherPacks(root, engine, this);
+        new ZoomInLeft(rect).play();
         return root;
     }
 

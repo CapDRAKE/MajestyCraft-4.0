@@ -17,6 +17,11 @@ import javafx.stage.*;
 
 import java.util.*;
 
+import java.awt.Desktop;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 public class LauncherSettings extends IScreen {
 
     private final LauncherLabel memorySliderLabel;
@@ -36,7 +41,6 @@ public class LauncherSettings extends IScreen {
     Stage stage; // Le stage qu'on voudra faire bouger (ici notre menu des paramètres)
 
     public LauncherSettings(final Pane root, final GameEngine engine, final LauncherPanel pane) {
-
         // String version = (String) pane.config.getValue(EnumConfig.VERSION);
         /* ===================== BOUGER LE MENU PARAMETRE ===================== */
         // Cet évent nous permet de récupérer les valeurs en x et en y initiales.
@@ -319,6 +323,16 @@ public class LauncherSettings extends IScreen {
             }
         });
         root.getChildren().add(this.useMusic);
+        
+        
+        /* ===================== BOUTON D'OUVERTURE DU REPERTOIRE DU JEU  ===================== */
+        JFXButton openGameDirButton = new JFXButton("Ouvrir le r�pertoire du jeu");
+        openGameDirButton.setStyle("-fx-background-color: rgba(53, 89, 119, 0.4); -fx-text-fill: white;");
+        openGameDirButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
+        openGameDirButton.setLayoutX(60); // Ajustez la position en X
+        openGameDirButton.setLayoutY(550); // Ajustez la position en Y
+        openGameDirButton.setOnAction(event -> openGameDirectory());
+        root.getChildren().add(openGameDirButton);
 
         /* ===================== BOUTON DE VALIDATION ===================== */
         JFXButton saveButton = new JFXButton("Valider");
@@ -376,4 +390,24 @@ public class LauncherSettings extends IScreen {
         };
         this.versionList.getItems().addAll(Arrays.asList(versions));
     }
+    
+    private void openGameDirectory() {
+        String os = System.getProperty("os.name").toLowerCase();
+        Path gameDirectory;
+
+        if (os.contains("win")) {
+            gameDirectory = Paths.get(System.getenv("APPDATA"), ".majestycraft", "bin", "game");
+        } else if (os.contains("mac")) {
+            gameDirectory = Paths.get(System.getProperty("user.home"), "Library", "Application Support", ".majestycraft", "bin", "game");
+        } else {
+            gameDirectory = Paths.get(System.getProperty("user.home"), ".majestycraft", "bin", "game");
+        }
+
+        try {
+            Desktop.getDesktop().open(gameDirectory.toFile());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
 }
