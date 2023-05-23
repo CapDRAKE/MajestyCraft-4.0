@@ -121,18 +121,6 @@ public class LauncherPanel extends IScreen {
             new Tada(youtubeButton).play();
         });
         animationOUVERTURE.play();
-        
-        
-        
-
-        
-        
-
-        if(this.config.getValue(EnumConfig.AUTOLOGIN).equals(true)) {
-        	
-        }
-
-
     }
 
 
@@ -186,12 +174,27 @@ public class LauncherPanel extends IScreen {
     private void authenticateMicrosoft(Pane root) {
         Platform.runLater(() -> {
             auth = new GameAuth(AccountType.MICROSOFT);
-            showMicrosoftAuth();
+
             if (auth.isLogged()) {
+                // If the user is already logged in
                 connectAccountPremiumCO(auth.getSession().getUsername(), root);
                 update();
             } else {
-                showAuthErrorAlert();
+                // If the user is not logged in, try to connect using a refresh token
+                auth.connectMicrosoftOnStartup(); // Assuming you have already implemented the connectMicrosoftOnStartup method
+                if (auth.isLogged()) {
+                    connectAccountPremiumCO(auth.getSession().getUsername(), root);
+                    update();
+                } else {
+                    // If the user is still not logged in, show the Microsoft authentication WebView
+                    showMicrosoftAuth();
+                    if (auth.isLogged()) {
+                        connectAccountPremiumCO(auth.getSession().getUsername(), root);
+                        update();
+                    } else {
+                        showAuthErrorAlert();
+                    }
+                }
             }
         });
     }
@@ -1054,5 +1057,9 @@ public class LauncherPanel extends IScreen {
 
     private void showAuthErrorAlert() {
     	  Platform.runLater(() -> new LauncherAlert("Erreur d'authentification", "Impossible de se connecter, identifiant ou mot de passe incorrect."));
+    }
+    
+    public GameAuth getAuth() {
+        return auth;
     }
 }

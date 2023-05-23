@@ -160,7 +160,6 @@ public class Main {
             alert.setTitle("JavaFX Installé");
             alert.setHeaderText("JavaFX a été installé avec succès");
             alert.setContentText("Veuillez relancer le launcher.");
-
             alert.showAndWait();
             System.exit(0);
         });

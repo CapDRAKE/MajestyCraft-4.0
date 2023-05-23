@@ -41,6 +41,7 @@ public class App extends AlternativeBase {
         LauncherBase launcherBase = new LauncherBase(primaryStage, scene, StageStyle.TRANSPARENT, this.gameEngine);
         launcherBase.setIconImage(primaryStage, "launchergifpng.png");
         Platform.runLater(() -> Main.showStartupPopup());
+        
     }
 
     private GameFolder createGameFolder() {
