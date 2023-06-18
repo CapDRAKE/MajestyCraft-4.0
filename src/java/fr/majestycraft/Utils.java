@@ -21,15 +21,16 @@ public class Utils {
                 return GameStyle.FORGE_1_13_HIGHER;
             } else if (version.matches("1\\.(17|17\\.1|18|18\\.1|18\\.2)")) {
                 return GameStyle.FORGE_1_17_HIGHER;
-            } else if (version.matches("1\\.19(\\.\\d+)?")) {
+            } else if (version.matches("1\\.(19|20)(\\.\\d+)?")) {
                 return GameStyle.FORGE_1_19_HIGHER;
             }
         } else if (useOptifine) {
             return GameStyle.OPTIFINE;
-        } else if (version.matches("1\\.19(\\.\\d+)?")) {
+        } else if (version.matches("1\\.(19|20)(\\.\\d+)?")) {
             return GameStyle.VANILLA_1_19_HIGHER;
         }
 
         return GameStyle.VANILLA;
     }
+
 }
