@@ -24,7 +24,7 @@ public class App extends AlternativeBase {
     private final GameEngine gameEngine = createGameEngine();
     private final GameMaintenance gameMaintenance = createGameMaintenance();
     private LauncherPanel panel;
-    public static final GameConnect GAME_CONNECT = new GameConnect("play.majestycraft.com", "25565");
+    public static final GameConnect GAME_CONNECT = new GameConnect("play.majestycraft.com", "");
 
     public void launcher(){
         launch();

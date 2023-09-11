@@ -156,6 +156,7 @@ public class LauncherSettings extends IScreen {
             @Override
             public void handle(ActionEvent event) {
                 useForge.setSelected(false);
+                pane.getConfig().updateValue("useOptifine", useOptifine.isSelected());
             }
         });
         root.getChildren().add(useOptifine);
@@ -174,6 +175,7 @@ public class LauncherSettings extends IScreen {
             @Override
             public void handle(ActionEvent event) {
                 LauncherSettings.useOptifine.setSelected(false);
+                pane.getConfig().updateValue("useForge", useForge.isSelected());
             }
         });
         root.getChildren().add(useForge);
@@ -296,6 +298,7 @@ public class LauncherSettings extends IScreen {
         this.connect.setLayoutX(250);
         this.connect.setLayoutY(465);
         this.connect.setOnAction(event -> {
+        	pane.getConfig().updateValue("useConnect", connect.isSelected());
             if (connect.isSelected()) {
                 engine.reg(App.GAME_CONNECT);
             } else {
