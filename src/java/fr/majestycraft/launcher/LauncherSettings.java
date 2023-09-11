@@ -289,7 +289,7 @@ public class LauncherSettings extends IScreen {
         this.autoLogin.setLayoutY(335);
         root.getChildren().add(autoLogin);
 
-        /* ===================== MICROSOFT CHECK BOX ===================== */
+        /* ===================== CONNECT AUTO SERVER CHECK BOX ===================== */
         this.connect = new JFXCheckBox();
         this.connect.setText("Connexion auto au serveur MajestyCraft (EXPERIMENTAL)");
         this.connect.setSelected((Boolean) pane.getConfig().getValue(EnumConfig.USE_CONNECT));
@@ -301,10 +301,7 @@ public class LauncherSettings extends IScreen {
         	pane.getConfig().updateValue("useConnect", connect.isSelected());
             if (connect.isSelected()) {
                 engine.reg(App.GAME_CONNECT);
-            } else {
-                engine.reg((GameConnect) null);
             }
-
         });
         root.getChildren().add(this.connect);
 

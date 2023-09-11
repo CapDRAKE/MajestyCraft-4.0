@@ -309,7 +309,7 @@ public class LauncherPanel extends IScreen {
 
     	  if (useConnect) {
     		System.out.println("useconnect");
-    	    engine.reg(App.GAME_CONNECT);
+    	    engine.reg(App.getGameConnect());
     	  }
 
     	  if (rememberMe) {
@@ -898,6 +898,10 @@ public class LauncherPanel extends IScreen {
          */
         engine.reg(GameMemory.getMemory(Double.parseDouble((String) this.config.getValue(EnumConfig.RAM))));
         engine.reg(GameSize.getWindowSize(Integer.parseInt((String) this.config.getValue(EnumConfig.GAME_SIZE))));
+        
+        if ((boolean) config.getValue(EnumConfig.USE_CONNECT)) {
+            engine.reg(App.getGameConnect());
+        }
 
         boolean useVmArgs = (Boolean) config.getValue(EnumConfig.USE_VM_ARGUMENTS);
         String vmArgs = (String) config.getValue(EnumConfig.VM_ARGUMENTS);
