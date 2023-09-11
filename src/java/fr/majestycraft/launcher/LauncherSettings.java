@@ -191,7 +191,7 @@ public class LauncherSettings extends IScreen {
         this.versionList = new JFXComboBox<>();
         this.populateVersionList();
         this.versionList.setValue((String) pane.getConfig().getValue(EnumConfig.VERSION));
-        List<String> disabledForgeVersions = Arrays.asList("1.8", "1.19.1", "1.19.2", "1.19.3", "1.19.4");
+        List<String> disabledForgeVersions = Arrays.asList("1.8", "1.19.1", "1.19.2", "1.19.3", "1.19.4", "1.20", "1.20.1");
         List<String> disabledOptifineVersions = Arrays.asList("1.8");
 
         if (pane.getConfig().getValue(EnumConfig.VERSION) != null) {
@@ -219,7 +219,7 @@ public class LauncherSettings extends IScreen {
         this.versionList.setOnAction(event -> {
             String version = versionList.getValue();
             boolean isForgeRestricted = "1.8".equals(version) || "1.19.1".equals(version) || "1.19.2".equals(version) || "1.19.3".equals(version) || "1.19.4".equals(version) || "1.20".equals(version) || "1.20.1".equals(version);
-            boolean isOptifineRestricted = "1.8".equals(version) || "1.20".equals(version) || "1.20.1".equals(version);
+            boolean isOptifineRestricted = "1.8".equals(version);
 
             if (!LauncherSettings.useForge.isDisabled() || isForgeRestricted) {
                 LauncherSettings.useForge.setSelected(false);
