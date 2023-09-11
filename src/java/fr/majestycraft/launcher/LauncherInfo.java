@@ -13,8 +13,8 @@ import javafx.stage.*;
 public class LauncherInfo extends IScreen {
 	
     private static final String DEVELOPPEUR_TITLE = "Développeur";
-    private static final String DEVELOPPEUR_INFO = "Développeur : Capdrake, Ostix360";
-    private static final String HELPER_INFO = "Helper : aucun";
+    private static final String DEVELOPPEUR_INFO = "Développeur : Capdrake";
+    private static final String HELPER_INFO = "Helper : Ostix360";
     private static final String REMARQUE_TITLE = "Remarque";
     private static final String REMARQUE_INFO_1 = "1 => Si une version ne démarre pas, allez dans votre %appdata% et ";
     private static final String REMARQUE_INFO_2 = "supprimez les fichiers 'Launcher_config.json' et '.majestycraft'";
