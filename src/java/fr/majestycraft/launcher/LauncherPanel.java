@@ -308,6 +308,7 @@ public class LauncherPanel extends IScreen {
     	  mediaPlayer.setMute(!useMusic);
 
     	  if (useConnect) {
+    		System.out.println("useconnect");
     	    engine.reg(App.GAME_CONNECT);
     	  }
 

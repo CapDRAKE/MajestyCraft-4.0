@@ -9,7 +9,7 @@ public class Discord {
     private static final String LARGE_IMAGE_KEY = "image";
     private static final String LARGE_IMAGE_TEXT = "MajestyLauncher, Launcher Gratuit Crack/Premium";
     private static final String DETAILS = "Launcher MajestyLauncher";
-    private static final String STATE = "Version : 1.8 => 1.19.4";
+    private static final String STATE = "Version : 1.8 => 1.20.1";
 
     private DiscordRPC rpc;
 
