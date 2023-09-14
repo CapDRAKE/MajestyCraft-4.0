@@ -12,6 +12,11 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.layout.VBox;
 
 import java.util.prefs.Preferences;
+
+import fr.trxyy.alternative.alternative_api.GameEngine;
+import fr.trxyy.alternative.alternative_api.utils.config.EnumConfig;
+import fr.trxyy.alternative.alternative_api.utils.config.LauncherConfig;
+
 import java.util.Locale;
 
 /**
@@ -20,7 +25,14 @@ import java.util.Locale;
 public class Main {
 	
 	public static ResourceBundle bundle;
+    public static LauncherConfig config;
+    public static String language;
 
+
+    public static void loadConfiguration(GameEngine engine) {
+        config = new LauncherConfig(engine);
+        config.loadConfiguration();
+    }
     /**
      * Point d'entrée du programme
      *
@@ -28,6 +40,19 @@ public class Main {
      */
     public static void main(String[] args) {
         configureLogging();
+        loadConfiguration(new GameEngine(null, null, null, null));
+        language = (String) config.getValue(EnumConfig.LANGUAGE);
+        switch (language) {
+            case "Français":
+            	Locale.setDefault(new Locale("fr", "FR"));
+                break;
+            case "English":
+            	Locale.setDefault(new Locale("en", "US"));
+                break;
+            case "Español":
+            	Locale.setDefault(new Locale("es", "ES"));
+                break;
+        }
         bundle = ResourceBundle.getBundle("resources.messages", Locale.getDefault());
         try {
             App app = new App();

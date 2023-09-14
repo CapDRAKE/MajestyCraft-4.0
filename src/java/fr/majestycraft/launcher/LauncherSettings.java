@@ -7,11 +7,14 @@ import fr.majestycraft.*;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
 import fr.trxyy.alternative.alternative_api.utils.config.*;
+import fr.trxyy.alternative.alternative_api_ui.LauncherAlert;
 import fr.trxyy.alternative.alternative_api_ui.base.*;
 import fr.trxyy.alternative.alternative_api_ui.components.*;
 import javafx.application.*;
 import javafx.beans.value.*;
 import javafx.event.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ListCell;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 
@@ -52,6 +55,7 @@ public class LauncherSettings extends IScreen {
     private static final String LABEL_PLAY_MUSIC = Main.bundle.getString("LABEL_PLAY_MUSIC");
     private static final String BUTTON_OPEN_GAME_DIR = Main.bundle.getString("BUTTON_OPEN_GAME_DIR");
     private static final String BUTTON_VALIDATE = Main.bundle.getString("BUTTON_VALIDATE");
+    private static final String LANGUAGE = Main.bundle.getString("LANGUAGE");
 
     public LauncherSettings(final Pane root, final GameEngine engine, final LauncherPanel pane) {
         /* ===================== BOUGER LE MENU PARAMETRE ===================== */
@@ -106,7 +110,7 @@ public class LauncherSettings extends IScreen {
         
         /* ===================== LAUNCHER LANGUAGE SELECTION LABEL ===================== */
         LauncherLabel LanguageLabel = new LauncherLabel(root);
-        LanguageLabel.setText("Langage :");
+        LanguageLabel.setText(LANGUAGE);
         LanguageLabel.setOpacity(1.0);
         LanguageLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
         LanguageLabel.setStyle("-fx-text-fill: white;");
@@ -116,24 +120,31 @@ public class LauncherSettings extends IScreen {
         
         /* ===================== LAUNCHER LANGUAGE SELECTION ===================== */
         this.LanguageList = new JFXComboBox<>();
+        this.languageList();
         this.LanguageList.setPrefSize(150, 20);
         this.LanguageList.setLayoutX(500);
         this.LanguageList.setLayoutY(385);
-        this.LanguageList.setVisibleRowCount(5);
-        this.LanguageList.getItems().addAll("Français", "English", "Español");
-        this.LanguageList.setOnAction(event -> {
-            String selectedLanguage = LanguageList.getValue();
-            switch (selectedLanguage) {
-                case "Français":
-
-                    break;
-                case "English":
-
-                    break;
-                case "Español":
-
-                    break;
+        this.LanguageList.setButtonCell(new ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item == null || empty) {
+                    setGraphic(null);
+                } else {
+                    setText(item);
+                    setStyle("-fx-text-fill: white;");
+                }
             }
+        });
+
+        this.LanguageList.setVisibleRowCount(5);
+        this.LanguageList.setValue((String) pane.getConfig().getValue(EnumConfig.LANGUAGE));
+        this.LanguageList.setOnAction(event -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle(Main.bundle.getString("alert.title"));
+            alert.setHeaderText(Main.bundle.getString("alert.header"));
+            alert.setContentText(Main.bundle.getString("alert.content"));
+            alert.showAndWait();
         });
         root.getChildren().add(this.LanguageList);
 
@@ -393,6 +404,7 @@ public class LauncherSettings extends IScreen {
             configMap.put("usevmarguments", "" + useVMArguments.isSelected());
             configMap.put("vmarguments", "" + vmArguments.getText());
             configMap.put("version", "" + versionList.getValue());
+            configMap.put("language", "" + LanguageList.getValue());
             configMap.put("useforge", "" + useForge.isSelected());
             configMap.put("useOptifine", "" + useOptifine.isSelected());
             configMap.put("usemusic", "" + useMusic.isSelected());
@@ -434,6 +446,13 @@ public class LauncherSettings extends IScreen {
             "1.18.2", "1.19", "1.19.1", "1.19.2", "1.19.3", "1.19.4", "1.20", "1.20.1"
         };
         this.versionList.getItems().addAll(Arrays.asList(versions));
+    }
+    
+    private void languageList() {
+        String[] language = new String[] {
+            "Français", "English", "Español",
+        };
+        this.LanguageList.getItems().addAll(Arrays.asList(language));
     }
     
     private void openGameDirectory() {
