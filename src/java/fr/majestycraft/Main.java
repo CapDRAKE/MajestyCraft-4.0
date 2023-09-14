@@ -1,6 +1,7 @@
 package fr.majestycraft;
 
 import java.io.IOException;
+import java.util.ResourceBundle;
 import java.util.logging.LogManager;
 
 import javafx.scene.control.Alert;
@@ -9,12 +10,16 @@ import javafx.scene.control.Hyperlink;
 import javafx.scene.layout.Region;
 import javafx.scene.control.CheckBox;
 import javafx.scene.layout.VBox;
+
 import java.util.prefs.Preferences;
+import java.util.Locale;
 
 /**
  * Classe principale du launcher MajestyLauncher
  */
 public class Main {
+	
+	public static ResourceBundle bundle;
 
     /**
      * Point d'entrée du programme
@@ -23,6 +28,7 @@ public class Main {
      */
     public static void main(String[] args) {
         configureLogging();
+        bundle = ResourceBundle.getBundle("resources.messages", Locale.getDefault());
         try {
             App app = new App();
             app.launcher();
@@ -52,19 +58,19 @@ public class Main {
 
         if (showDialog) {
             Alert alert = new Alert(AlertType.INFORMATION);
-            alert.setTitle("Offre spéciale");
-            alert.setHeaderText("Profitez de -10% chez Minestrator avec le code MAJESTYCRAFT!");
+            alert.setTitle(bundle.getString("specialOffer"));
+            alert.setHeaderText(bundle.getString("discountHeader"));
 
-            Hyperlink link = new Hyperlink("Cliquez ici pour bénéficier de l'offre chez Minestrator.");
+            Hyperlink link = new Hyperlink(bundle.getString("clickHereLink"));
             link.setOnAction(event -> {
                 try {
                     java.awt.Desktop.getDesktop().browse(new java.net.URI("https://minestrator.com/partenaire/eus561rkso"));
                 } catch (Exception e) {
-                    System.err.println("Erreur lors de l'ouverture du lien : " + e.getMessage());
+                    System.err.println(bundle.getString("errorOpeningLink") + e.getMessage());
                 }
             });
 
-            CheckBox checkBox = new CheckBox("Ne plus afficher ce message");
+            CheckBox checkBox = new CheckBox(bundle.getString("doNotShowAgain"));
             checkBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
                 prefs.putBoolean("showStartupPopup", !newVal);
             });
@@ -76,4 +82,5 @@ public class Main {
             alert.showAndWait();
         }
     }
+
 }

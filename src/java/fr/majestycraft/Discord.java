@@ -7,10 +7,6 @@ public class Discord {
     private static final String APPLICATION_ID = "805862518567469077";
     private static final String STEAM_ID = "";
     private static final String LARGE_IMAGE_KEY = "image";
-    private static final String LARGE_IMAGE_TEXT = "MajestyLauncher, Launcher Gratuit Crack/Premium";
-    private static final String DETAILS = "Launcher MajestyLauncher";
-    private static final String STATE = "Version : 1.8 => 1.20.1";
-
     private DiscordRPC rpc;
 
     public Discord() {
@@ -24,9 +20,9 @@ public class Discord {
         DiscordRichPresence presence = new DiscordRichPresence();
         presence.startTimestamp = System.currentTimeMillis() / 1000;
         presence.largeImageKey = LARGE_IMAGE_KEY;
-        presence.largeImageText = LARGE_IMAGE_TEXT;
-        presence.details = DETAILS;
-        presence.state = STATE;
+        presence.largeImageText = Main.bundle.getString("LARGE_IMAGE_TEXT");
+        presence.details = Main.bundle.getString("DETAILS");
+        presence.state = Main.bundle.getString("STATE");
 
         rpc.Discord_UpdatePresence(presence);
     }

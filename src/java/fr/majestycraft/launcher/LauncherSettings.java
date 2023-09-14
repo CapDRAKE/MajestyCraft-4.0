@@ -39,6 +39,18 @@ public class LauncherSettings extends IScreen {
     private double xOffSet; // Position x Ã  l'instant du clic
     private double yOffSet; // Position y Ã  l'instant du clic
     Stage stage; // Le stage qu'on voudra faire bouger (ici notre menu des paramÃ¨tres)
+    
+    private static final String LABEL_SETTINGS = Main.bundle.getString("LABEL_SETTINGS");
+    private static final String LABEL_WINDOW_SIZE = Main.bundle.getString("LABEL_WINDOW_SIZE");
+    private static final String LABEL_RAM_ALLOC = Main.bundle.getString("LABEL_RAM_ALLOC");
+    private static final String LABEL_CHOOSE_VERSION = Main.bundle.getString("LABEL_CHOOSE_VERSION");
+    private static final String LABEL_USE_JVM_ARGUMENTS = Main.bundle.getString("LABEL_USE_JVM_ARGUMENTS");
+    private static final String LABEL_DISCORD_STATUS = Main.bundle.getString("LABEL_DISCORD_STATUS");
+    private static final String LABEL_AUTO_CONNECT = Main.bundle.getString("LABEL_AUTO_CONNECT");
+    private static final String LABEL_CONNECT_SERVER = Main.bundle.getString("LABEL_CONNECT_SERVER");
+    private static final String LABEL_PLAY_MUSIC = Main.bundle.getString("LABEL_PLAY_MUSIC");
+    private static final String BUTTON_OPEN_GAME_DIR = Main.bundle.getString("BUTTON_OPEN_GAME_DIR");
+    private static final String BUTTON_VALIDATE = Main.bundle.getString("BUTTON_VALIDATE");
 
     public LauncherSettings(final Pane root, final GameEngine engine, final LauncherPanel pane) {
         /* ===================== BOUGER LE MENU PARAMETRE ===================== */
@@ -63,7 +75,7 @@ public class LauncherSettings extends IScreen {
 
         /* ===================== LABEL TITRE ===================== */
         LauncherLabel titleLabel = new LauncherLabel(root);
-        titleLabel.setText("PARAMETRES");
+        titleLabel.setText(LABEL_SETTINGS);
         titleLabel.setStyle("-fx-text-fill: white;");
         titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 28F));
         titleLabel.setPosition(350, 20);
@@ -71,7 +83,7 @@ public class LauncherSettings extends IScreen {
 
         /* ===================== MC SIZE LABEL ===================== */
         LauncherLabel windowsSizeLabel = new LauncherLabel(root);
-        windowsSizeLabel.setText("Taille de la fenêtre:");
+        windowsSizeLabel.setText(LABEL_WINDOW_SIZE);
         windowsSizeLabel.setOpacity(1.0);
         windowsSizeLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
         windowsSizeLabel.setStyle("-fx-text-fill: white;");
@@ -93,7 +105,7 @@ public class LauncherSettings extends IScreen {
 
         /* ===================== SLIDER RAM LABEL ===================== */
         LauncherLabel sliderLabel = new LauncherLabel(root);
-        sliderLabel.setText("RAM Allouée:");
+        sliderLabel.setText(LABEL_RAM_ALLOC);
         sliderLabel.setOpacity(1.0);
         sliderLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
         sliderLabel.setStyle("-fx-text-fill: white;");
@@ -182,7 +194,7 @@ public class LauncherSettings extends IScreen {
 
         /* ===================== MC VERSION LABEL ===================== */
         LauncherLabel versionListLabel = new LauncherLabel(root);
-        versionListLabel.setText("Choix de la version:");
+        versionListLabel.setText(LABEL_CHOOSE_VERSION);
         versionListLabel.setOpacity(1.0);
         versionListLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
         versionListLabel.setStyle("-fx-text-fill: white;");
@@ -249,7 +261,7 @@ public class LauncherSettings extends IScreen {
 
         /* ===================== CHECKBOX USE VM ARGUMENTS ===================== */
         this.useVMArguments = new JFXCheckBox();
-        this.useVMArguments.setText("Utiliser les Arguments JVM");
+        this.useVMArguments.setText(LABEL_USE_JVM_ARGUMENTS);
         this.useVMArguments.setSelected((Boolean) pane.getConfig().getValue(EnumConfig.USE_VM_ARGUMENTS));
         this.useVMArguments.setOpacity(1.0);
         this.useVMArguments.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
@@ -263,7 +275,7 @@ public class LauncherSettings extends IScreen {
 
         /* ===================== CHECKBOX Discord statut ===================== */
         this.useDiscord = new JFXCheckBox();
-        this.useDiscord.setText("Statut discord");
+        this.useDiscord.setText(LABEL_DISCORD_STATUS);
         this.useDiscord.setSelected((Boolean) pane.getConfig().getValue(EnumConfig.USE_DISCORD));
         this.useDiscord.setOpacity(1.0);
         this.useDiscord.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
@@ -281,7 +293,7 @@ public class LauncherSettings extends IScreen {
 
         /* ===================== AUTO LOGIN CHECK BOX ===================== */
         this.autoLogin = new JFXCheckBox();
-        this.autoLogin.setText("Connexion automatique");
+        this.autoLogin.setText(LABEL_AUTO_CONNECT);
         this.autoLogin.setSelected((Boolean) pane.getConfig().getValue(EnumConfig.AUTOLOGIN));
         this.autoLogin.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
         this.autoLogin.setStyle("-fx-text-fill: white; -jfx-checked-color: RED; -jfx-unchecked-color: BLACK");
@@ -291,7 +303,7 @@ public class LauncherSettings extends IScreen {
 
         /* ===================== CONNECT AUTO SERVER CHECK BOX ===================== */
         this.connect = new JFXCheckBox();
-        this.connect.setText("Connexion auto au serveur MajestyCraft (EXPERIMENTAL)");
+        this.connect.setText(LABEL_CONNECT_SERVER);
         this.connect.setSelected((Boolean) pane.getConfig().getValue(EnumConfig.USE_CONNECT));
         this.connect.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
         this.connect.setStyle("-fx-text-fill: white; -jfx-checked-color: RED; -jfx-unchecked-color: BLACK");
@@ -307,7 +319,7 @@ public class LauncherSettings extends IScreen {
 
         /* ===================== AUTO LOGIN CHECK BOX ===================== */
         this.useMusic = new JFXCheckBox();
-        this.useMusic.setText("Jouer la musique");
+        this.useMusic.setText(LABEL_PLAY_MUSIC);
         this.useMusic.setSelected((Boolean) pane.getConfig().getValue(EnumConfig.USE_MUSIC));
         this.useMusic.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
         this.useMusic.setStyle("-fx-text-fill: white; -jfx-checked-color: RED; -jfx-unchecked-color: BLACK");
@@ -325,7 +337,7 @@ public class LauncherSettings extends IScreen {
         
         
         /* ===================== BOUTON D'OUVERTURE DU REPERTOIRE DU JEU  ===================== */
-        JFXButton openGameDirButton = new JFXButton("Ouvrir le répertoire du jeu");
+        JFXButton openGameDirButton = new JFXButton(BUTTON_OPEN_GAME_DIR);
         openGameDirButton.setStyle("-fx-background-color: rgba(53, 89, 119, 0.4); -fx-text-fill: white;");
         openGameDirButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
         openGameDirButton.setLayoutX(60); // Ajustez la position en X
@@ -334,7 +346,7 @@ public class LauncherSettings extends IScreen {
         root.getChildren().add(openGameDirButton);
 
         /* ===================== BOUTON DE VALIDATION ===================== */
-        JFXButton saveButton = new JFXButton("Valider");
+        JFXButton saveButton = new JFXButton(BUTTON_VALIDATE);
         saveButton.setStyle("-fx-background-color: rgba(53, 89, 119, 0.4); -fx-text-fill: white;");
         saveButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
         saveButton.setLayoutX(740);
