@@ -1,6 +1,7 @@
 package fr.majestycraft.launcher;
 
 import animatefx.animation.*;
+import fr.majestycraft.Main;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
 import fr.trxyy.alternative.alternative_api_ui.base.*;
@@ -12,24 +13,25 @@ import javafx.stage.*;
 
 public class LauncherInfo extends IScreen {
 	
-    private static final String DEVELOPPEUR_TITLE = "Développeur";
-    private static final String DEVELOPPEUR_INFO = "Développeur : Capdrake";
-    private static final String HELPER_INFO = "Helper : Ostix360";
-    private static final String REMARQUE_TITLE = "Remarque";
-    private static final String REMARQUE_INFO_1 = "1 => Si une version ne démarre pas, allez dans votre %appdata% et ";
-    private static final String REMARQUE_INFO_2 = "supprimez les fichiers 'Launcher_config.json' et '.majestycraft'";
-    private static final String CHANGELOGS_TITLE = "Changelogs";
-    private static final String CHANGELOG_1 = "- Ajout d'Optifine à la 1.20 et 1.20.1";
+	private static final String DEVELOPPEUR_TITLE = Main.bundle.getString("DEVELOPPEUR_TITLE");
+	private static final String DEVELOPPEUR_INFO = Main.bundle.getString("DEVELOPPEUR_INFO");
+	private static final String HELPER_INFO = Main.bundle.getString("HELPER_INFO");
+	private static final String REMARQUE_TITLE = Main.bundle.getString("REMARQUE_TITLE");
+	private static final String REMARQUE_INFO_1 = Main.bundle.getString("REMARQUE_INFO_1");
+	private static final String REMARQUE_INFO_2 = Main.bundle.getString("REMARQUE_INFO_2");
+	private static final String CHANGELOGS_TITLE = Main.bundle.getString("CHANGELOGS_TITLE");
+	private static final String CHANGELOG_1 = Main.bundle.getString("CHANGELOG_1");
+	private static final String CHANGELOG_2 = Main.bundle.getString("CHANGELOG_2");
+	private static final String CHANGELOG_3 = Main.bundle.getString("CHANGELOG_3");
+	private static final String CHANGELOG_4 = Main.bundle.getString("CHANGELOG_4");
+	private static final String VERSION_TITLE = Main.bundle.getString("VERSION_TITLE");
+	private static final String VERSION_INFO = Main.bundle.getString("VERSION_INFO");
+	private static final String QUITTER_BUTTON_TEXT = Main.bundle.getString("QUITTER_BUTTON_TEXT");
+	
     private static final boolean CHANGE_1 = true;
-    private static final String CHANGELOG_2 = "- Correction du bug obligeant à redémarrer le launcher pour utiliser Otifine/forge";
     private static final boolean CHANGE_2 = true;
-    private static final String CHANGELOG_3 = "- Correction du bug provoquant la tentative de connection auto au serveur MajestyCraft peu importe la selection dans les paramètres";
-    private static final boolean CHANGE_3 = true;
-    private static final String CHANGELOG_4 = "- Corrections de divers autres bugs";
-    private static final boolean CHANGE_4 = true;
-    private static final String VERSION_TITLE = "Version";
-    private static final String VERSION_INFO = "Version : 3.3.2 (11/09/2023)";
-    private static final String QUITTER_BUTTON_TEXT = "Retour";
+    private static final boolean CHANGE_3 = false;
+    private static final boolean CHANGE_4 = false;
 
 	private LauncherLabel titleLabel;
 	private LauncherLabel developpeur;

@@ -89,7 +89,29 @@ public class LauncherPanel extends IScreen {
     private LauncherImage updateAvatar;
     private LauncherImage avatar;
 
-
+    private static final String ERROR_AUTH_FAILED = Main.bundle.getString("ERROR_AUTH_FAILED");
+    private static final String ERROR_OFFLINE_MODE = Main.bundle.getString("ERROR_OFFLINE_MODE");
+    private static final String ERROR_MOJANG_AUTH = Main.bundle.getString("ERROR_MOJANG_AUTH");
+    private static final String BUTTON_SITE = Main.bundle.getString("BUTTON_SITE");
+    private static final String BUTTON_DISCORD = Main.bundle.getString("BUTTON_DISCORD");
+    private static final String LABEL_CONNECTION = Main.bundle.getString("LABEL_CONNECTION");
+    private static final String INPUT_PSEUDO_OR_EMAIL = Main.bundle.getString("INPUT_PSEUDO_OR_EMAIL");
+    private static final String INPUT_PASSWORD_PROMPT = Main.bundle.getString("INPUT_PASSWORD_PROMPT");
+    private static final String LABEL_REMEMBER_ME = Main.bundle.getString("LABEL_REMEMBER_ME");
+    private static final String BUTTON_LOGIN = Main.bundle.getString("BUTTON_LOGIN");
+    private static final String LABEL_OFFLINE_CONNECTION = Main.bundle.getString("LABEL_OFFLINE_CONNECTION");
+    private static final String BUTTON_CANCEL = Main.bundle.getString("BUTTON_CANCEL");
+    private static final String AUTH_FAILED = Main.bundle.getString("AUTH_FAILED");
+    private static final String OFFLINE_MODE_ALERT = Main.bundle.getString("OFFLINE_MODE_ALERT");
+    private static final String USERNAME_ALERT = Main.bundle.getString("USERNAME_ALERT");
+    private static final String ONLINE_MODE_ALERT = Main.bundle.getString("ONLINE_MODE_ALERT");
+    private static final String AUTOLOGIN_START = Main.bundle.getString("AUTOLOGIN_START");
+    private static final String AUTOLOGIN_COUNTDOWN = Main.bundle.getString("AUTOLOGIN_COUNTDOWN");
+    private static final String UPDATE_LABEL_TEXT = Main.bundle.getString("UPDATE_LABEL");
+    private static final String UPDATE_STEP_TEXT = Main.bundle.getString("UPDATE_STEP");
+    private static final String AUTH_ERROR_TITLE = Main.bundle.getString("AUTH_ERROR_TITLE");
+    private static final String CONNECTION_ERROR_MSG = Main.bundle.getString("CONNECTION_ERROR_MSG");
+    private static final String AUTH_ERROR_MSG = Main.bundle.getString("AUTH_ERROR_MSG");
 
     public LauncherPanel(Pane root, GameEngine engine) {
         this.engine = engine;
@@ -121,21 +143,7 @@ public class LauncherPanel extends IScreen {
             new Tada(youtubeButton).play();
         });
         animationOUVERTURE.play();
-        
-        
-        
-
-        
-        
-
-        if(this.config.getValue(EnumConfig.AUTOLOGIN).equals(true)) {
-        	
-        }
-
-
     }
-
-
 
     private void checkAutoLogin(Pane root) {
         if (!isAutoLoginEnabled()) {
@@ -206,16 +214,11 @@ public class LauncherPanel extends IScreen {
     }
 
     private void showOfflineError() {
-        Platform.runLater(() -> new LauncherAlert("Authentification échouée!",
-                "Impossible de se connecter, vous êtes en mode offline"
-                        + " \nMerci de vous connecter en crack."));
+        Platform.runLater(() -> new LauncherAlert(ERROR_AUTH_FAILED, ERROR_OFFLINE_MODE));
     }
 
     private void showMojangAuthError() {
-        Platform.runLater(() -> new LauncherAlert("Authentification échouée!",
-                "Impossible de se connecter, l'authentification semble être une authentification 'en-ligne'"
-                        + " \nIl y a un problème lors de la tentative de connexion. \n\n-Vérifiez que le pseudonyme comprenne au minimum 3 caractères. (compte non migré)"
-                        + "\n-Faites bien attention aux majuscules et minuscules. \nAssurez-vous d'utiliser un compte Mojang. \nAssurez-vous de bien utiliser votre email dans le  cas d'une connexion avec un compte Mojang !"));
+        Platform.runLater(() -> new LauncherAlert(ERROR_AUTH_FAILED, ERROR_MOJANG_AUTH));
     }
 
 
@@ -498,7 +501,7 @@ public class LauncherPanel extends IScreen {
 
         /* ===================== BOUTON URL VOTE ===================== */
         this.voteButton = new LauncherButton(root);
-        this.voteButton.setText("Site");
+        this.voteButton.setText(BUTTON_SITE);
         this.voteButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
         this.voteButton.setPosition(engine.getWidth() / 2 - 260, engine.getHeight() / 2 + 190);
         this.voteButton.setSize(250, 45);
@@ -507,32 +510,12 @@ public class LauncherPanel extends IScreen {
 
         /* ===================== BOUTON URL BOUTIQUE ===================== */
         this.boutiqueButton = new LauncherButton(root);
-        this.boutiqueButton.setText("Discord");
+        this.boutiqueButton.setText(BUTTON_DISCORD);
         this.boutiqueButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
         this.boutiqueButton.setPosition(engine.getWidth() / 2 - 125 + 130, engine.getHeight() / 2 + 190);
         this.boutiqueButton.setSize(250, 45);
         this.boutiqueButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0.4); -fx-text-fill: orange");
         this.boutiqueButton.setOnAction(event -> openLink(DISCORD_URL));
-
-        /* ===================== BOUTON URL SITE ===================== */
-        this.siteButton = new LauncherButton(root);
-        this.siteButton.setText("Site");
-        this.siteButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
-        this.siteButton.setPosition(engine.getWidth() / 2 - 500, engine.getHeight() - 107);
-        this.siteButton.setSize(200, 45);
-        this.siteButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0.4); -fx-text-fill: orange");
-        this.siteButton.setOnAction(event -> openLink(SITE_URL));
-        this.siteButton.setVisible(false);
-
-        /* ===================== BOUTON URL FORUM ===================== */
-        LauncherButton forumButton = new LauncherButton(root);
-        forumButton.setText("Discord");
-        forumButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
-        forumButton.setPosition(engine.getWidth() / 2 + 300, engine.getHeight() - 107);
-        forumButton.setSize(200, 45);
-        forumButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0.4); -fx-text-fill: orange");
-        forumButton.setOnAction(event -> openLink(DISCORD_URL));
-        forumButton.setVisible(false);
 
         /* ===================== BOUTON URL MINESTRATOR ===================== */
         this.minestratorButton = new LauncherButton(root);
@@ -590,7 +573,7 @@ public class LauncherPanel extends IScreen {
 
 
         this.titleCrack = new LauncherLabel(root);
-        this.titleCrack.setText("Connexion");
+        this.titleCrack.setText(LABEL_CONNECTION);
         this.titleCrack.setFont(Font.font("leadcoat.ttf", FontWeight.BOLD, 27d));
         this.titleCrack.setStyle("-fx-background-color: transparent; -fx-text-fill: orange");
         this.titleCrack.setPosition(engine.getWidth() / 2 - 116, engine.getHeight() / 2 - 130);
@@ -609,7 +592,7 @@ public class LauncherPanel extends IScreen {
         this.usernameField.setLayoutY((float) engine.getHeight() / 2 - 52);
         this.usernameField.setFont(FontLoader.loadFont("leadcoat.ttf", "Lead Coat", 14F));
         this.usernameField.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0.2); -fx-text-fill: orange; -fx-font-family: leadcoat");
-        this.usernameField.setPromptText("Pseudo or Email");
+        this.usernameField.setPromptText(INPUT_PSEUDO_OR_EMAIL);
         if (!(boolean) config.getValue(EnumConfig.USE_MICROSOFT)) {
             this.usernameField.setText((String) this.config.getValue(EnumConfig.USERNAME));
         }
@@ -621,11 +604,11 @@ public class LauncherPanel extends IScreen {
         this.passwordField.getStyleClass().add("input");
         this.passwordField.setFont(FontLoader.loadFont("Roboto-Light.ttf", "Roboto Light", 14F));
         this.passwordField.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0.4); -fx-text-fill: orange");
-        this.passwordField.setPromptText("Mot de passe (laisser vide pour crack)");
+        this.passwordField.setPromptText(INPUT_PASSWORD_PROMPT);
         root.getChildren().add(this.passwordField);
 
         this.rememberMe = new JFXToggleButton();
-        this.rememberMe.setText("Se souvenir de moi");
+        this.rememberMe.setText(LABEL_REMEMBER_ME);
         this.rememberMe.setSelected((boolean) config.getValue(EnumConfig.REMEMBER_ME));
         this.rememberMe.getStyleClass().add("jfx-toggle-button");
         this.rememberMe.setLayoutX(385);
@@ -635,16 +618,14 @@ public class LauncherPanel extends IScreen {
         root.getChildren().add(this.rememberMe);
 
         /* ===================== BOUTON DE CONNEXION ===================== */
-        this.loginButton = new JFXButton("Se connecter");
+        this.loginButton = new JFXButton(BUTTON_LOGIN);
         this.loginButton.getStyleClass().add("button-raised");
         this.loginButton.setLayoutX(400);
         this.loginButton.setLayoutY(480);
         this.loginButton.setFont(FontLoader.loadFont("../resources/leadcoat.ttf", "leadcoat", 22F));
-        // this.loginButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0.4);
-        // -fx-text-fill: orange");
         this.loginButton.setOnAction(event -> {
             if (!App.netIsAvailable()) {
-                Platform.runLater(() -> new LauncherAlert("Authentification échouée!", "Impossible de se connecter, vous êtes hors ligne. Merci de vous connecter en crack."));
+            	Platform.runLater(() -> new LauncherAlert(AUTH_FAILED, OFFLINE_MODE_ALERT));
                 return;
             }
 
@@ -654,9 +635,7 @@ public class LauncherPanel extends IScreen {
             String password = passwordField.getText();
 
             if (username.length() <= 3) {
-                new LauncherAlert("Authentification échouée!",
-                                    "Impossible de se connecter, l'authentification semble être une authentification 'hors-ligne'"
-                                    + " \nIl y a un problème lors de la tentative de connexion. \n\n-Vérifiez que le pseudonyme comprenne au minimum 3 caractères.");
+            	new LauncherAlert(AUTH_FAILED, USERNAME_ALERT);
                 return;
             }
 
@@ -677,10 +656,7 @@ public class LauncherPanel extends IScreen {
                 config.updateValue("username", username);
                 update();
             } else {
-                new LauncherAlert("Authentification échouée!",
-                                        "Impossible de se connecter, l'authentification semble être une authentification 'en-ligne'"
-                                        + " \nIl y a un problème lors de la tentative de connexion. \n\n-Vérifiez que le pseudonyme comprenne au minimum 3 caractères. (compte non migré)"
-                                        + "\n-Faites bien attention aux majuscules et minuscules. \nAssurez-vous d'utiliser un compte Mojang. \nAssurez-vous de bien utiliser votre email dans le cas d'une connexion avec un compte Mojang !");
+            	new LauncherAlert(AUTH_FAILED, ONLINE_MODE_ALERT);
             }
         });
         root.getChildren().add(this.loginButton);
@@ -694,7 +670,7 @@ public class LauncherPanel extends IScreen {
 
         /* ===================== MESSAGE AUTOLOGIN ===================== */
         this.autoLoginLabel = new LauncherLabel(root);
-        this.autoLoginLabel.setText("Connexion auto dans 3 secondes. Appuyez sur ECHAP pour annuler.");
+        this.autoLoginLabel.setText(LABEL_OFFLINE_CONNECTION);
         this.autoLoginLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 18F));
         this.autoLoginLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: red;");
         this.autoLoginLabel.setPosition(engine.getWidth() / 2 - 280, engine.getHeight() - 34);
@@ -704,7 +680,7 @@ public class LauncherPanel extends IScreen {
 
         /* ===================== ANNULER AUTOLOGIN ===================== */
         this.autoLoginButton = new LauncherButton(root);
-        this.autoLoginButton.setText("Annuler");
+        this.autoLoginButton.setText(BUTTON_CANCEL);
         this.autoLoginButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
         this.autoLoginButton.setPosition(engine.getWidth() / 2 + 60, engine.getHeight() - 30);
         this.autoLoginButton.setSize(100, 20);
@@ -722,7 +698,7 @@ public class LauncherPanel extends IScreen {
         
         /* ===================== ANNULER AUTOLOGIN ===================== */
         this.autoLoginButton2 = new LauncherButton(root);
-        this.autoLoginButton2.setText("Démarrer");
+        this.autoLoginButton2.setText(AUTOLOGIN_START);
         this.autoLoginButton2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
         this.autoLoginButton2.setPosition(engine.getWidth() / 2 + 170, engine.getHeight() - 30);
         this.autoLoginButton2.setSize(100, 20);
@@ -765,7 +741,7 @@ public class LauncherPanel extends IScreen {
                     	}
                         else {
                             final int time = (waitTime - (elapsed % waitTime));
-                            Platform.runLater(() -> autoLoginLabel.setText("Connexion auto dans " + time + " secondes."));
+                            Platform.runLater(() -> autoLoginLabel.setText(String.format(AUTOLOGIN_COUNTDOWN, time)));
                         }
                     }
                     
@@ -792,7 +768,7 @@ public class LauncherPanel extends IScreen {
 
         /* =============== LABEL TITRE MISE A JOUR =============== **/
         this.updateLabel = new LauncherLabel(root);
-        this.updateLabel.setText("- MISE A JOUR -");
+        this.updateLabel.setText(UPDATE_LABEL_TEXT);
         this.updateLabel.setAlignment(Pos.CENTER);
         this.updateLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
         this.updateLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: orange;");
@@ -803,7 +779,7 @@ public class LauncherPanel extends IScreen {
 
         /* =============== ETAPE DE MISE A JOUR =============== **/
         this.currentStep = new LauncherLabel(root);
-        this.currentStep.setText("Preparation de la mise a jour.");
+        this.currentStep.setText(UPDATE_STEP_TEXT);
         this.currentStep.setFont(Font.font("Verdana", FontPosture.ITALIC, 18F)); // FontPosture.ITALIC
         this.currentStep.setStyle("-fx-background-color: transparent; -fx-text-fill: orange;");
         this.currentStep.setAlignment(Pos.CENTER);
@@ -1054,10 +1030,11 @@ public class LauncherPanel extends IScreen {
     }
     
     private void showConnectionErrorAlert() {
-    	  Platform.runLater(() -> new LauncherAlert("Erreur d'authentification", "Impossible de se connecter, vous n'êtes pas connecté à internet."));
+        Platform.runLater(() -> new LauncherAlert(AUTH_ERROR_TITLE, CONNECTION_ERROR_MSG));
     }
 
     private void showAuthErrorAlert() {
-    	  Platform.runLater(() -> new LauncherAlert("Erreur d'authentification", "Impossible de se connecter, identifiant ou mot de passe incorrect."));
+        Platform.runLater(() -> new LauncherAlert(AUTH_ERROR_TITLE, AUTH_ERROR_MSG));
     }
+
 }

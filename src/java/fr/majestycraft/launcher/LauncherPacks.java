@@ -1,5 +1,6 @@
 package fr.majestycraft.launcher;
 
+import fr.majestycraft.Main;
 import fr.trxyy.alternative.alternative_api.GameEngine;
 import fr.trxyy.alternative.alternative_api.utils.FontLoader;
 import fr.trxyy.alternative.alternative_api_ui.base.IScreen;
@@ -40,6 +41,13 @@ public class LauncherPacks extends IScreen {
     private File resourcePacksDir;
     Stage stage;
 	private LauncherButton quit;
+	private static final String LABEL_TITLE_LISTE = Main.bundle.getString("LABEL_TITLE_LISTE");
+	private static final String BUTTON_ADD_PACK = Main.bundle.getString("BUTTON_ADD_PACK");
+	private static final String DIALOG_SELECT_RESOURCE_PACK = Main.bundle.getString("DIALOG_SELECT_RESOURCE_PACK");
+	private static final String DIALOG_CONFIRMATION_REMOVAL = Main.bundle.getString("DIALOG_CONFIRMATION_REMOVAL");
+	private static final String DIALOG_CONFIRMATION_REMOVAL_MSG = Main.bundle.getString("DIALOG_CONFIRMATION_REMOVAL_MSG");
+	private static final String ERROR_DELETION = Main.bundle.getString("ERROR_DELETION");
+	private static final String ERROR_DELETION_MSG = Main.bundle.getString("ERROR_DELETION_MSG");
     private static final String QUITTER_BUTTON_TEXT = "Retour";
     
     public LauncherPacks(final Pane root, final GameEngine engine, final LauncherPanel pane) {
@@ -52,7 +60,7 @@ public class LauncherPacks extends IScreen {
 
         /* ===================== LABEL TITRE ===================== */
         LauncherLabel titleLabel = new LauncherLabel(root);
-        titleLabel.setText("Lise des ressources packs");
+        titleLabel.setText(LABEL_TITLE_LISTE);
         titleLabel.setStyle("-fx-text-fill: white;");
         titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 28F));
         titleLabel.setPosition(250, 20);
@@ -69,7 +77,7 @@ public class LauncherPacks extends IScreen {
         resourcePacksDir = new File("./resourcepacks");
         configureResourcePacksList();
         /* ===================== BOUTON AJOUTER ===================== */
-        addButton = new JFXButton("Ajouter un pack");
+        addButton = new JFXButton(BUTTON_ADD_PACK);
         addButton.setLayoutX(60); // Ajustez la position en X
         addButton.setLayoutY(550); // Ajustez la position en Y
         addButton.setStyle("-fx-background-color: rgba(53, 89, 119, 0.4); -fx-text-fill: white;");
@@ -133,7 +141,7 @@ public class LauncherPacks extends IScreen {
 
     private void addResourcePack() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Sélectionnez un pack de ressources");
+        fileChooser.setTitle(DIALOG_SELECT_RESOURCE_PACK);
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Packs de ressources", "*.zip"));
         File selectedFile = fileChooser.showOpenDialog(stage);
         if (selectedFile != null) {
@@ -183,12 +191,12 @@ public class LauncherPacks extends IScreen {
                     // Configure delete button
                     deleteButton.setGraphic(deleteImageView);
                     deleteButton.setOnAction(event -> {
-                        if (showConfirmationDialog("Confirmation de la suppression", "Êtes-vous sûr de vouloir supprimer ce pack de ressources ?")) {
+                    	if (showConfirmationDialog(DIALOG_CONFIRMATION_REMOVAL, DIALOG_CONFIRMATION_REMOVAL_MSG)) {
                             File packFile = new File(resourcePacksDir, item.getName() + ".zip");
                             if (packFile.delete()) {
                                 resourcePacksList.getItems().remove(item);
                             } else {
-                                showErrorDialog("Erreur de suppression", "Impossible de supprimer le pack de ressources.");
+                            	showErrorDialog(ERROR_DELETION, ERROR_DELETION_MSG);
                             }
                         }
                     });
