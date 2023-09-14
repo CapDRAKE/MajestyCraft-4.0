@@ -28,6 +28,7 @@ public class LauncherSettings extends IScreen {
     private JFXSlider memorySlider;
     private final JFXComboBox<String> windowsSizeList;
     private final JFXComboBox<String> versionList;
+    private final JFXComboBox<String> LanguageList;
     private final JFXCheckBox autoLogin;
     private final JFXCheckBox connect;
     private static JFXCheckBox useForge;
@@ -102,6 +103,39 @@ public class LauncherSettings extends IScreen {
         this.windowsSizeList.setLayoutY(115);
         this.windowsSizeList.setVisibleRowCount(5);
         root.getChildren().add(this.windowsSizeList);
+        
+        /* ===================== LAUNCHER LANGUAGE SELECTION LABEL ===================== */
+        LauncherLabel LanguageLabel = new LauncherLabel(root);
+        LanguageLabel.setText("Langage :");
+        LanguageLabel.setOpacity(1.0);
+        LanguageLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
+        LanguageLabel.setStyle("-fx-text-fill: white;");
+        LanguageLabel.setSize(490, 30);
+        LanguageLabel.setPosition(500, 360);
+
+        
+        /* ===================== LAUNCHER LANGUAGE SELECTION ===================== */
+        this.LanguageList = new JFXComboBox<>();
+        this.LanguageList.setPrefSize(150, 20);
+        this.LanguageList.setLayoutX(500);
+        this.LanguageList.setLayoutY(385);
+        this.LanguageList.setVisibleRowCount(5);
+        this.LanguageList.getItems().addAll("Français", "English", "Español");
+        this.LanguageList.setOnAction(event -> {
+            String selectedLanguage = LanguageList.getValue();
+            switch (selectedLanguage) {
+                case "Français":
+
+                    break;
+                case "English":
+
+                    break;
+                case "Español":
+
+                    break;
+            }
+        });
+        root.getChildren().add(this.LanguageList);
 
         /* ===================== SLIDER RAM LABEL ===================== */
         LauncherLabel sliderLabel = new LauncherLabel(root);
