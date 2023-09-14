@@ -17,7 +17,7 @@ public class Utils {
         if (useForge) {
             if (version.matches("1\\.(8|9|10\\.2|11\\.2|12\\.2)")) {
                 return GameStyle.FORGE_1_8_TO_1_12_2;
-            } else if (version.matches("1\\.(13\\.2|14\\.4|15\\.2|16\\.(2|3|4|5))")) {
+            } else if (version.matches("1\\.(13\\.2|14\\.4|15\\.2|16\\.(\\d+)?)")) {
                 return GameStyle.FORGE_1_13_HIGHER;
             } else if (version.matches("1\\.(17|17\\.1|18|18\\.1|18\\.2)")) {
                 return GameStyle.FORGE_1_17_HIGHER;
