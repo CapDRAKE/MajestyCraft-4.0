@@ -29,7 +29,7 @@ public class LauncherInfo extends IScreen {
 	private static final String QUITTER_BUTTON_TEXT = Main.bundle.getString("QUITTER_BUTTON_TEXT");
 	
     private static final boolean CHANGE_1 = true;
-    private static final boolean CHANGE_2 = true;
+    private static final boolean CHANGE_2 = false;
     private static final boolean CHANGE_3 = false;
     private static final boolean CHANGE_4 = false;
 
