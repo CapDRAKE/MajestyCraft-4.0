@@ -4,6 +4,7 @@ import fr.majestycraft.launcher.*;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.maintenance.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
+import fr.trxyy.alternative.alternative_api.utils.config.EnumConfig;
 import fr.trxyy.alternative.alternative_api_ui.*;
 import fr.trxyy.alternative.alternative_api_ui.base.*;
 import javafx.application.Platform;
@@ -24,7 +25,7 @@ public class App extends AlternativeBase {
     private final GameEngine gameEngine = createGameEngine();
     private final GameMaintenance gameMaintenance = createGameMaintenance();
     private LauncherPanel panel;
-    public static final GameConnect GAME_CONNECT = new GameConnect("play.majestycraft.com", "");
+    public static final GameConnect GAME_CONNECT = new GameConnect("91.197.6.207", "25585");
 
     public void launcher(){
         launch();
@@ -52,7 +53,7 @@ public class App extends AlternativeBase {
     }
 
     private GameLinks createGameLinks() {
-        return new GameLinks("https://majestycraft.com/minecraft/", "1.20.1.json");
+        return new GameLinks("https://majestycraft.com/minecraft/", "1.20.6.json");
     }
 
     private GameEngine createGameEngine() {

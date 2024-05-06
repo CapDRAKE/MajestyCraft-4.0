@@ -712,6 +712,7 @@ public class LauncherPanel extends IScreen {
                 autoLoginRectangle.setVisible(false);
                 autoLoginButton2.setVisible(false);
                 if ((boolean) config.getValue(EnumConfig.USE_CONNECT)) {
+                	System.out.println("c ici");
                     engine.reg(App.getGameConnect());
                 }
                 checkAutoLogin(root);
@@ -837,7 +838,7 @@ public class LauncherPanel extends IScreen {
         new ZoomOutDown(this.deadButton).setResetOnFinished(false).play();
         new ZoomOutDown(this.rememberMe).setResetOnFinished(false).play();
         new ZoomOutDown(this.loginButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.siteButton).setResetOnFinished(false).play();
+        //new ZoomOutDown(this.siteButton).setResetOnFinished(false).play();
         new ZoomOutDown(this.voteButton).setResetOnFinished(false).play();
         new ZoomOutDown(this.connexionRectangle).setResetOnFinished(false).play();
         new ZoomOutDown(this.lolButton2).setResetOnFinished(false).play();
@@ -876,6 +877,7 @@ public class LauncherPanel extends IScreen {
         engine.reg(GameSize.getWindowSize(Integer.parseInt((String) this.config.getValue(EnumConfig.GAME_SIZE))));
         
         if ((boolean) config.getValue(EnumConfig.USE_CONNECT)) {
+        	System.out.println("true");
             engine.reg(App.getGameConnect());
         }
 
