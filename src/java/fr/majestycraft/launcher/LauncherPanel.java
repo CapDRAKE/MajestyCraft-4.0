@@ -68,7 +68,6 @@ public class LauncherPanel extends IScreen {
     private LauncherRectangle connexionRectangle;
     private LauncherLabel titleCrack;
     private JFXTextField usernameField;
-    private JFXPasswordField passwordField;
     private JFXToggleButton rememberMe;
     private JFXButton loginButton;
 
@@ -91,12 +90,10 @@ public class LauncherPanel extends IScreen {
 
     private static final String ERROR_AUTH_FAILED = Main.bundle.getString("ERROR_AUTH_FAILED");
     private static final String ERROR_OFFLINE_MODE = Main.bundle.getString("ERROR_OFFLINE_MODE");
-    private static final String ERROR_MOJANG_AUTH = Main.bundle.getString("ERROR_MOJANG_AUTH");
     private static final String BUTTON_SITE = Main.bundle.getString("BUTTON_SITE");
     private static final String BUTTON_DISCORD = Main.bundle.getString("BUTTON_DISCORD");
     private static final String LABEL_CONNECTION = Main.bundle.getString("LABEL_CONNECTION");
     private static final String INPUT_PSEUDO_OR_EMAIL = Main.bundle.getString("INPUT_PSEUDO_OR_EMAIL");
-    private static final String INPUT_PASSWORD_PROMPT = Main.bundle.getString("INPUT_PASSWORD_PROMPT");
     private static final String LABEL_REMEMBER_ME = Main.bundle.getString("LABEL_REMEMBER_ME");
     private static final String BUTTON_LOGIN = Main.bundle.getString("BUTTON_LOGIN");
     private static final String LABEL_OFFLINE_CONNECTION = Main.bundle.getString("LABEL_OFFLINE_CONNECTION");
@@ -151,8 +148,7 @@ public class LauncherPanel extends IScreen {
         }
 
         String username = usernameField.getText();
-        String password = passwordField.getText();
-        boolean isPasswordEmpty = password.isEmpty();
+        boolean isPasswordEmpty = true;
 
         if (isOfflineAccount(username, isPasswordEmpty)) {
             authenticateOffline(username);
@@ -163,8 +159,6 @@ public class LauncherPanel extends IScreen {
         if (isOnlineAccount()) {
             if (isMicrosoftAccount()) {
                 authenticateMicrosoft(root);
-            } else {
-                authenticateMojang(username, password);
             }
         } else {
             showOfflineError();
@@ -204,21 +198,8 @@ public class LauncherPanel extends IScreen {
         });
     }
 
-    private void authenticateMojang(String username, String password) {
-        auth = new GameAuth(username, password, AccountType.MOJANG);
-        if (auth.isLogged()) {
-            update();
-        } else {
-            showMojangAuthError();
-        }
-    }
-
     private void showOfflineError() {
         Platform.runLater(() -> new LauncherAlert(ERROR_AUTH_FAILED, ERROR_OFFLINE_MODE));
-    }
-
-    private void showMojangAuthError() {
-        Platform.runLater(() -> new LauncherAlert(ERROR_AUTH_FAILED, ERROR_MOJANG_AUTH));
     }
 
 
@@ -294,13 +275,10 @@ public class LauncherPanel extends IScreen {
     	  boolean useDiscord = (boolean) config.getValue(EnumConfig.USE_DISCORD);
     	  boolean useMusic = (boolean) config.getValue(EnumConfig.USE_MUSIC);
     	  boolean useConnect = (boolean) config.getValue(EnumConfig.USE_CONNECT);
-    	  boolean rememberMe = (boolean) config.getValue(EnumConfig.REMEMBER_ME);
     	  boolean useMicrosoft = (boolean) config.getValue(EnumConfig.USE_MICROSOFT);
     	  boolean usePremium = (boolean) config.getValue(EnumConfig.USE_PREMIUM);
-    	  String password = (String) config.getValue(EnumConfig.PASSWORD);
     	  String username = (String) config.getValue(EnumConfig.USERNAME);
     	  String version = (String) config.getValue(EnumConfig.VERSION);
-    	  String email = usernameField.getText();
 
     	  if (useDiscord) {
     	    rpc.start();
@@ -315,30 +293,10 @@ public class LauncherPanel extends IScreen {
     	    engine.reg(App.getGameConnect());
     	  }
 
-    	  if (rememberMe) {
-    	    passwordField.setText(password);
-    	  } else {
-    	    passwordField.setText("");
-    	  }
-
     	  if (useMicrosoft) {
     		connectAccountPremium(username, root);
     	    connectAccountPremiumCO(username, root);
-    	  } else if (email.length() > 3 && email.contains("@")) {
-    	    if (!passwordField.getText().isEmpty()) {
-    	      GameAuth auth = new GameAuth(email, password, AccountType.MOJANG);
-    	      if (auth.isLogged()) {
-    	        connectAccountPremium(auth.getSession().getUsername(), root);
-    	        connectAccountPremiumCO(auth.getSession().getUsername(), root);
-    	      } else {
-    	        connectAccountPremiumOFF(root);
-    	        connectAccountCrackCO(root);
-    	      }
-    	    } else {
-    	      connectAccountPremiumOFF(root);
-    	      connectAccountCrackCO(root);
-    	    }
-    	  } else if (usePremium) {
+    	  }  else if (usePremium) {
     	    connectAccountPremiumOFF(root);
     	    connectAccountCrackCO(root);
     	  } else {
@@ -494,7 +452,6 @@ public class LauncherPanel extends IScreen {
                 new Hinge(connexionRectangle).setResetOnFinished(true).play();
                 new Hinge(rememberMe).setResetOnFinished(true).play();
                 new Hinge(usernameField).setResetOnFinished(true).play();
-                new Hinge(passwordField).setResetOnFinished(true).play();
                 new Hinge(loginButton).setResetOnFinished(true).play();
             }
         });
@@ -562,7 +519,8 @@ public class LauncherPanel extends IScreen {
         this.youtubeButton.setOnAction(event -> openLink(YOUTUBE_URL));
     }
 
-    private void setupConnectionsGUI(Pane root) {
+    @SuppressWarnings("null")
+	private void setupConnectionsGUI(Pane root) {
         /* ===================== RECTANGLE DES CONNEXIONS ===================== */
         this.connexionRectangle = new LauncherRectangle(root, engine.getWidth() / 2 - 188, engine.getHeight() / 2 - 150,
                 380, 320);
@@ -598,15 +556,6 @@ public class LauncherPanel extends IScreen {
         }
         root.getChildren().add(this.usernameField);
 
-        this.passwordField = new JFXPasswordField();
-        this.passwordField.setLayoutX((float) engine.getWidth() / 2 - 126);
-        this.passwordField.setLayoutY((float) engine.getHeight() / 2 + 15);
-        this.passwordField.getStyleClass().add("input");
-        this.passwordField.setFont(FontLoader.loadFont("Roboto-Light.ttf", "Roboto Light", 14F));
-        this.passwordField.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0.4); -fx-text-fill: orange");
-        this.passwordField.setPromptText(INPUT_PASSWORD_PROMPT);
-        root.getChildren().add(this.passwordField);
-
         this.rememberMe = new JFXToggleButton();
         this.rememberMe.setText(LABEL_REMEMBER_ME);
         this.rememberMe.setSelected((boolean) config.getValue(EnumConfig.REMEMBER_ME));
@@ -632,7 +581,7 @@ public class LauncherPanel extends IScreen {
             config.updateValue("useMicrosoft", false);
 
             String username = usernameField.getText();
-            String password = passwordField.getText();
+            String password = null;
 
             if (username.length() <= 3) {
             	new LauncherAlert(AUTH_FAILED, USERNAME_ALERT);
@@ -828,7 +777,6 @@ public class LauncherPanel extends IScreen {
         new ZoomOutDown(this.settingsButton).setResetOnFinished(false).play();
         new ZoomOutDown(this.titleCrack).setResetOnFinished(false).play();
         new ZoomOutDown(this.usernameField).setResetOnFinished(false).play();
-        new ZoomOutDown(this.passwordField).setResetOnFinished(false).play();
         new ZoomOutDown(this.boutiqueButton).setResetOnFinished(false).play();
         new ZoomOutDown(this.avatar).setResetOnFinished(false).play();
         new ZoomOutDown(this.minestratorButton).setResetOnFinished(false).play();
@@ -846,7 +794,6 @@ public class LauncherPanel extends IScreen {
         this.usernameField.setDisable(true);
         this.connexionRectangle.setDisable(true);
         this.rememberMe.setDisable(true);
-        this.passwordField.setDisable(true);
         this.loginButton.setDisable(true);
         this.settingsButton.setDisable(true);
 
