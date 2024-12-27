@@ -7,7 +7,6 @@ import fr.majestycraft.*;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
 import fr.trxyy.alternative.alternative_api.utils.config.*;
-import fr.trxyy.alternative.alternative_api_ui.LauncherAlert;
 import fr.trxyy.alternative.alternative_api_ui.base.*;
 import fr.trxyy.alternative.alternative_api_ui.components.*;
 import javafx.application.*;
@@ -357,7 +356,7 @@ public class LauncherSettings extends IScreen {
         this.connect.setOnAction(event -> {
         	pane.getConfig().updateValue("useConnect", connect.isSelected());
             if (connect.isSelected()) {
-                engine.reg(App.GAME_CONNECT);
+                engine.reg(App.getGameConnect());
             }
         });
         root.getChildren().add(this.connect);

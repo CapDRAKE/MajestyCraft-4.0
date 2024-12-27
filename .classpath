@@ -2,7 +2,6 @@
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="src" path="src/java"/>
-	<classpathentry kind="lib" path="libs/AlternativeAPI.jar"/>
 	<classpathentry kind="lib" path="libs/animateFX-1.2.2.jar"/>
 	<classpathentry kind="lib" path="libs/java-discord-rpc-2.0.1.jar"/>
 	<classpathentry kind="lib" path="libs/jfoenix-8.0.10.jar"/>
@@ -23,5 +22,6 @@
 	<classpathentry kind="lib" path="libs/lwjgl-platform-2.9.1-natives-windows.jar"/>
 	<classpathentry kind="lib" path="libs/openlauncherlib-3.1.7.jar"/>
 	<classpathentry kind="lib" path="libs/PluginLoaderAPI-94e88e0.jar"/>
+	<classpathentry kind="lib" path="libs/AlternativeAPI.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

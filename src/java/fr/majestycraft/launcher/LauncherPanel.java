@@ -581,7 +581,7 @@ public class LauncherPanel extends IScreen {
             config.updateValue("useMicrosoft", false);
 
             String username = usernameField.getText();
-            String password = null;
+            String password = "";
 
             if (username.length() <= 3) {
             	new LauncherAlert(AUTH_FAILED, USERNAME_ALERT);
