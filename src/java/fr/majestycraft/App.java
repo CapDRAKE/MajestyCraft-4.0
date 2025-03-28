@@ -27,7 +27,7 @@ public class App extends AlternativeBase {
     private static final String PARTNER_IP = "91.197.6.34";
     private static final String PARTNER_PORT = "25601";
     private static final String ICON_IMAGE = "launchergifpng.png";
-    private static final String DEFAULT_JSON_VERSION = "1.21.4.json";
+    private static final String DEFAULT_JSON_VERSION = "1.21.5.json";
     private static final String GAME_LINK_BASE_URL = "https://majestycraft.com/minecraft/";
 
     private static App instance;

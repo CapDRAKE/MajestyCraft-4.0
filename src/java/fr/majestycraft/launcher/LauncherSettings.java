@@ -249,8 +249,8 @@ public class LauncherSettings extends IScreen {
         this.versionList = new JFXComboBox<>();
         this.populateVersionList();
         this.versionList.setValue((String) pane.getConfig().getValue(EnumConfig.VERSION));
-        List<String> disabledForgeVersions = Arrays.asList("1.8", "1.19.2", "1.19.3", "1.19.4", "1.20", "1.20.1", "1.20.2", "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4");
-        List<String> disabledOptifineVersions = Arrays.asList("1.8", "1.20.2", "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21", "1.21.2", "1.21.3", "1.21.4");
+        List<String> disabledForgeVersions = Arrays.asList("1.8", "1.19.2", "1.19.3", "1.19.4", "1.20", "1.20.1", "1.20.2", "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5");
+        List<String> disabledOptifineVersions = Arrays.asList("1.8", "1.20.2", "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21", "1.21.2", "1.21.3", "1.21.4", "1.21.5");
 
         if (pane.getConfig().getValue(EnumConfig.VERSION) != null) {
             String verif = (String) pane.getConfig().getValue(EnumConfig.VERSION);
@@ -443,7 +443,8 @@ public class LauncherSettings extends IScreen {
             "1.8", "1.9", "1.10.2", "1.11.2", "1.12.2", "1.13.2", "1.14.4", "1.15.2",
             "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17", "1.17.1", "1.18", "1.18.1",
             "1.18.2", "1.19", "1.19.1", "1.19.2", "1.19.3", "1.19.4", "1.20", "1.20.1", "1.20.2",
-            "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4"
+            "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4",
+            "1.21.5"
         };
         this.versionList.getItems().addAll(Arrays.asList(versions));
     }
