@@ -12,11 +12,16 @@ import fr.trxyy.alternative.alternative_api_ui.base.*;
 import fr.trxyy.alternative.alternative_api_ui.components.*;
 import fr.trxyy.alternative.alternative_auth.account.*;
 import fr.trxyy.alternative.alternative_auth.base.*;
+import fr.trxyy.alternative.alternative_auth.microsoft.MicrosoftAuth;
+import fr.trxyy.alternative.alternative_auth.microsoft.ParamType;
+import fr.trxyy.alternative.alternative_auth.microsoft.model.MicrosoftModel;
 import javafx.animation.*;
 import javafx.application.*;
 import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.*;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.media.*;
@@ -30,6 +35,7 @@ import java.text.*;
 import java.util.*;
 
 public class LauncherPanel extends IScreen {
+	
     private final String MINESTRATOR_URL = "https://minestrator.com/?partner=eus561rkso";
     private final String INSTAGRAM_URL = "https://www.tiktok.com/@majestycraft?lang=fr";
     private final String TWITTER_URL = "http://twitter.com/craftsurvie";
@@ -186,16 +192,8 @@ public class LauncherPanel extends IScreen {
     }
 
     private void authenticateMicrosoft(Pane root) {
-        Platform.runLater(() -> {
-            auth = new GameAuth(AccountType.MICROSOFT);
-            showMicrosoftAuth();
-            if (auth.isLogged()) {
-                connectAccountPremiumCO(auth.getSession().getUsername(), root);
-                update();
-            } else {
-                showAuthErrorAlert();
-            }
-        });
+        auth = new GameAuth(AccountType.MICROSOFT);
+        showMicrosoftAuth(root);
     }
 
     private void showOfflineError() {
@@ -349,17 +347,23 @@ public class LauncherPanel extends IScreen {
         	  if (!App.netIsAvailable()) {
         	    showConnectionErrorAlert();
         	    return;
-        	  }
+        	  }        	
         	  
         	  auth = new GameAuth(AccountType.MICROSOFT);
-        	  showMicrosoftAuth();
-        	  if (auth.isLogged()) {
-        	    connectAccountPremiumCO(auth.getSession().getUsername(), root);
-        	    config.updateValue("useMicrosoft", true);
-        	    update();
-        	  } else {
-        	    showAuthErrorAlert();
-        	  }
+        	  
+        	  /* ① tentative instantanée avec le refresh_token */
+        	    if (auth.trySilentRefresh(engine)) {
+        	        // succès : on met à jour l’UI comme d’habitude puis on s’en va
+        	        Session s = auth.getSession();
+        	        connectAccountPremiumCO(s.getUsername(), root);
+        	        config.updateValue("useMicrosoft", true);
+        	        update();
+        	        return;
+        	    }
+        	  
+        	  /* lance la fenêtre + thread d’auth ; le résultat sera
+              traité dans startMicrosoftLogin() */
+        	  showMicrosoftAuth(root);
         });
 
         this.settingsButton = new LauncherButton(root);
@@ -937,23 +941,21 @@ public class LauncherPanel extends IScreen {
     }
 
 
-    private void showMicrosoftAuth() {
-        Scene scene = new Scene(createMicrosoftPanel());
-        Stage stage = new Stage();
-        scene.setFill(Color.TRANSPARENT);
-        stage.setResizable(false);
-        stage.setTitle("Microsoft Authentication");
-        stage.setWidth(500);
-        stage.setHeight(600);
-        stage.setScene(scene);
-        stage.initModality(Modality.APPLICATION_MODAL);
-        stage.showAndWait();
-    }
+    private void showMicrosoftAuth(Pane root) {   // ← nouveau paramètre
+        ProgressIndicator spinner = new ProgressIndicator();
+        spinner.setPrefSize(80, 80);
 
-    private Parent createMicrosoftPanel() {
-        LauncherPane contentPane = new LauncherPane(engine);
-        auth.connectMicrosoft(engine, contentPane);
-        return contentPane;
+        StackPane pane = new StackPane(spinner);
+        pane.setPadding(new Insets(20));
+
+        Stage stage = new Stage();
+        stage.setScene(new Scene(pane, 300, 160));
+        stage.setTitle("Connexion Microsoft");
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.setResizable(false);
+        stage.show();
+
+        startMicrosoftLogin(stage, root);
     }
 
     private String urlModifier(String version) {
@@ -985,5 +987,91 @@ public class LauncherPanel extends IScreen {
     private void showAuthErrorAlert() {
         Platform.runLater(() -> new LauncherAlert(AUTH_ERROR_TITLE, AUTH_ERROR_MSG));
     }
+    
+    private void startMicrosoftLogin(Stage stage, Pane root) {
+
+        /* petit spinner d’attente pendant toute la phase d’auth */
+        ProgressIndicator spinner = new ProgressIndicator();
+        Stage wait = new Stage();
+        wait.initOwner(stage);
+        wait.initModality(Modality.APPLICATION_MODAL);
+        wait.setScene(new Scene(new StackPane(spinner), 120, 120));
+        wait.setTitle("Connexion Microsoft");
+        wait.setResizable(false);
+        wait.show();
+
+        /* thread de travail pour ne pas bloquer JavaFX */
+        new Thread(() -> {
+            try {
+                /* 1) URL d’autorisation Live-ID (scope XboxLive.signin + offline_access) */
+                MicrosoftAuth msAuth = new MicrosoftAuth();
+                String authUrl = msAuth.getAuthorizationUrl(null);
+                java.awt.Desktop.getDesktop().browse(new java.net.URI(authUrl));
+
+                /* 2) boîte de dialogue → l’utilisateur colle l’URL ou juste le code */
+                final java.util.concurrent.atomic.AtomicReference<String> codeRef =
+                        new java.util.concurrent.atomic.AtomicReference<>();
+                final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+
+                Platform.runLater(() -> {
+                    TextInputDialog dlg = new TextInputDialog();
+                    dlg.setTitle("Connexion Microsoft – Dernière étape");
+                    dlg.setHeaderText("Terminer la connexion");
+                    dlg.setContentText(
+                          "1\u2003Dans le navigateur, clique sur le bouton « Oui » de Microsoft.\n Si tu as une page blanche, passe à l'étape 2\n"
+                        + "\n"
+                        + "2\u2003Une page blanche s’affiche ; c’est normal.\n"
+                        + "   Copie l’adresse complète de la barre d’adresse, par ex. :\n"
+                        + "   https://login.live.com/oauth20_desktop.srf?code=ABCDEFGHI…\n"
+                        + "   (ou copie seulement le long code après « code= »)\n"
+                        + "\n"
+                        + "3\u2003Reviens dans le launcher, colle ici ↓ puis valide :");
+                    dlg.getEditor().setPromptText("URL ou code Microsoft ici…");
+                    dlg.showAndWait().ifPresent(codeRef::set);
+                    latch.countDown();
+                });
+
+                latch.await();                      // attend que l’utilisateur colle quelque chose
+                String authCode = codeRef.get();
+                if (authCode == null || authCode.trim().isEmpty())
+                    throw new IllegalStateException("Aucun code n’a été fourni.");
+
+                /* 3) si l’utilisateur a collé l’URL complète, on isole le code */
+                authCode = authCode.trim();
+                if (authCode.startsWith("http")) {
+                    int p = authCode.indexOf("code=") + 5;
+                    authCode = authCode.substring(p);
+                    int amp = authCode.indexOf('&');
+                    if (amp > 0) authCode = authCode.substring(0, amp);
+                }
+
+                /* 4) échange code → access_token → session Minecraft */
+                MicrosoftModel model   = msAuth.getAuthorizationCode(ParamType.AUTH, authCode);
+                Session        session = msAuth.getLiveToken(model.getAccess_token());
+
+                /* 5) retourne sur le thread JavaFX → mise à jour UI + config */
+                Platform.runLater(() -> {
+                    wait.close();
+                    stage.close();
+
+                    auth = new GameAuth(AccountType.MICROSOFT);
+                    auth.setSession(session);
+
+                    connectAccountPremiumCO(session.getUsername(), root);
+                    config.updateValue("useMicrosoft", true);
+                    update();    // lance la mise à jour du jeu / packs
+                });
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                Platform.runLater(() -> {
+                    wait.close();
+                    stage.close();
+                    showAuthErrorAlert();
+                });
+            }
+        }).start();
+    }
+
 
 }
