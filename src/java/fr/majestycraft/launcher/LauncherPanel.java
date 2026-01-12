@@ -12,17 +12,20 @@ import fr.trxyy.alternative.alternative_api_ui.base.*;
 import fr.trxyy.alternative.alternative_api_ui.components.*;
 import fr.trxyy.alternative.alternative_auth.account.*;
 import fr.trxyy.alternative.alternative_auth.base.*;
-import fr.trxyy.alternative.alternative_auth.microsoft.MicrosoftAuth;
-import fr.trxyy.alternative.alternative_auth.microsoft.ParamType;
+import fr.trxyy.alternative.alternative_auth.microsoft.MicrosoftXboxAuth;
+import fr.trxyy.alternative.alternative_auth.microsoft.MicrosoftOAuthClient;
 import fr.trxyy.alternative.alternative_auth.microsoft.model.MicrosoftModel;
 import javafx.animation.*;
 import javafx.application.*;
 import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.image.Image;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.*;
 import javafx.scene.media.*;
 import javafx.scene.paint.Color;
@@ -31,6 +34,8 @@ import javafx.scene.text.*;
 import javafx.scene.text.Font;
 import javafx.stage.*;
 
+import java.awt.Desktop;
+import java.net.URI;
 import java.text.*;
 import java.util.*;
 
@@ -942,20 +947,7 @@ public class LauncherPanel extends IScreen {
 
 
     private void showMicrosoftAuth(Pane root) {   // ← nouveau paramètre
-        ProgressIndicator spinner = new ProgressIndicator();
-        spinner.setPrefSize(80, 80);
-
-        StackPane pane = new StackPane(spinner);
-        pane.setPadding(new Insets(20));
-
-        Stage stage = new Stage();
-        stage.setScene(new Scene(pane, 300, 160));
-        stage.setTitle("Connexion Microsoft");
-        stage.initModality(Modality.APPLICATION_MODAL);
-        stage.setResizable(false);
-        stage.show();
-
-        startMicrosoftLogin(stage, root);
+        startMicrosoftLogin(root);
     }
 
     private String urlModifier(String version) {
@@ -988,90 +980,106 @@ public class LauncherPanel extends IScreen {
         Platform.runLater(() -> new LauncherAlert(AUTH_ERROR_TITLE, AUTH_ERROR_MSG));
     }
     
-    private void startMicrosoftLogin(Stage stage, Pane root) {
+    private void startMicrosoftLogin(Pane root) {
 
-        /* petit spinner d’attente pendant toute la phase d’auth */
+        /* ===================== Fenêtre ===================== */
+        Stage authStage = new Stage();
+        authStage.initModality(Modality.APPLICATION_MODAL);
+        authStage.setTitle("Connexion Microsoft");
+        authStage.setResizable(false);
+
         ProgressIndicator spinner = new ProgressIndicator();
-        Stage wait = new Stage();
-        wait.initOwner(stage);
-        wait.initModality(Modality.APPLICATION_MODAL);
-        wait.setScene(new Scene(new StackPane(spinner), 120, 120));
-        wait.setTitle("Connexion Microsoft");
-        wait.setResizable(false);
-        wait.show();
+        spinner.setPrefSize(40, 40);
 
-        /* thread de travail pour ne pas bloquer JavaFX */
+        Label title = new Label("Connexion Microsoft");
+        title.setFont(Font.font("System", FontWeight.BOLD, 16));
+
+        Label info = new Label(
+                "Un navigateur s’est ouvert automatiquement.\n"
+              + "Saisis le code ci-dessous sur la page Microsoft :"
+        );
+        info.setWrapText(true);
+        info.setAlignment(Pos.CENTER);
+
+        Label codeLabel = new Label("-----");
+        codeLabel.setFont(Font.font("Consolas", FontWeight.BOLD, 28));
+        codeLabel.setStyle("-fx-background-color: #f2f2f2; -fx-padding: 10 20 10 20;");
+
+        Button copyBtn = new Button("📋 Copier le code");
+        copyBtn.setDisable(true);
+
+        Label waitLabel = new Label("⏳ En attente de validation…");
+
+        VBox box = new VBox(
+                15,
+                title,
+                info,
+                codeLabel,
+                copyBtn,
+                spinner,
+                waitLabel
+        );
+        box.setPadding(new Insets(20));
+        box.setAlignment(Pos.CENTER);
+
+        authStage.setScene(new Scene(box, 420, 260));
+        authStage.show();
+
+        /* ===================== Thread Auth ===================== */
         new Thread(() -> {
             try {
-                /* 1) URL d’autorisation Live-ID (scope XboxLive.signin + offline_access) */
-                MicrosoftAuth msAuth = new MicrosoftAuth();
-                String authUrl = msAuth.getAuthorizationUrl(null);
-                java.awt.Desktop.getDesktop().browse(new java.net.URI(authUrl));
+                MicrosoftOAuthClient deviceAuth = new MicrosoftOAuthClient();
+                MicrosoftOAuthClient.DeviceCode deviceCode = deviceAuth.requestDeviceCode();
 
-                /* 2) boîte de dialogue → l’utilisateur colle l’URL ou juste le code */
-                final java.util.concurrent.atomic.AtomicReference<String> codeRef =
-                        new java.util.concurrent.atomic.AtomicReference<>();
-                final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
-
+                /* UI : affiche le code */
                 Platform.runLater(() -> {
-                    TextInputDialog dlg = new TextInputDialog();
-                    dlg.setTitle("Connexion Microsoft – Dernière étape");
-                    dlg.setHeaderText("Terminer la connexion");
-                    dlg.setContentText(
-                          "1\u2003Dans le navigateur, clique sur le bouton « Oui » de Microsoft.\n Si tu as une page blanche, passe à l'étape 2\n"
-                        + "\n"
-                        + "2\u2003Une page blanche s’affiche ; c’est normal.\n"
-                        + "   Copie l’adresse complète de la barre d’adresse, par ex. :\n"
-                        + "   https://login.live.com/oauth20_desktop.srf?code=ABCDEFGHI…\n"
-                        + "   (ou copie seulement le long code après « code= »)\n"
-                        + "\n"
-                        + "3\u2003Reviens dans le launcher, colle ici ↓ puis valide :");
-                    dlg.getEditor().setPromptText("URL ou code Microsoft ici…");
-                    dlg.showAndWait().ifPresent(codeRef::set);
-                    latch.countDown();
+                    codeLabel.setText(deviceCode.getUserCode());
+                    copyBtn.setDisable(false);
+
+                    copyBtn.setOnAction(e -> {
+                        ClipboardContent content = new ClipboardContent();
+                        content.putString(deviceCode.getUserCode());
+                        Clipboard.getSystemClipboard().setContent(content);
+                    });
                 });
 
-                latch.await();                      // attend que l’utilisateur colle quelque chose
-                String authCode = codeRef.get();
-                if (authCode == null || authCode.trim().isEmpty())
-                    throw new IllegalStateException("Aucun code n’a été fourni.");
+                /* Ouvre le navigateur */
+                Desktop.getDesktop().browse(
+                        URI.create(deviceCode.getVerificationUri())
+                );
 
-                /* 3) si l’utilisateur a collé l’URL complète, on isole le code */
-                authCode = authCode.trim();
-                if (authCode.startsWith("http")) {
-                    int p = authCode.indexOf("code=") + 5;
-                    authCode = authCode.substring(p);
-                    int amp = authCode.indexOf('&');
-                    if (amp > 0) authCode = authCode.substring(0, amp);
-                }
+                /* Poll token */
+                MicrosoftModel model = deviceAuth.pollForToken(deviceCode);
+                
+                /* 🔑 SAUVEGARDE DES TOKENS */
+                AuthConfig authConfig = new AuthConfig(engine);
+                authConfig.createConfigFile(model);
 
-                /* 4) échange code → access_token → session Minecraft */
-                MicrosoftModel model   = msAuth.getAuthorizationCode(ParamType.AUTH, authCode);
-                Session        session = msAuth.getLiveToken(model.getAccess_token());
+                /* Xbox → Minecraft */
+                MicrosoftXboxAuth msAuth = new MicrosoftXboxAuth();
+                Session session = msAuth.getLiveToken(model.getAccess_token());
 
-                /* 5) retourne sur le thread JavaFX → mise à jour UI + config */
+                /* Succès */
                 Platform.runLater(() -> {
-                    wait.close();
-                    stage.close();
-
-                    auth = new GameAuth(AccountType.MICROSOFT);
-                    auth.setSession(session);
+                    authStage.close();
 
                     connectAccountPremiumCO(session.getUsername(), root);
                     config.updateValue("useMicrosoft", true);
-                    update();    // lance la mise à jour du jeu / packs
+                    update();
                 });
 
             } catch (Exception ex) {
                 ex.printStackTrace();
                 Platform.runLater(() -> {
-                    wait.close();
-                    stage.close();
+                    authStage.close();
                     showAuthErrorAlert();
                 });
             }
         }).start();
     }
+
+
+
 
 
 }
