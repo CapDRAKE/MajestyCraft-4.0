@@ -30,8 +30,8 @@ public class LauncherInfo extends IScreen {
 	
     private static final boolean CHANGE_1 = true;
     private static final boolean CHANGE_2 = true;
-    private static final boolean CHANGE_3 = false;
-    private static final boolean CHANGE_4 = false;
+    private static final boolean CHANGE_3 = true;
+    private static final boolean CHANGE_4 = true;
 
 	private LauncherLabel titleLabel;
 	private LauncherLabel developpeur;

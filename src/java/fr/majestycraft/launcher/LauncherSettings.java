@@ -50,9 +50,9 @@ public class LauncherSettings extends IScreen {
     private JFXCheckBox includeSnapshots;
     private boolean includeSnapshotsEnabled = true;
 
-    private double xOffSet; // Position x à l'instant du clic
-    private double yOffSet; // Position y à l'instant du clic
-    Stage stage; // Le stage qu'on voudra faire bouger (ici notre menu des paramètres)
+    private double xOffSet; // Position x Ã  l'instant du clic
+    private double yOffSet; // Position y Ã  l'instant du clic
+    Stage stage; // Le stage qu'on voudra faire bouger (ici notre menu des paramÃ¨tres)
 
     private static final String LABEL_SETTINGS = Main.bundle.getString("LABEL_SETTINGS");
     private static final String LABEL_WINDOW_SIZE = Main.bundle.getString("LABEL_WINDOW_SIZE");
@@ -66,7 +66,7 @@ public class LauncherSettings extends IScreen {
     private static final String BUTTON_OPEN_GAME_DIR = Main.bundle.getString("BUTTON_OPEN_GAME_DIR");
     private static final String BUTTON_VALIDATE = Main.bundle.getString("BUTTON_VALIDATE");
     private static final String LANGUAGE = Main.bundle.getString("LANGUAGE");
-    // Clé config (issue de EnumConfig) => PAS dans le bundle
+    // ClÃ© config (issue de EnumConfig) => PAS dans le bundle
     private static final String CFG_INCLUDE_SNAPSHOTS = EnumConfig.CFG_INCLUDE_SNAPSHOTS.getOption();
 
     // Label UI i18n (optionnel) + fallback
@@ -82,7 +82,7 @@ public class LauncherSettings extends IScreen {
     private static final String MOJANG_MANIFEST_FALLBACK =
             "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json";
 
-    // Limite snapshots (sinon la liste est énorme)
+    // Limite snapshots (sinon la liste est Ã©norme)
     private static final int MAX_SNAPSHOTS = 50;
 
     // versionId -> URL du json Mojang pour cette version
@@ -93,8 +93,8 @@ public class LauncherSettings extends IScreen {
     @SuppressWarnings("unused")
     private final Gson gson = new Gson();
 
-    // ===================== Liste vanilla supportée (ancienne liste) =====================
-    // => sert à filtrer/ordonner les releases
+    // ===================== Liste vanilla supportÃ©e (ancienne liste) =====================
+    // => sert Ã  filtrer/ordonner les releases
     private static final List<String> VANILLA_SUPPORTED_RELEASES = Arrays.asList(
             "1.8", "1.9", "1.10.2", "1.11.2", "1.12.2", "1.13.2", "1.14.4", "1.15.2",
             "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17", "1.17.1", "1.18", "1.18.1",
@@ -104,7 +104,7 @@ public class LauncherSettings extends IScreen {
     );
     private static final Set<String> VANILLA_SUPPORTED_RELEASE_SET = new HashSet<>(VANILLA_SUPPORTED_RELEASES);
 
-    // ===================== Anciennes "restrictions" => on va en déduire les supports =====================
+    // ===================== Anciennes "restrictions" => on va en dÃ©duire les supports =====================
     private static final Set<String> FORGE_UNSUPPORTED_VERSIONS = new HashSet<>(Arrays.asList(
             "1.8", "1.19.2", "1.19.3", "1.19.4", "1.20", "1.20.1", "1.20.2", "1.20.3", "1.20.4",
             "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5",
@@ -318,7 +318,7 @@ public class LauncherSettings extends IScreen {
         this.versionList.setLayoutY(165);
         this.versionList.setVisibleRowCount(10);
 
-        // Champ sélectionné : blanc (sur fond du launcher)
+        // Champ sÃ©lectionnÃ© : blanc (sur fond du launcher)
         this.versionList.setButtonCell(new ListCell<String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -332,7 +332,7 @@ public class LauncherSettings extends IScreen {
             }
         });
 
-        // Dropdown : noir + séparateurs visuels
+        // Dropdown : noir + sÃ©parateurs visuels
         this.versionList.setCellFactory(cb -> new ListCell<String>() {
 
             private final Label header = new Label();
@@ -340,7 +340,7 @@ public class LauncherSettings extends IScreen {
             private final VBox box = new VBox(header, value);
 
             {
-                // Style du séparateur
+                // Style du sÃ©parateur
                 header.setStyle("-fx-text-fill: #666666; -fx-font-size: 11px; -fx-padding: 6 0 2 0;");
                 // Style de la valeur (dropdown fond blanc)
                 value.setStyle("-fx-text-fill: black; -fx-font-size: 13px; -fx-padding: 0 0 6 0;");
@@ -389,7 +389,7 @@ public class LauncherSettings extends IScreen {
                 }
 
                 if (showHeader) {
-                    header.setText(isSnapshot(item) ? "— Snapshots —" : "— Releases —");
+                    header.setText(isSnapshot(item) ? "â€” Snapshots â€”" : "â€” Releases â€”");
                     header.setManaged(true);
                     header.setVisible(true);
                 } else {
@@ -432,7 +432,7 @@ public class LauncherSettings extends IScreen {
 
         root.getChildren().add(this.includeSnapshots);
 
-        // Charge la liste depuis Mojang (releases triées comme avant + snapshots selon checkbox)
+        // Charge la liste depuis Mojang (releases triÃ©es comme avant + snapshots selon checkbox)
         this.populateVersionListFromMojang(pane, (String) pane.getConfig().getValue(EnumConfig.VERSION));
 
         this.versionList.setOnAction(event -> applyModRestrictionsForVersion(versionList.getValue(), pane));
@@ -575,7 +575,7 @@ public class LauncherSettings extends IScreen {
     }
 
     /**
-     * Si Forge/Optifine sélectionné : on garde ton serveur distant.
+     * Si Forge/Optifine sÃ©lectionnÃ© : on garde ton serveur distant.
      * Sinon : on utilise le JSON officiel Mojang (vanilla release/snapshot).
      */
     private GameLinks buildGameLinks(String version, boolean forge, boolean optifine) {
@@ -585,7 +585,7 @@ public class LauncherSettings extends IScreen {
 
         String fullUrl = mojangVersionUrlById.get(version);
         if (fullUrl == null || fullUrl.trim().isEmpty()) {
-            // Fallback sécurité : si la map n'est pas chargée / version inconnue
+            // Fallback sÃ©curitÃ© : si la map n'est pas chargÃ©e / version inconnue
             return new GameLinks("https://majestycraft.com/minecraft" + urlModifier(), version + ".json");
         }
 
@@ -603,7 +603,7 @@ public class LauncherSettings extends IScreen {
         return "/" + versionList.getValue() + (useForge.isSelected() ? "/forge/" : "/");
     }
 
-    // ===================== Versions Mojang (releases triées + snapshots selon checkbox) =====================
+    // ===================== Versions Mojang (releases triÃ©es + snapshots selon checkbox) =====================
 
     private void populateVersionListFromMojang(final LauncherPanel pane) {
         populateVersionListFromMojang(pane, null);
@@ -639,11 +639,11 @@ public class LauncherSettings extends IScreen {
                 this.versionList.getItems().setAll(finalVersions);
                 this.versionList.setDisable(false);
 
-                // 1) On tente de conserver la sélection préférée (utile lors du toggle)
+                // 1) On tente de conserver la sÃ©lection prÃ©fÃ©rÃ©e (utile lors du toggle)
                 if (preferredSelection != null && finalVersions.contains(preferredSelection)) {
                     this.versionList.setValue(preferredSelection);
                 } else {
-                    // 2) Sinon la version sauvée (si elle existe)
+                    // 2) Sinon la version sauvÃ©e (si elle existe)
                     String saved = (String) pane.getConfig().getValue(EnumConfig.VERSION);
                     if (saved != null && finalVersions.contains(saved)) {
                         this.versionList.setValue(saved);
@@ -662,9 +662,9 @@ public class LauncherSettings extends IScreen {
 
     /**
      * Releases + snapshots dans l'ordre du manifest Mojang
-     * => plus récent -> plus ancien, snapshots intercalés selon leur date.
+     * => plus rÃ©cent -> plus ancien, snapshots intercalÃ©s selon leur date.
      *
-     * Releases : on garde uniquement celles présentes dans ta liste VANILLA_SUPPORTED_RELEASE_SET
+     * Releases : on garde uniquement celles prÃ©sentes dans ta liste VANILLA_SUPPORTED_RELEASE_SET
      * Snapshots : on en prend maxSnapshots (si includeSnapshots=true).
      */
     private List<String> fetchMojangVersions(String manifestUrl, boolean includeSnapshots, int maxSnapshots) throws IOException {
@@ -683,19 +683,10 @@ public class LauncherSettings extends IScreen {
             JsonObject o = el.getAsJsonObject();
 
             String id = o.get("id").getAsString();
-            String type = o.get("type").getAsString();
-            String url = o.get("url").getAsString();
+            String type = o.get("type").getAsString();     // release / snapshot / old_beta / old_alpha
+            String url  = o.get("url").getAsString();
 
-            if ("release".equalsIgnoreCase(type)) {
-                // On garde UNIQUEMENT les releases que tu supportes (ta liste historique)
-                if (!VANILLA_SUPPORTED_RELEASE_SET.contains(id)) continue;
-
-                out.add(id);
-                mojangVersionUrlById.put(id, url);
-                mojangVersionTypeById.put(id, "release");
-                continue;
-            }
-
+            // Snapshots : option + limite
             if ("snapshot".equalsIgnoreCase(type)) {
                 if (!includeSnapshots) continue;
                 if (snapshotCount >= maxSnapshots) continue;
@@ -704,7 +695,13 @@ public class LauncherSettings extends IScreen {
                 out.add(id);
                 mojangVersionUrlById.put(id, url);
                 mojangVersionTypeById.put(id, "snapshot");
+                continue;
             }
+
+            // Tout le reste => on garde (release + old_beta + old_alpha)
+            out.add(id);
+            mojangVersionUrlById.put(id, url);
+            mojangVersionTypeById.put(id, type.toLowerCase(Locale.ROOT));
         }
 
         return out;
@@ -748,14 +745,14 @@ public class LauncherSettings extends IScreen {
         return versionId != null && versionId.matches("\\d{2}w\\d{2}[a-z]");
     }
 
-    // ===================== Restrictions Forge/Optifine (via "versions supportées") =====================
+    // ===================== Restrictions Forge/Optifine (via "versions supportÃ©es") =====================
 
     private void applyModRestrictionsForVersion(String version, LauncherPanel pane) {
         if (version == null || version.trim().isEmpty() || "Chargement...".equals(version)) return;
 
         boolean snapshot = isSnapshot(version);
 
-        // On procède "à l'envers" : on autorise uniquement si la version est dans la liste supportée.
+        // On procÃ¨de "Ã  l'envers" : on autorise uniquement si la version est dans la liste supportÃ©e.
         boolean forgeAllowed = !snapshot && FORGE_SUPPORTED_VERSIONS.contains(version);
         boolean optifineAllowed = !snapshot && OPTIFINE_SUPPORTED_VERSIONS.contains(version);
 
@@ -779,7 +776,7 @@ public class LauncherSettings extends IScreen {
         useOptifine.setOpacity(optifineRestricted ? 0.3 : 1.0);
     }
 
-    // ===================== Taille fenêtre =====================
+    // ===================== Taille fenÃªtre =====================
 
     private void populateSizeList() {
         for (GameSize size : GameSize.values()) {
@@ -788,7 +785,7 @@ public class LauncherSettings extends IScreen {
     }
 
     private void languageList() {
-        String[] language = new String[] { "Français", "English", "Español", };
+        String[] language = new String[] { "FranÃ§ais", "English", "EspaÃ±ol", };
         this.LanguageList.getItems().addAll(Arrays.asList(language));
     }
 
