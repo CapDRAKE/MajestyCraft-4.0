@@ -4,6 +4,7 @@ import fr.majestycraft.launcher.*;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.maintenance.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
+import fr.trxyy.alternative.alternative_api.utils.config.EnumConfig;
 import fr.trxyy.alternative.alternative_api_ui.*;
 import fr.trxyy.alternative.alternative_api_ui.base.*;
 import javafx.application.Platform;
@@ -12,11 +13,17 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
+
+import com.google.gson.*;
 
 /**
  * Classe principale de l'application MajestyLauncher
@@ -24,28 +31,44 @@ import java.util.logging.Logger;
 public class App extends AlternativeBase {
 
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
+
     private static final String PARTNER_IP = "91.197.6.34";
     private static final String PARTNER_PORT = "25601";
     private static final String ICON_IMAGE = "launchergifpng.png";
-    private static final String DEFAULT_JSON_VERSION = "1.21.5.json";
-    private static final String GAME_LINK_BASE_URL = "https://majestycraft.com/minecraft/";
+
+    // Base serveur (SANS slash final pour maîtriser les concat)
+    private static final String GAME_LINK_BASE_URL = "https://majestycraft.com/minecraft";
+
+    // Default si aucune config
+    private static final String DEFAULT_VERSION_ID = "1.21.11";
+
+    // Mojang manifests
+    private static final String MOJANG_MANIFEST_PRIMARY =
+            "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
+    private static final String MOJANG_MANIFEST_FALLBACK =
+            "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json";
 
     private static App instance;
     private Scene scene;
+
     private final GameFolder gameFolder = createGameFolder();
     private final LauncherPreferences launcherPreferences = createLauncherPreferences();
-    private final GameLinks gameLinks = createGameLinks();
+
+    // Valeur par défaut “safe” au boot (on ré-écrase via config ensuite)
+    private final GameLinks gameLinks = createDefaultGameLinks();
     private final GameEngine gameEngine = createGameEngine();
     private final GameMaintenance gameMaintenance = createGameMaintenance();
     private LauncherPanel panel;
 
     private static final GameConnect GAME_CONNECT = new GameConnect(PARTNER_IP, PARTNER_PORT);
-    private static final ExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadExecutor();
+
+    // 2 threads : un pour netIsAvailable, un pour les résolutions Mojang / autres tâches
+    private static final ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(2);
 
     /**
      * Lance le launcher.
      */
-    public void launcher(){
+    public void launcher() {
         launch();
     }
 
@@ -54,103 +77,221 @@ public class App extends AlternativeBase {
         setInstance(this);
         try {
             createContent();
+
+            // IMPORTANT : applique la config (version + forge/opti) dès le démarrage
+            applyGameLinksFromConfigAsync();
+
             registerGameEngine(primaryStage);
+
             LauncherBase launcherBase = setupLauncherBase(primaryStage);
             launcherBase.setIconImage(primaryStage, ICON_IMAGE);
+
             Platform.runLater(Main::showStartupPopup);
         } catch (IOException e) {
             LOGGER.severe("Erreur lors de la création du contenu: " + e.getMessage());
         }
     }
 
-    /**
-     * Crée le dossier de jeu.
-     *
-     * @return une instance de GameFolder
-     */
     private GameFolder createGameFolder() {
         return new GameFolder("majestycraft");
     }
 
-    /**
-     * Crée les préférences du launcher.
-     *
-     * @return une instance de LauncherPreferences
-     */
     private LauncherPreferences createLauncherPreferences() {
         return new LauncherPreferences("MajestyLauncher Optifine + Forge", 1050, 750, Mover.MOVE);
     }
 
     /**
-     * Crée les liens de jeu.
-     *
-     * @return une instance de GameLinks
+     * GameLinks par défaut (avant lecture config)
+     * -> correspond à la structure /<version>/<version>.json
      */
-    private GameLinks createGameLinks() {
-        return new GameLinks(GAME_LINK_BASE_URL, DEFAULT_JSON_VERSION);
+    private GameLinks createDefaultGameLinks() {
+        String base = GAME_LINK_BASE_URL + "/" + DEFAULT_VERSION_ID + "/";
+        String jsonName = DEFAULT_VERSION_ID + ".json";
+        return new GameLinks(base, jsonName);
     }
 
-    /**
-     * Crée le moteur de jeu.
-     *
-     * @return une instance de GameEngine
-     */
     private GameEngine createGameEngine() {
         return new GameEngine(gameFolder, gameLinks, launcherPreferences, GameStyle.VANILLA_1_19_HIGHER);
     }
 
-    /**
-     * Crée la maintenance du jeu.
-     *
-     * @return une instance de GameMaintenance
-     */
     private GameMaintenance createGameMaintenance() {
         return new GameMaintenance(Maintenance.USE, gameEngine);
     }
 
-    /**
-     * Crée le contenu de l'application.
-     *
-     * @throws IOException si une erreur d'E/S se produit
-     */
     private void createContent() throws IOException {
         LauncherPane contentPane = new LauncherPane(this.gameEngine);
         scene = new Scene(contentPane, launcherPreferences.getWidth(), launcherPreferences.getHeight());
+
         Rectangle clipRect = new Rectangle(launcherPreferences.getWidth(), launcherPreferences.getHeight());
         clipRect.setArcWidth(15.0);
         clipRect.setArcHeight(15.0);
         contentPane.setClip(clipRect);
         contentPane.setStyle("-fx-background-color: transparent;");
+
         setPanel(new LauncherPanel(contentPane, this.gameEngine));
     }
 
-    /**
-     * Enregistre le GameEngine et la maintenance.
-     *
-     * @param primaryStage le stage principal
-     */
     private void registerGameEngine(Stage primaryStage) {
         gameEngine.reg(primaryStage);
-        if(netIsAvailable()) {
+        if (netIsAvailable()) {
             gameEngine.reg(gameMaintenance);
         }
     }
 
-    /**
-     * Configure et retourne le LauncherBase.
-     *
-     * @param primaryStage le stage principal
-     * @return une instance de LauncherBase
-     */
     private LauncherBase setupLauncherBase(Stage primaryStage) {
-        LauncherBase launcherBase = new LauncherBase(primaryStage, scene, StageStyle.TRANSPARENT, this.gameEngine);
-        return launcherBase;
+        return new LauncherBase(primaryStage, scene, StageStyle.TRANSPARENT, this.gameEngine);
+    }
+
+    /**
+     * Applique les GameLinks selon la config sauvegardée :
+     * - Forge/Optifine => JSON serveur (structure /<version>/forge/ ou /<version>/)
+     * - Vanilla => JSON Mojang (si possible), sinon fallback serveur
+     *
+     * On le fait en async pour ne pas bloquer le thread JavaFX.
+     */
+    private void applyGameLinksFromConfigAsync() {
+        if (this.panel == null || this.panel.getConfig() == null) {
+            return;
+        }
+
+        // S'assure que la config est chargée
+        this.panel.getConfig().loadConfiguration();
+
+        String version = (String) this.panel.getConfig().getValue(EnumConfig.VERSION);
+        if (version == null || version.trim().isEmpty()) {
+            version = DEFAULT_VERSION_ID;
+        }
+
+        boolean useForge = getBooleanConfig(EnumConfig.USE_FORGE);
+        boolean useOptifine = getBooleanConfig(EnumConfig.USE_OPTIFINE);
+
+        // Si Forge/Optifine => serveur direct (pas Mojang)
+        if (useForge || useOptifine) {
+            GameLinks serverLinks = buildServerGameLinks(version, useForge);
+            this.gameEngine.reg(serverLinks);
+            return;
+        }
+
+        // Vanilla : on tente Mojang en arrière-plan, sinon fallback serveur
+        final String finalVersion = version;
+
+        EXECUTOR_SERVICE.submit(() -> {
+            try {
+                // si pas de réseau, inutile de tenter Mojang
+                if (!netIsAvailable()) {
+                    GameLinks fallback = buildServerGameLinks(finalVersion, false);
+                    Platform.runLater(() -> this.gameEngine.reg(fallback));
+                    return;
+                }
+
+                String mojangJsonUrl = resolveMojangVersionJsonUrl(finalVersion);
+                if (mojangJsonUrl == null) {
+                    GameLinks fallback = buildServerGameLinks(finalVersion, false);
+                    Platform.runLater(() -> this.gameEngine.reg(fallback));
+                    return;
+                }
+
+                // On garde tes URLs custom sur ton serveur (si tu as ignore/delete/status/files)
+                String serverBaseForVersion = GAME_LINK_BASE_URL + "/" + finalVersion + "/";
+
+                GameLinks links = new GameLinks(
+                        mojangJsonUrl,
+                        serverBaseForVersion + "ignore.cfg",
+                        serverBaseForVersion + "delete.cfg",
+                        serverBaseForVersion + "status.cfg",
+                        serverBaseForVersion + "files/"
+                );
+
+                Platform.runLater(() -> this.gameEngine.reg(links));
+
+            } catch (Exception e) {
+                LOGGER.warning("Impossible d'appliquer les GameLinks Mojang, fallback serveur. " + e.getMessage());
+                GameLinks fallback = buildServerGameLinks(finalVersion, false);
+                Platform.runLater(() -> this.gameEngine.reg(fallback));
+            }
+        });
+    }
+
+    private boolean getBooleanConfig(EnumConfig key) {
+        Object v = this.panel.getConfig().getValue(key);
+        return (v instanceof Boolean) ? (Boolean) v : false;
+    }
+
+    /**
+     * Forge => /<version>/forge/
+     * Vanilla/Optifine => /<version>/
+     */
+    private GameLinks buildServerGameLinks(String version, boolean forge) {
+        String base = GAME_LINK_BASE_URL + "/" + version + (forge ? "/forge/" : "/");
+        String jsonName = version + ".json";
+        return new GameLinks(base, jsonName);
+    }
+
+    /**
+     * Résout l'URL Mojang du JSON de version via le manifest.
+     * Retourne null si non trouvé.
+     */
+    private String resolveMojangVersionJsonUrl(String versionId) throws IOException {
+        try {
+            String url = resolveMojangVersionJsonUrlFromManifest(MOJANG_MANIFEST_PRIMARY, versionId);
+            if (url != null) return url;
+        } catch (IOException ignored) { }
+
+        return resolveMojangVersionJsonUrlFromManifest(MOJANG_MANIFEST_FALLBACK, versionId);
+    }
+
+    private String resolveMojangVersionJsonUrlFromManifest(String manifestUrl, String versionId) throws IOException {
+        String json = downloadText(manifestUrl);
+
+        JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+        JsonArray versions = root.getAsJsonArray("versions");
+        if (versions == null) return null;
+
+        for (JsonElement el : versions) {
+            JsonObject o = el.getAsJsonObject();
+            if (o == null) continue;
+
+            String id = o.has("id") ? o.get("id").getAsString() : null;
+            if (versionId.equals(id)) {
+                return o.has("url") ? o.get("url").getAsString() : null;
+            }
+        }
+        return null;
+    }
+
+    private String downloadText(String urlStr) throws IOException {
+        HttpURLConnection connection = null;
+        InputStream is = null;
+        try {
+            URL url = new URL(urlStr);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(8000);
+            connection.setReadTimeout(12000);
+            connection.setRequestProperty("User-Agent", "MajestyLauncher");
+
+            int code = connection.getResponseCode();
+            is = (code >= 200 && code < 300) ? connection.getInputStream() : connection.getErrorStream();
+            if (is == null) throw new IOException("HTTP " + code + " sans body");
+
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) sb.append(line);
+
+                if (code < 200 || code >= 300) {
+                    throw new IOException("HTTP " + code + " -> " + sb);
+                }
+                return sb.toString();
+            }
+        } finally {
+            if (is != null) try { is.close(); } catch (Exception ignored) {}
+            if (connection != null) connection.disconnect();
+        }
     }
 
     /**
      * Vérifie si la connexion Internet est disponible.
-     *
-     * @return vrai si la connexion est disponible, faux sinon
      */
     public static boolean netIsAvailable() {
         Future<Boolean> future = EXECUTOR_SERVICE.submit(() -> {
@@ -158,8 +299,8 @@ public class App extends AlternativeBase {
                 URL url = new URL("http://www.google.com");
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("HEAD");
-                urlConnection.setConnectTimeout(3000); // Timeout de connexion de 3 secondes
-                urlConnection.setReadTimeout(3000);    // Timeout de lecture de 3 secondes
+                urlConnection.setConnectTimeout(3000);
+                urlConnection.setReadTimeout(3000);
                 urlConnection.connect();
                 int responseCode = urlConnection.getResponseCode();
                 return responseCode == HttpURLConnection.HTTP_OK;
@@ -170,7 +311,7 @@ public class App extends AlternativeBase {
         });
 
         try {
-            return future.get(5, TimeUnit.SECONDS); // Timeout total de 5 secondes
+            return future.get(5, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             LOGGER.warning("Erreur lors de la vérification asynchrone de la connexion Internet: " + e.getMessage());
             future.cancel(true);
@@ -178,54 +319,26 @@ public class App extends AlternativeBase {
         }
     }
 
-    /**
-     * Retourne l'instance unique de l'application.
-     *
-     * @return l'instance de l'application
-     */
     public static App getInstance() {
         return instance;
     }
 
-    /**
-     * Définit l'instance unique de l'application.
-     *
-     * @param app l'instance de l'application
-     */
     private static void setInstance(App app) {
         instance = app;
     }
 
-    /**
-     * Retourne le panneau du launcher.
-     *
-     * @return le panneau du launcher
-     */
     public LauncherPanel getPanel() {
         return panel;
     }
 
-    /**
-     * Définit le panneau du launcher.
-     *
-     * @param panel le panneau du launcher
-     */
     private void setPanel(LauncherPanel panel) {
         this.panel = panel;
     }
 
-    /**
-     * Retourne la connexion du jeu.
-     *
-     * @return une instance de GameConnect
-     */
     public static GameConnect getGameConnect() {
         return GAME_CONNECT;
     }
 
-    /**
-     * Ferme l'ExecutorService lors de l'arrêt de l'application.
-     */
     @Override
     public void stop() throws Exception {
         super.stop();
