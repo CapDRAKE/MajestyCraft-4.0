@@ -1,91 +1,132 @@
 .jfx-toggle-button {
-	 -fx-text-fill: orange;
-     -jfx-toggle-color: #FF9F2B;
-     -jfx-untoggle-color: #FAFAFA;
-     -jfx-toggle-line-color: #FF0000;
-     -jfx-untoggle-line-color: #999999;
-     -jfx-size: 10.0;
-     -jfx-disable-visual-focus: false;
+    -fx-text-fill: rgba(255,255,255,0.9);
+    -jfx-toggle-color: #FF9F2B;
+    -jfx-untoggle-color: #FAFAFA;
+    -jfx-toggle-line-color: #FF9F2B;
+    -jfx-untoggle-line-color: rgba(255,255,255,0.35);
+    -jfx-size: 10.0;
+    -jfx-disable-visual-focus: false;
 }
 
-/*Design button*/
+/* Bouton principal (Connexion) */
 .button-raised{
-    -fx-font-size: 20px;
     -jfx-button-type: RAISED;
-        -fx-background-color: rgb(255,0,0,0.3);
-    -fx-pref-width: 269;
-    -fx-pref-height: 30;
-    -fx-text-fill: orange;
+    -fx-font-size: 20px;
+    -fx-background-radius: 16;
+    -fx-text-fill: white;
+
+    /* JavaFX gradient syntax */
+    -fx-background-color: linear-gradient(#ff9800, #ff6d00);
+
+    -fx-pref-width: 240;
+    -fx-pref-height: 46;
 }
 
-/*Design textfield*/
+.button-raised:hover{
+    -fx-background-color: linear-gradient(#ffb74d, #ff8f00);
+}
+
+/* Textfield */
 .input{
-    -fx-pref-width: 269;
-    -fx-pref-height: 50;
-    -jfx-focus-color: red;
-    -jfx-unfocus-color: orange;
+    -fx-background-color: rgba(255,255,255,0.07);
+    -fx-background-radius: 14;
+    -fx-text-fill: rgba(255,255,255,0.92);
+    -fx-prompt-text-fill: rgba(255,255,255,0.45);
+    -fx-padding: 10 12 10 12;
+
+    -fx-pref-height: 48;
+
+    -jfx-focus-color: #ff6d00;
+    -jfx-unfocus-color: rgba(255,255,255,0.25);
 }
 
-/*Design progress bar*/
+/* Progress bar */
 .jfx-progress-bar{
-	-fx-pref-width: 252;
-	-fx-pref-height: 20;
-	-fx-accent: orange;
+    -fx-pref-width: 252;
+    -fx-pref-height: 20;
+    -fx-accent: orange;
 }
 
 .jfx-progress-bar > .track {
-    -fx-background-color: #E0E0E0;
+    -fx-background-color: rgba(255,255,255,0.25);
 }
 
 .jfx-progress-bar > .bar {
-    -fx-background-color: #FF0000;
+    -fx-background-color: #ff6d00;
 }
 
-/*Design checkBox*/
-.custom-jfx-check-box {
-    -jfx-checked-color: RED;
-    -jfx-unchecked-color: BLACK;
-}
-
-/*Design rippler*/
+/* Rippler */
 .rippler{
-	-fx-pref-width: 240;
-	-jfx-rippler-radius : 50;
-	-jfx-rippler-fill: orange;
-	-jfx-rippler-recenter: true;
-	-jfc-mask-type: CIRCLE;
+    -fx-pref-width: 240;
+    -jfx-rippler-radius : 50;
+    -jfx-rippler-fill: orange;
+    -jfx-rippler-recenter: true;
+    -jfc-mask-type: CIRCLE;
 }
 
 .rippler2{
-	-fx-pref-width: 50;
-	-jfx-rippler-radius : 50;
-	-jfx-rippler-fill: red;
-	-jfx-rippler-recenter: true;
-	-jfc-mask-type: CIRCLE;
+    -fx-pref-width: 50;
+    -jfx-rippler-radius : 50;
+    -jfx-rippler-fill: #ff6d00;
+    -jfx-rippler-recenter: true;
+    -jfc-mask-type: CIRCLE;
 }
 
-/* Styling the slider track */
-.jfx-slider > .track {
-     -fx-background-color: yellow;
+/* ===================== Modern ComboBox (JFoenix) ===================== */
+.combo-modern {
+    -fx-background-color: rgba(255,255,255,0.06);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(255,255,255,0.14);
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 2 10 2 10;
+
+    -jfx-focus-color: #ff6d00;
+    -jfx-unfocus-color: rgba(255,255,255,0.22);
 }
 
-/* Styling the slider thumb */
-.jfx-slider > .thumb {
-     -fx-background-color: red;
+.combo-modern .cell {
+    -fx-text-fill: rgba(255,255,255,0.92);
+    -fx-padding: 6 10 6 10;
 }
 
-/* Styling the filled track */
-.jfx-slider > .colored-track {
-     -fx-background-color: red;
+.combo-modern .arrow-button {
+    -fx-background-color: transparent;
 }
 
-/* Styling the animated thumb */
-.jfx-slider > .animated-thumb {
-     -fx-background-color: red;
+.combo-modern .arrow {
+    -fx-background-color: rgba(255,255,255,0.75);
 }
 
-/* Styling the slider value text inside animated thumb */
-.jfx-slider .slider-value {
-     -fx-fill: white;
-     -fx-stroke: white;
+/* Popup dropdown */
+.jfx-combo-box-popup .list-view {
+    -fx-background-color: rgba(16,16,16,0.96);
+    -fx-background-radius: 14;
+    -fx-padding: 6;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.70), 24, 0, 0, 8);
+}
+
+.jfx-combo-box-popup .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: rgba(255,255,255,0.88);
+    -fx-padding: 8 12;
+    -fx-background-radius: 10;
+}
+
+.jfx-combo-box-popup .list-cell:hover {
+    -fx-background-color: rgba(255,255,255,0.10);
+}
+
+.jfx-combo-box-popup .list-cell:selected {
+    -fx-background-color: rgba(255,109,0,0.28);
+    -fx-text-fill: white;
+}
+
+/* Scrollbar plus discret (optionnel) */
+.jfx-combo-box-popup .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(255,255,255,0.20);
+    -fx-background-radius: 8;
+}
+.jfx-combo-box-popup .scroll-bar:vertical {
+    -fx-background-color: transparent;
 }

@@ -1,13 +1,25 @@
 package fr.majestycraft.launcher;
 
-import animatefx.animation.*;
-import com.jfoenix.controls.*;
-import fr.majestycraft.*;
+import animatefx.animation.FadeIn;
+import animatefx.animation.ZoomInDown;
+import animatefx.animation.ZoomInLeft;
+import animatefx.animation.ZoomOutDown;
+
+import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXProgressBar;
+import com.jfoenix.controls.JFXTextField;
+import com.jfoenix.controls.JFXToggleButton;
+
+import fr.majestycraft.App;
+import fr.majestycraft.Discord;
+import fr.majestycraft.Main;
+import fr.majestycraft.Utils;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.updater.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
 import fr.trxyy.alternative.alternative_api.utils.config.*;
-import fr.trxyy.alternative.alternative_api_ui.*;
+import fr.trxyy.alternative.alternative_api_ui.LauncherAlert;
+import fr.trxyy.alternative.alternative_api_ui.LauncherPane;
 import fr.trxyy.alternative.alternative_api_ui.base.*;
 import fr.trxyy.alternative.alternative_api_ui.components.*;
 import fr.trxyy.alternative.alternative_auth.account.*;
@@ -15,32 +27,44 @@ import fr.trxyy.alternative.alternative_auth.base.*;
 import fr.trxyy.alternative.alternative_auth.microsoft.MicrosoftXboxAuth;
 import fr.trxyy.alternative.alternative_auth.microsoft.MicrosoftOAuthClient;
 import fr.trxyy.alternative.alternative_auth.microsoft.model.MicrosoftModel;
+
 import javafx.animation.*;
-import javafx.application.*;
-import javafx.event.*;
-import javafx.geometry.*;
-import javafx.scene.*;
+import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-import javafx.scene.layout.*;
-import javafx.scene.media.*;
-import javafx.scene.paint.Color;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.paint.*;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.*;
 import javafx.scene.text.Font;
-import javafx.stage.*;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.awt.Desktop;
 import java.net.URI;
-import java.text.*;
-import java.util.*;
+import java.text.DecimalFormat;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class LauncherPanel extends IScreen {
-	
+
     private final String MINESTRATOR_URL = "https://minestrator.com/?partner=eus561rkso";
     private final String INSTAGRAM_URL = "https://www.tiktok.com/@majestycraft?lang=fr";
     private final String TWITTER_URL = "http://twitter.com/craftsurvie";
@@ -49,32 +73,35 @@ public class LauncherPanel extends IScreen {
     private final String DISCORD_URL = "https://discord.gg/qyuuHk4udD";
 
     private final GameEngine engine;
-
     private final LauncherConfig config;
 
     private final Discord rpc = new Discord();
     private GameAuth auth;
     private final GameUpdater gameUpdater = new GameUpdater();
 
-
     private MediaPlayer mediaPlayer;
 
-
     private LauncherImage titleImage;
+    private LauncherImage heroLogo;
+
+    private LauncherLabel heroTitleLabel;
+    private LauncherLabel heroSubtitleLabel;
+    private LauncherLabel heroTextLine1;
+    private LauncherLabel heroTextLine2;
+    private LauncherLabel microsoftHintLabel;
+
     private LauncherButton infoButton;
     private LauncherButton microsoftButton;
-
     private LauncherButton settingsButton;
     private LauncherButton packsButton;
+
     private LauncherButton minestratorButton;
     private LauncherButton twitterButton;
     private LauncherButton tiktokButton;
     private LauncherButton youtubeButton;
-    private LauncherButton siteButton;
+
     private LauncherButton voteButton;
     private LauncherButton boutiqueButton;
-    private LauncherButton lolButton2;
-    private LauncherButton deadButton;
 
     private LauncherRectangle connexionRectangle;
     private LauncherLabel titleCrack;
@@ -121,42 +148,245 @@ public class LauncherPanel extends IScreen {
     private static final String CONNECTION_ERROR_MSG = Main.bundle.getString("CONNECTION_ERROR_MSG");
     private static final String AUTH_ERROR_MSG = Main.bundle.getString("AUTH_ERROR_MSG");
 
+    private int connX, connY, connW, connH;
+    private int centerX;
+    private int socialY;
+
     public LauncherPanel(Pane root, GameEngine engine) {
         this.engine = engine;
+
         this.drawBackgroundImage(engine, root, "heading.jpg");
-        // Dï¿½selectionne la textfield par dï¿½faut
         Platform.runLater(root::requestFocus);
 
         this.config = new LauncherConfig(engine);
         this.config.loadConfiguration();
 
-        setupBackGround(root);
+        computeLayout();
 
+        setupBackGround(root);
         initMusic();
 
         setupButtons(root);
-
         setupConnectionsGUI(root);
-        
         setupUpdateGUI(root);
 
         initConfig(root);
 
-        final JackInTheBox animationOUVERTURE = new JackInTheBox(root);
-        animationOUVERTURE.setSpeed(0.5);
-        animationOUVERTURE.setOnFinished(actionEvent -> {
-            new Tada(tiktokButton).play();
-            new Tada(minestratorButton).play();
-            new Tada(twitterButton).play();
-            new Tada(youtubeButton).play();
+        FadeIn fade = new FadeIn(root);
+        fade.setSpeed(1.10);
+        fade.play();
+
+        Platform.runLater(() -> {
+            playEntranceAnimations();
+            playAmbientAnimations();
         });
-        animationOUVERTURE.play();
+    }
+
+    private void computeLayout() {
+        setCenterX(engine.getWidth() / 2);
+
+        connW = 430;
+        connH = 360;
+        connX = engine.getWidth() - connW - 85;
+        connY = 185;
+
+        socialY = engine.getHeight() - 95;
+    }
+
+    private void applyModernCardStyle(LauncherRectangle r, double opacity) {
+        r.setArcWidth(34);
+        r.setArcHeight(34);
+        r.setFill(Color.rgb(8, 12, 18, opacity));
+        r.setStroke(Color.rgb(255, 255, 255, 0.10));
+        r.setStrokeWidth(1.0);
+        r.setEffect(new DropShadow(35, Color.rgb(0, 0, 0, 0.68)));
+    }
+
+    private void installHoverScale(Node node) {
+        node.setOnMouseEntered(e -> {
+            ScaleTransition st = new ScaleTransition(javafx.util.Duration.millis(120), node);
+            st.setToX(1.06);
+            st.setToY(1.06);
+            st.play();
+        });
+        node.setOnMouseExited(e -> {
+            ScaleTransition st = new ScaleTransition(javafx.util.Duration.millis(120), node);
+            st.setToX(1.0);
+            st.setToY(1.0);
+            st.play();
+        });
+    }
+
+    private void styleSidebarButton(LauncherButton button) {
+        button.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.06);" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: rgba(255,255,255,0.10);" +
+                "-fx-border-radius: 18;" +
+                "-fx-border-width: 1;"
+        );
+    }
+
+    private void styleGhostButton(LauncherButton button) {
+        button.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.06);" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: rgba(255,255,255,0.12);" +
+                "-fx-border-radius: 18;" +
+                "-fx-border-width: 1;" +
+                "-fx-text-fill: white;"
+        );
+    }
+
+    private void stylePrimaryButton(JFXButton button) {
+        button.setStyle(
+                "-fx-background-color: linear-gradient(#ff9f1a, #ff7a00);" +
+                "-fx-background-radius: 18;" +
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 17px;" +
+                "-fx-font-weight: bold;"
+        );
+    }
+
+    private void styleUsernameField(JFXTextField field) {
+        field.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.08);" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: rgba(255,255,255,0.10);" +
+                "-fx-border-radius: 18;" +
+                "-fx-border-width: 1;" +
+                "-fx-text-fill: rgba(255,255,255,0.95);" +
+                "-fx-prompt-text-fill: rgba(255,255,255,0.45);" +
+                "-fx-padding: 0 16 0 16;" +
+                "-jfx-focus-color: #ff8a00;" +
+                "-jfx-unfocus-color: rgba(255,255,255,0.18);"
+        );
+    }
+
+    private void animateFromLeft(Node node, int delayMs) {
+        if (node == null) return;
+        node.setOpacity(0);
+        node.setTranslateX(-24);
+
+        FadeTransition ft = new FadeTransition(javafx.util.Duration.millis(420), node);
+        ft.setFromValue(0);
+        ft.setToValue(1);
+
+        TranslateTransition tt = new TranslateTransition(javafx.util.Duration.millis(420), node);
+        tt.setFromX(-24);
+        tt.setToX(0);
+
+        ParallelTransition pt = new ParallelTransition(ft, tt);
+        pt.setDelay(javafx.util.Duration.millis(delayMs));
+        pt.play();
+    }
+
+    private void animateFromBottom(Node node, int delayMs) {
+        if (node == null) return;
+        node.setOpacity(0);
+        node.setTranslateY(18);
+
+        FadeTransition ft = new FadeTransition(javafx.util.Duration.millis(460), node);
+        ft.setFromValue(0);
+        ft.setToValue(1);
+
+        TranslateTransition tt = new TranslateTransition(javafx.util.Duration.millis(460), node);
+        tt.setFromY(18);
+        tt.setToY(0);
+
+        ParallelTransition pt = new ParallelTransition(ft, tt);
+        pt.setDelay(javafx.util.Duration.millis(delayMs));
+        pt.play();
+    }
+
+    private void animateFromRight(Node node, int delayMs) {
+        if (node == null) return;
+        node.setOpacity(0);
+        node.setTranslateX(28);
+
+        FadeTransition ft = new FadeTransition(javafx.util.Duration.millis(460), node);
+        ft.setFromValue(0);
+        ft.setToValue(1);
+
+        TranslateTransition tt = new TranslateTransition(javafx.util.Duration.millis(460), node);
+        tt.setFromX(28);
+        tt.setToX(0);
+
+        ParallelTransition pt = new ParallelTransition(ft, tt);
+        pt.setDelay(javafx.util.Duration.millis(delayMs));
+        pt.play();
+    }
+
+    private void playEntranceAnimations() {
+        animateFromLeft(titleImage, 0);
+        animateFromLeft(microsoftButton, 60);
+        animateFromLeft(infoButton, 120);
+        animateFromLeft(settingsButton, 180);
+        animateFromLeft(packsButton, 240);
+
+        animateFromBottom(heroLogo, 90);
+        animateFromBottom(heroTitleLabel, 160);
+        animateFromBottom(heroSubtitleLabel, 220);
+        animateFromBottom(heroTextLine1, 280);
+        animateFromBottom(heroTextLine2, 330);
+        animateFromBottom(voteButton, 380);
+        animateFromBottom(boutiqueButton, 430);
+
+        animateFromRight(connexionRectangle, 120);
+        animateFromRight(titleCrack, 190);
+        animateFromRight(avatar, 230);
+        animateFromRight(usernameField, 260);
+        animateFromRight(rememberMe, 310);
+        animateFromRight(loginButton, 360);
+        animateFromRight(microsoftHintLabel, 420);
+
+        animateFromBottom(tiktokButton, 470);
+        animateFromBottom(minestratorButton, 520);
+        animateFromBottom(twitterButton, 570);
+        animateFromBottom(youtubeButton, 620);
+    }
+
+    private void playAmbientAnimations() {
+        if (heroLogo != null) {
+            TranslateTransition floatLogo = new TranslateTransition(javafx.util.Duration.seconds(3.2), heroLogo);
+            floatLogo.setFromY(0);
+            floatLogo.setToY(10);
+            floatLogo.setAutoReverse(true);
+            floatLogo.setCycleCount(Animation.INDEFINITE);
+
+            ScaleTransition pulseLogo = new ScaleTransition(javafx.util.Duration.seconds(3.2), heroLogo);
+            pulseLogo.setFromX(1.0);
+            pulseLogo.setFromY(1.0);
+            pulseLogo.setToX(1.03);
+            pulseLogo.setToY(1.03);
+            pulseLogo.setAutoReverse(true);
+            pulseLogo.setCycleCount(Animation.INDEFINITE);
+
+            new ParallelTransition(floatLogo, pulseLogo).play();
+        }
+
+        if (titleImage != null) {
+            ScaleTransition pulseMini = new ScaleTransition(javafx.util.Duration.seconds(2.6), titleImage);
+            pulseMini.setFromX(1.0);
+            pulseMini.setFromY(1.0);
+            pulseMini.setToX(1.05);
+            pulseMini.setToY(1.05);
+            pulseMini.setAutoReverse(true);
+            pulseMini.setCycleCount(Animation.INDEFINITE);
+            pulseMini.play();
+        }
+    }
+
+    public void openLink(String url) {
+        try {
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().browse(URI.create(url));
+            }
+        } catch (Exception ignored) {}
     }
 
     private void checkAutoLogin(Pane root) {
-        if (!isAutoLoginEnabled()) {
-            return;
-        }
+        if (!isAutoLoginEnabled()) return;
 
         String username = usernameField.getText();
         boolean isPasswordEmpty = true;
@@ -168,9 +398,7 @@ public class LauncherPanel extends IScreen {
         }
 
         if (isOnlineAccount()) {
-            if (isMicrosoftAccount()) {
-                authenticateMicrosoft(root);
-            }
+            if (isMicrosoftAccount()) authenticateMicrosoft(root);
         } else {
             showOfflineError();
         }
@@ -205,361 +433,345 @@ public class LauncherPanel extends IScreen {
         Platform.runLater(() -> new LauncherAlert(ERROR_AUTH_FAILED, ERROR_OFFLINE_MODE));
     }
 
-
     private void setupBackGround(Pane root) {
-        LauncherRectangle topRectangle = new LauncherRectangle(root, 0, 0, 70, engine.getHeight());
-        topRectangle.setFill(Color.rgb(255, 255, 255, 0.10));
+        Rectangle overlay = new Rectangle(engine.getWidth(), engine.getHeight());
+        overlay.setFill(new LinearGradient(
+                0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
+                new Stop(0, Color.rgb(0, 0, 0, 0.14)),
+                new Stop(1, Color.rgb(0, 0, 0, 0.70))
+        ));
+        root.getChildren().add(overlay);
 
-        this.drawImage(engine, getResourceLocation().loadImage(engine, "launchergifpng.png"),
-                engine.getWidth() / 2 - 70, 40, 150, 150, root, Mover.DONT_MOVE);
+        LauncherRectangle leftDock = new LauncherRectangle(root, 0, 0, 84, engine.getHeight());
+        leftDock.setFill(new LinearGradient(
+                0, 0, 1, 0, true, CycleMethod.NO_CYCLE,
+                new Stop(0, Color.rgb(8, 12, 18, 0.85)),
+                new Stop(1, Color.rgb(8, 12, 18, 0.28))
+        ));
 
+        LauncherRectangle separator = new LauncherRectangle(root, 83, 0, 1, engine.getHeight());
+        separator.setFill(Color.rgb(255, 255, 255, 0.08));
 
-        // Titre de la fenÃ©tre
-        LauncherLabel titleLabel = new LauncherLabel(root);
-        titleLabel.setText("Launcher MajestyCraft Optifine + Forge");
-        titleLabel.setFont(FontLoader.loadFont("Roboto-Light.ttf", "Roboto Light", 18F));
-        titleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: orange");
-        titleLabel.setPosition(engine.getWidth() / 2 - 150, -4);
-        titleLabel.setOpacity(0.7);
-        titleLabel.setSize(500, 40);
-        titleLabel.setVisible(true);
+        if (root.getScene() != null && !root.getScene().getStylesheets().contains("css/design.css")) {
+            root.getScene().getStylesheets().add("css/design.css");
+        }
 
-        root.getScene().getStylesheets().add("css/design.css");
-
-        /* ===================== IMAGE DU LOGO EN HAUT ===================== */
         this.titleImage = new LauncherImage(root);
         this.titleImage.setImage(getResourceLocation().loadImage(engine, "launchergifpng.png"));
-        this.titleImage.setSize(50, 50);
-        this.titleImage.setBounds(12, 5, 50, 50);
+        this.titleImage.setSize(48, 48);
+        this.titleImage.setBounds(18, 10, 48, 48);
 
-        /* ===================== BOUTON FERMETURE ===================== */
+        this.heroLogo = new LauncherImage(root);
+        this.heroLogo.setImage(getResourceLocation().loadImage(engine, "launchergifpng.png"));
+        this.heroLogo.setSize(180, 180);
+        this.heroLogo.setBounds(170, 82, 180, 180);
+
+        this.heroTitleLabel = new LauncherLabel(root);
+        this.heroTitleLabel.setText("Rejoins MajestyCraft");
+        this.heroTitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 28F));
+        this.heroTitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.96)");
+        this.heroTitleLabel.setPosition(135, 300);
+        this.heroTitleLabel.setSize(320, 40);
+
+        this.heroSubtitleLabel = new LauncherLabel(root);
+        this.heroSubtitleLabel.setText("Launcher nouvelle génération");
+        this.heroSubtitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        this.heroSubtitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,176,0,0.95)");
+        this.heroSubtitleLabel.setPosition(138, 344);
+        this.heroSubtitleLabel.setSize(320, 26);
+
+        this.heroTextLine1 = new LauncherLabel(root);
+        this.heroTextLine1.setText("Multi-version • Forge • Optifine");
+        this.heroTextLine1.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        this.heroTextLine1.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.70)");
+        this.heroTextLine1.setPosition(138, 376);
+        this.heroTextLine1.setSize(320, 24);
+
+        this.heroTextLine2 = new LauncherLabel(root);
+        this.heroTextLine2.setText("Choisis ton mode de jeu et lance-toi.");
+        this.heroTextLine2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        this.heroTextLine2.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.55)");
+        this.heroTextLine2.setPosition(138, 400);
+        this.heroTextLine2.setSize(320, 24);
+
+        LauncherLabel titleLabel = new LauncherLabel(root);
+        titleLabel.setText("MajestyLauncher");
+        titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 17F));
+        titleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.92)");
+        titleLabel.setPosition(engine.getWidth() / 2 - 85, 10);
+        titleLabel.setSize(170, 26);
+        titleLabel.setAlignment(Pos.CENTER);
+
+        LauncherLabel subtitleLabel = new LauncherLabel(root);
+        subtitleLabel.setText("Projet MajestyCraft");
+        subtitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        subtitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.42)");
+        subtitleLabel.setPosition(engine.getWidth() / 2 - 85, 31);
+        subtitleLabel.setSize(170, 18);
+        subtitleLabel.setAlignment(Pos.CENTER);
+
         LauncherButton closeButton = new LauncherButton(root);
-        // this.closeButton.setInvisible();
         LauncherImage closeImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "close.png"));
-        closeImg.setSize(15, 15);
+        closeImg.setSize(14, 14);
         closeButton.setGraphic(closeImg);
         closeButton.setBackground(null);
-        closeButton.setPosition(engine.getWidth() - 35, 2);
-        closeButton.setSize(15, 15);
-        closeButton.setOnAction(event -> {
-            final BounceOutDown animation = new BounceOutDown(root);
-            animation.setOnFinished(actionEvent -> System.exit(0));
-            animation.play();
-        });
+        closeButton.setPosition(engine.getWidth() - 32, 10);
+        closeButton.setSize(16, 16);
+        closeButton.setOnAction(event -> System.exit(0));
 
-        /* ===================== BOUTON REDUIRE ===================== */
         LauncherButton reduceButton = new LauncherButton(root);
-        // this.reduceButton.setInvisible();
         LauncherImage reduceImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "reduce.png"));
-        reduceImg.setSize(15, 15);
+        reduceImg.setSize(14, 14);
         reduceButton.setGraphic(reduceImg);
         reduceButton.setBackground(null);
-        reduceButton.setPosition(engine.getWidth() - 65, 2);
-        reduceButton.setSize(15, 15);
+        reduceButton.setPosition(engine.getWidth() - 60, 10);
+        reduceButton.setSize(16, 16);
         reduceButton.setOnAction(event -> {
-            final ZoomOutDown animation2 = new ZoomOutDown(root);
-            animation2.setOnFinished(actionEvent -> {
-                Stage stage = (Stage) ((LauncherButton) event.getSource()).getScene().getWindow();
-                stage.setIconified(true);
-            });
-            animation2.setResetOnFinished(true);
-            animation2.play();
+            Stage stage = (Stage) ((LauncherButton) event.getSource()).getScene().getWindow();
+            stage.setIconified(true);
         });
     }
 
     private void initMusic() {
         Media media = getResourceLocation().getMedia(this.engine, "Minecraft.mp3");
         mediaPlayer = new MediaPlayer(media);
-        mediaPlayer.play();
         mediaPlayer.setVolume(0.05);
+        mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+        mediaPlayer.play();
     }
 
     private void initConfig(Pane root) {
-    	  boolean useDiscord = (boolean) config.getValue(EnumConfig.USE_DISCORD);
-    	  boolean useMusic = (boolean) config.getValue(EnumConfig.USE_MUSIC);
-    	  boolean useConnect = (boolean) config.getValue(EnumConfig.USE_CONNECT);
-    	  boolean useMicrosoft = (boolean) config.getValue(EnumConfig.USE_MICROSOFT);
-    	  boolean usePremium = (boolean) config.getValue(EnumConfig.USE_PREMIUM);
-    	  String username = (String) config.getValue(EnumConfig.USERNAME);
-    	  String version = (String) config.getValue(EnumConfig.VERSION);
+        boolean useDiscord = (boolean) config.getValue(EnumConfig.USE_DISCORD);
+        boolean useMusic = (boolean) config.getValue(EnumConfig.USE_MUSIC);
+        boolean useConnect = (boolean) config.getValue(EnumConfig.USE_CONNECT);
+        boolean useMicrosoft = (boolean) config.getValue(EnumConfig.USE_MICROSOFT);
+        boolean usePremium = (boolean) config.getValue(EnumConfig.USE_PREMIUM);
+        String username = (String) config.getValue(EnumConfig.USERNAME);
 
-    	  if (useDiscord) {
-    	    rpc.start();
-    	  } else {
-    	    rpc.stop();
-    	  }
+        if (useDiscord) rpc.start();
+        else rpc.stop();
 
-    	  mediaPlayer.setMute(!useMusic);
+        mediaPlayer.setMute(!useMusic);
 
-    	  if (useConnect) {
-    		System.out.println("useconnect");
-    	    engine.reg(App.getGameConnect());
-    	  }
+        if (useConnect) engine.reg(App.getGameConnect());
 
-    	  if (useMicrosoft) {
-    		connectAccountPremium(username, root);
-    	    connectAccountPremiumCO(username, root);
-    	  }  else if (usePremium) {
-    	    connectAccountPremiumOFF(root);
-    	    connectAccountCrackCO(root);
-    	  } else {
-    	    this.rememberMe.setSelected(false);
-    	    connectAccountCrack(root);
-    	    connectAccountCrackCO(root);
-    	  }
+        if (useMicrosoft) {
+            connectAccountPremium(username, root);
+            connectAccountPremiumCO(username, root);
+        } else if (usePremium) {
+            connectAccountPremiumOFF(root);
+            connectAccountCrackCO(root);
+        } else {
+            rememberMe.setSelected(false);
+            connectAccountCrack(root);
+            connectAccountCrackCO(root);
+        }
 
-    	  GameLinks links = new GameLinks("https://majestycraft.com/minecraft" + urlModifier(version), version + ".json");
-    	  engine.reg(links);
-    	  Utils.regGameStyle(engine, config);
-    	}
+        Utils.regGameStyle(engine, config);
+    }
 
     private void setupButtons(Pane root) {
+        int sbX = 17;
+        int sbY = 122;
+        int step = 72;
+        int size = 50;
+
+        this.microsoftButton = new LauncherButton(root);
+        styleSidebarButton(this.microsoftButton);
+        LauncherImage microsoftImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "microsoft.png"));
+        microsoftImg.setSize(22, 22);
+        this.microsoftButton.setGraphic(microsoftImg);
+        this.microsoftButton.setPosition(sbX, sbY);
+        this.microsoftButton.setSize(size, size);
+        this.microsoftButton.setOnAction(event -> {
+            if (!App.netIsAvailable()) {
+                showConnectionErrorAlert();
+                return;
+            }
+
+            auth = new GameAuth(AccountType.MICROSOFT);
+
+            if (auth.trySilentRefresh(engine)) {
+                Session s = auth.getSession();
+                connectAccountPremiumCO(s.getUsername(), root);
+                config.updateValue("useMicrosoft", true);
+                update();
+                return;
+            }
+
+            showMicrosoftAuth(root);
+        });
+        installHoverScale(this.microsoftButton);
+
         this.infoButton = new LauncherButton(root);
-        this.infoButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0); -fx-text-fill: orange");
-        LauncherImage settingsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "info.png"));
-        settingsImg.setSize(27, 27);
-        this.infoButton.setGraphic(settingsImg);
-        this.infoButton.setPosition(engine.getWidth() / 2 - 522, engine.getHeight() / 2 - 50);
-        this.infoButton.setSize(60, 46);
+        styleSidebarButton(this.infoButton);
+        LauncherImage infoImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "info.png"));
+        infoImg.setSize(22, 22);
+        this.infoButton.setGraphic(infoImg);
+        this.infoButton.setPosition(sbX, sbY + step);
+        this.infoButton.setSize(size, size);
         this.infoButton.setOnAction(event -> {
             Scene scene = new Scene(createInfoPanel());
             Stage stage = new Stage();
             scene.setFill(Color.TRANSPARENT);
             stage.setResizable(false);
             stage.initStyle(StageStyle.TRANSPARENT);
-            stage.setTitle("Parametres Launcher");
-            stage.setWidth(900);
-            stage.setHeight(600);
+            stage.setTitle("Infos Launcher");
+            stage.setWidth(1000);
+            stage.setHeight(720);
             stage.setScene(scene);
             stage.show();
         });
-
-        JFXRippler rippler3 = new JFXRippler(this.infoButton);
-        rippler3.setLayoutX((float) engine.getWidth() / 2 - 515);
-        rippler3.setLayoutY((float) engine.getHeight() / 2 - 50);
-        rippler3.getStyleClass().add("rippler2");
-        root.getChildren().add(rippler3);
-
-        /* ===================== BOUTON microsoft ===================== */
-        this.microsoftButton = new LauncherButton(root);
-        this.microsoftButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0); -fx-text-fill: orange");
-        LauncherImage microsoftImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "microsoft.png"));
-        microsoftImg.setSize(27, 27);
-        this.microsoftButton.setGraphic(microsoftImg);
-        this.microsoftButton.setPosition(engine.getWidth() / 2 - 522, engine.getHeight() / 2 - 100);
-        this.microsoftButton.setSize(60, 46);
-        microsoftButton.setOnAction(event -> {
-        	  if (!App.netIsAvailable()) {
-        	    showConnectionErrorAlert();
-        	    return;
-        	  }        	
-        	  
-        	  auth = new GameAuth(AccountType.MICROSOFT);
-        	  
-        	  /* ① tentative instantanée avec le refresh_token */
-        	    if (auth.trySilentRefresh(engine)) {
-        	        // succès : on met à jour l’UI comme d’habitude puis on s’en va
-        	        Session s = auth.getSession();
-        	        connectAccountPremiumCO(s.getUsername(), root);
-        	        config.updateValue("useMicrosoft", true);
-        	        update();
-        	        return;
-        	    }
-        	  
-        	  /* lance la fenêtre + thread d’auth ; le résultat sera
-              traité dans startMicrosoftLogin() */
-        	  showMicrosoftAuth(root);
-        });
+        installHoverScale(this.infoButton);
 
         this.settingsButton = new LauncherButton(root);
-        this.settingsButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0); -fx-text-fill: orange");
-        settingsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "settings.png"));
-        settingsImg.setSize(27, 27);
+        styleSidebarButton(this.settingsButton);
+        LauncherImage settingsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "settings.png"));
+        settingsImg.setSize(22, 22);
         this.settingsButton.setGraphic(settingsImg);
-        this.settingsButton.setPosition(engine.getWidth() / 2 - 522, engine.getHeight() / 2);
-        this.settingsButton.setSize(60, 46);
+        this.settingsButton.setPosition(sbX, sbY + step * 2);
+        this.settingsButton.setSize(size, size);
         this.settingsButton.setOnAction(event -> {
             Scene scene = new Scene(createSettingsPanel(root));
-            Stage stage = new Stage();
             scene.setFill(Color.TRANSPARENT);
+            if (!scene.getStylesheets().contains("css/design.css")) {
+                scene.getStylesheets().add("css/design.css");
+            }
+
+            Stage stage = new Stage();
             stage.setResizable(false);
             stage.initStyle(StageStyle.TRANSPARENT);
-            stage.setTitle("Parametres Launcher");
-            stage.setWidth(900);
-            stage.setHeight(600);
+            stage.setTitle("Paramètres Launcher");
+            stage.setWidth(1000);
+            stage.setHeight(750);
             stage.setScene(scene);
             stage.showAndWait();
         });
+        installHoverScale(this.settingsButton);
 
-        JFXRippler rippler4 = new JFXRippler(this.settingsButton);
-        rippler4.setLayoutX((float) engine.getWidth() / 2 - 515);
-        rippler4.setLayoutY((float) engine.getHeight() / 2);
-        rippler4.getStyleClass().add("rippler2");
-        root.getChildren().add(rippler4);
-        
-        
         this.packsButton = new LauncherButton(root);
-        this.packsButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0); -fx-text-fill: orange");
-        settingsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "pack.png"));
-        settingsImg.setSize(27, 27);
-        this.packsButton.setGraphic(settingsImg);
-        this.packsButton.setPosition(engine.getWidth() / 2 - 522, engine.getHeight() / 2+100);
-        this.packsButton.setSize(60, 46);
+        styleSidebarButton(this.packsButton);
+        LauncherImage packImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "pack.png"));
+        packImg.setSize(22, 22);
+        this.packsButton.setGraphic(packImg);
+        this.packsButton.setPosition(sbX, sbY + step * 3);
+        this.packsButton.setSize(size, size);
         this.packsButton.setOnAction(event -> {
             Scene scene = new Scene(createPacksPanel(root));
             Stage stage = new Stage();
             scene.setFill(Color.TRANSPARENT);
             stage.setResizable(false);
             stage.initStyle(StageStyle.TRANSPARENT);
-            stage.setTitle("Parametres Launcher");
-            stage.setWidth(900);
-            stage.setHeight(600);
+            stage.setTitle("Packs Launcher");
+            stage.setWidth(1180);
+            stage.setHeight(820);
             stage.setScene(scene);
             stage.showAndWait();
         });
+        installHoverScale(this.packsButton);
 
-        JFXRippler rippler5 = new JFXRippler(this.packsButton);
-        rippler5.setLayoutX((float) engine.getWidth() / 2 - 515);
-        rippler5.setLayoutY((float) engine.getHeight() / 2 + 50 );
-        rippler5.getStyleClass().add("rippler2");
-        root.getChildren().add(rippler5);
+        int quickW = 155;
+        int quickH = 40;
+        int quickGap = 16;
+        int quickY = 468;
 
-        /* ===================== BOUTON easter egg 2 ===================== */
-        this.deadButton = new LauncherButton(root);
-        this.deadButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0); -fx-text-fill: orange");
-        settingsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "dead.png"));
-        settingsImg.setSize(22, 27);
-        this.deadButton.setGraphic(settingsImg);
-        this.deadButton.setPosition(engine.getWidth() / 2 + 467, engine.getHeight() / 2 + 330);
-        this.deadButton.setSize(60, 46);
-        this.deadButton.setOnAction(event -> openLink("https://youtu.be/koQN49gW5fE?t=31"));
-
-        this.lolButton2 = new LauncherButton(root);
-        this.lolButton2.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0); -fx-text-fill: orange");
-        settingsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "lol2.PNG"));
-        settingsImg.setSize(27, 27);
-        this.lolButton2.setGraphic(settingsImg);
-        this.lolButton2.setPosition(engine.getWidth() / 2 - 522, engine.getHeight() / 2 + 300);
-        this.lolButton2.setSize(60, 60);
-        this.lolButton2.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                // Les animations de l'easter egg
-                new Hinge(microsoftButton).setResetOnFinished(true).play();
-                new Hinge(infoButton).setResetOnFinished(true).play();
-                new Hinge(settingsButton).setResetOnFinished(true).play();
-                new Hinge(boutiqueButton).setResetOnFinished(true).play();
-                new Hinge(avatar).setResetOnFinished(true).play();
-                new Hinge(minestratorButton).setResetOnFinished(true).play();
-                new Hinge(twitterButton).setResetOnFinished(true).play();
-                new Hinge(tiktokButton).setResetOnFinished(true).play();
-                new Hinge(youtubeButton).setResetOnFinished(true).play();
-                new Hinge(deadButton).setResetOnFinished(true).play();
-                new Hinge(titleImage).setResetOnFinished(true).play();
-                new Hinge(siteButton).setResetOnFinished(true).play();
-                new Hinge(voteButton).setResetOnFinished(true).play();
-                new Hinge(connexionRectangle).setResetOnFinished(true).play();
-                new Hinge(rememberMe).setResetOnFinished(true).play();
-                new Hinge(usernameField).setResetOnFinished(true).play();
-                new Hinge(loginButton).setResetOnFinished(true).play();
-            }
-        });
-
-        /* ===================== BOUTON URL VOTE ===================== */
         this.voteButton = new LauncherButton(root);
         this.voteButton.setText(BUTTON_SITE);
-        this.voteButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
-        this.voteButton.setPosition(engine.getWidth() / 2 - 260, engine.getHeight() / 2 + 190);
-        this.voteButton.setSize(250, 45);
-        this.voteButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0.4); -fx-text-fill: orange");
+        this.voteButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
+        this.voteButton.setPosition(138, quickY);
+        this.voteButton.setSize(quickW, quickH);
+        styleGhostButton(this.voteButton);
         this.voteButton.setOnAction(event -> openLink(SITE_URL));
+        installHoverScale(this.voteButton);
 
-        /* ===================== BOUTON URL BOUTIQUE ===================== */
         this.boutiqueButton = new LauncherButton(root);
         this.boutiqueButton.setText(BUTTON_DISCORD);
-        this.boutiqueButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
-        this.boutiqueButton.setPosition(engine.getWidth() / 2 - 125 + 130, engine.getHeight() / 2 + 190);
-        this.boutiqueButton.setSize(250, 45);
-        this.boutiqueButton.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0.4); -fx-text-fill: orange");
+        this.boutiqueButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
+        this.boutiqueButton.setPosition(138 + quickW + quickGap, quickY);
+        this.boutiqueButton.setSize(quickW, quickH);
+        styleGhostButton(this.boutiqueButton);
         this.boutiqueButton.setOnAction(event -> openLink(DISCORD_URL));
+        installHoverScale(this.boutiqueButton);
 
-        /* ===================== BOUTON URL MINESTRATOR ===================== */
-        this.minestratorButton = new LauncherButton(root);
-        this.minestratorButton.setInvisible();
-        this.minestratorButton.setPosition(engine.getWidth() / 2 - 125, engine.getHeight() - 130);
-        LauncherImage facebookImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "minestrator.png"));
-        facebookImg.setSize(80, 80);
-        this.minestratorButton.setGraphic(facebookImg);
-        this.minestratorButton.setSize((int) facebookImg.getFitWidth(), (int) facebookImg.getFitHeight());
-        this.minestratorButton.setBackground(null);
-        this.minestratorButton.setOnAction(event -> openLink(MINESTRATOR_URL));
+        int iconSize = 56;
+        int iconGap = 84;
+        int socialStartX = 145;
 
-        /* ===================== BOUTON URL TWITTER ===================== */
-        this.twitterButton = new LauncherButton(root);
-        this.twitterButton.setInvisible();
-        this.twitterButton.setPosition(engine.getWidth() / 2 + 25, engine.getHeight() - 130);
-        LauncherImage twitterImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "twitter_icon.png"));
-        twitterImg.setSize(80, 80);
-        this.twitterButton.setGraphic(twitterImg);
-        this.twitterButton.setSize((int) twitterImg.getFitWidth(), (int) twitterImg.getFitHeight());
-        this.twitterButton.setBackground(null);
-        this.twitterButton.setOnAction(event -> openLink(TWITTER_URL));
-
-        /* ===================== BOUTON URL TIKTOK ===================== */
         this.tiktokButton = new LauncherButton(root);
         this.tiktokButton.setInvisible();
-        this.tiktokButton.setPosition(engine.getWidth() / 2 - 125 - 150, engine.getHeight() - 130);
+        this.tiktokButton.setPosition(socialStartX, socialY);
         LauncherImage tiktokImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "tiktok.png"));
-        tiktokImg.setSize(80, 80);
+        tiktokImg.setSize(iconSize, iconSize);
         this.tiktokButton.setGraphic(tiktokImg);
-        this.tiktokButton.setSize((int) tiktokImg.getFitWidth(), (int) tiktokImg.getFitHeight());
+        this.tiktokButton.setSize(iconSize, iconSize);
         this.tiktokButton.setBackground(null);
         this.tiktokButton.setOnAction(event -> openLink(INSTAGRAM_URL));
+        installHoverScale(this.tiktokButton);
 
-        /*===================== BOUTON URL YOUTUBE ===================== */
+        this.minestratorButton = new LauncherButton(root);
+        this.minestratorButton.setInvisible();
+        this.minestratorButton.setPosition(socialStartX + iconGap, socialY);
+        LauncherImage minestratorImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "minestrator.png"));
+        minestratorImg.setSize(iconSize, iconSize);
+        this.minestratorButton.setGraphic(minestratorImg);
+        this.minestratorButton.setSize(iconSize, iconSize);
+        this.minestratorButton.setBackground(null);
+        this.minestratorButton.setOnAction(event -> openLink(MINESTRATOR_URL));
+        installHoverScale(this.minestratorButton);
+
+        this.twitterButton = new LauncherButton(root);
+        this.twitterButton.setInvisible();
+        this.twitterButton.setPosition(socialStartX + iconGap * 2, socialY);
+        LauncherImage twitterImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "twitter_icon.png"));
+        twitterImg.setSize(iconSize, iconSize);
+        this.twitterButton.setGraphic(twitterImg);
+        this.twitterButton.setSize(iconSize, iconSize);
+        this.twitterButton.setBackground(null);
+        this.twitterButton.setOnAction(event -> openLink(TWITTER_URL));
+        installHoverScale(this.twitterButton);
+
         this.youtubeButton = new LauncherButton(root);
         this.youtubeButton.setInvisible();
-        this.youtubeButton.setPosition(engine.getWidth() / 2 - 125 + 300, engine.getHeight() - 130);
+        this.youtubeButton.setPosition(socialStartX + iconGap * 3, socialY);
         LauncherImage youtubeImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "yt_icon.png"));
-        youtubeImg.setSize(80, 80);
+        youtubeImg.setSize(iconSize, iconSize);
         this.youtubeButton.setGraphic(youtubeImg);
-        this.youtubeButton.setSize((int) youtubeImg.getFitWidth(), (int) youtubeImg.getFitHeight());
+        this.youtubeButton.setSize(iconSize, iconSize);
         this.youtubeButton.setBackground(null);
         this.youtubeButton.setOnAction(event -> openLink(YOUTUBE_URL));
+        installHoverScale(this.youtubeButton);
     }
 
-    @SuppressWarnings("null")
-	private void setupConnectionsGUI(Pane root) {
-        /* ===================== RECTANGLE DES CONNEXIONS ===================== */
-        this.connexionRectangle = new LauncherRectangle(root, engine.getWidth() / 2 - 188, engine.getHeight() / 2 - 150,
-                380, 320);
-        this.connexionRectangle.setArcWidth(50.0);
-        this.connexionRectangle.setArcHeight(50.0);
-        this.connexionRectangle.setFill(Color.rgb(0, 0, 0, 0.30));
-        this.connexionRectangle.setVisible(true);
+    private void setupConnectionsGUI(Pane root) {
+        this.connexionRectangle = new LauncherRectangle(root, connX, connY, connW, connH);
+        applyModernCardStyle(this.connexionRectangle, 0.72);
+        this.connexionRectangle.setMouseTransparent(true);
 
+        LauncherRectangle avatarCard = new LauncherRectangle(root, connX + 28, connY + 108, 82, 82);
+        avatarCard.setArcWidth(24);
+        avatarCard.setArcHeight(24);
+        avatarCard.setFill(Color.rgb(255, 255, 255, 0.06));
+        avatarCard.setStroke(Color.rgb(255, 255, 255, 0.08));
+        avatarCard.setStrokeWidth(1);
+        avatarCard.setMouseTransparent(true);
 
         this.titleCrack = new LauncherLabel(root);
         this.titleCrack.setText(LABEL_CONNECTION);
-        this.titleCrack.setFont(Font.font("leadcoat.ttf", FontWeight.BOLD, 27d));
-        this.titleCrack.setStyle("-fx-background-color: transparent; -fx-text-fill: orange");
-        this.titleCrack.setPosition(engine.getWidth() / 2 - 116, engine.getHeight() / 2 - 130);
-        this.titleCrack.setSize(500, 40);
-
-        JFXRippler rippler2 = new JFXRippler(this.titleCrack);
-        rippler2.setLayoutX((float) engine.getWidth() / 2 - 72);
-        rippler2.setLayoutY((float) engine.getHeight() / 2 - 130);
-        rippler2.getStyleClass().add("rippler");
-        root.getChildren().add(rippler2);
+        this.titleCrack.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 28F));
+        this.titleCrack.setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
+        this.titleCrack.setAlignment(Pos.CENTER);
+        this.titleCrack.setPosition(connX, connY + 28);
+        this.titleCrack.setSize(connW, 40);
 
         this.usernameField = new JFXTextField();
-
-        this.usernameField.getStyleClass().add("input");
-        this.usernameField.setLayoutX((float) engine.getWidth() / 2 - 126);
-        this.usernameField.setLayoutY((float) engine.getHeight() / 2 - 52);
-        this.usernameField.setFont(FontLoader.loadFont("leadcoat.ttf", "Lead Coat", 14F));
-        this.usernameField.setStyle("-fx-background-color: rgba(0 ,0 ,0 , 0.2); -fx-text-fill: orange; -fx-font-family: leadcoat");
+        this.usernameField.setLayoutX(connX + 126);
+        this.usernameField.setLayoutY(connY + 122);
+        this.usernameField.setPrefWidth(connW - 156);
+        this.usernameField.setPrefHeight(54);
+        this.usernameField.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
         this.usernameField.setPromptText(INPUT_PSEUDO_OR_EMAIL);
+        styleUsernameField(this.usernameField);
+
         if (!(boolean) config.getValue(EnumConfig.USE_MICROSOFT)) {
             this.usernameField.setText((String) this.config.getValue(EnumConfig.USERNAME));
         }
@@ -569,21 +781,23 @@ public class LauncherPanel extends IScreen {
         this.rememberMe.setText(LABEL_REMEMBER_ME);
         this.rememberMe.setSelected((boolean) config.getValue(EnumConfig.REMEMBER_ME));
         this.rememberMe.getStyleClass().add("jfx-toggle-button");
-        this.rememberMe.setLayoutX(385);
-        this.rememberMe.setLayoutY(427);
+        this.rememberMe.setLayoutX(connX + 112);
+        this.rememberMe.setLayoutY(connY + 205);
         this.rememberMe.setOnAction(event -> config.updateValue("rememberme", rememberMe.isSelected()));
-
         root.getChildren().add(this.rememberMe);
 
-        /* ===================== BOUTON DE CONNEXION ===================== */
         this.loginButton = new JFXButton(BUTTON_LOGIN);
-        this.loginButton.getStyleClass().add("button-raised");
-        this.loginButton.setLayoutX(400);
-        this.loginButton.setLayoutY(480);
-        this.loginButton.setFont(FontLoader.loadFont("../resources/leadcoat.ttf", "leadcoat", 22F));
+        this.loginButton.setLayoutX(connX + 28);
+        this.loginButton.setLayoutY(connY + 248);
+        this.loginButton.setPrefWidth(connW - 56);
+        this.loginButton.setPrefHeight(46);
+        this.loginButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 17F));
+        stylePrimaryButton(this.loginButton);
+        installHoverScale(this.loginButton);
+
         this.loginButton.setOnAction(event -> {
             if (!App.netIsAvailable()) {
-            	Platform.runLater(() -> new LauncherAlert(AUTH_FAILED, OFFLINE_MODE_ALERT));
+                Platform.runLater(() -> new LauncherAlert(AUTH_FAILED, OFFLINE_MODE_ALERT));
                 return;
             }
 
@@ -593,7 +807,7 @@ public class LauncherPanel extends IScreen {
             String password = "";
 
             if (username.length() <= 3) {
-            	new LauncherAlert(AUTH_FAILED, USERNAME_ALERT);
+                new LauncherAlert(AUTH_FAILED, USERNAME_ALERT);
                 return;
             }
 
@@ -603,30 +817,32 @@ public class LauncherPanel extends IScreen {
             } else {
                 auth = new GameAuth(username, password, AccountType.MOJANG);
                 connectAccountPremiumCO(username, root);
-                if ((boolean) config.getValue(EnumConfig.REMEMBER_ME)) {
-                    config.updateValue("password", password);
-                } else {
-                    config.updateValue("password", "");
-                }
+                if ((boolean) config.getValue(EnumConfig.REMEMBER_ME)) config.updateValue("password", password);
+                else config.updateValue("password", "");
             }
 
             if (auth.isLogged()) {
                 config.updateValue("username", username);
                 update();
             } else {
-            	new LauncherAlert(AUTH_FAILED, ONLINE_MODE_ALERT);
+                new LauncherAlert(AUTH_FAILED, ONLINE_MODE_ALERT);
             }
         });
         root.getChildren().add(this.loginButton);
 
+        this.microsoftHintLabel = new LauncherLabel(root);
+        this.microsoftHintLabel.setText("Connexion Microsoft via l’icône à gauche");
+        this.microsoftHintLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        this.microsoftHintLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.48);");
+        this.microsoftHintLabel.setPosition(connX + 28, connY + 314);
+        this.microsoftHintLabel.setSize(connW - 56, 18);
+        this.microsoftHintLabel.setAlignment(Pos.CENTER);
 
-        this.autoLoginRectangle = new LauncherRectangle(root, 0, engine.getHeight() - 32, 2000,
-                engine.getHeight());
+        this.autoLoginRectangle = new LauncherRectangle(root, 0, engine.getHeight() - 32, 2000, engine.getHeight());
         this.autoLoginRectangle.setFill(Color.rgb(0, 0, 0, 0.70));
         this.autoLoginRectangle.setOpacity(1.0);
         this.autoLoginRectangle.setVisible(false);
 
-        /* ===================== MESSAGE AUTOLOGIN ===================== */
         this.autoLoginLabel = new LauncherLabel(root);
         this.autoLoginLabel.setText(LABEL_OFFLINE_CONNECTION);
         this.autoLoginLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 18F));
@@ -636,7 +852,6 @@ public class LauncherPanel extends IScreen {
         this.autoLoginLabel.setSize(700, 40);
         this.autoLoginLabel.setVisible(false);
 
-        /* ===================== ANNULER AUTOLOGIN ===================== */
         this.autoLoginButton = new LauncherButton(root);
         this.autoLoginButton.setText(BUTTON_CANCEL);
         this.autoLoginButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
@@ -646,15 +861,14 @@ public class LauncherPanel extends IScreen {
         this.autoLoginButton.setVisible(false);
         this.autoLoginButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
-                autoLoginTimer.cancel();
+                if (autoLoginTimer != null) autoLoginTimer.cancel();
                 autoLoginLabel.setVisible(false);
                 autoLoginButton.setVisible(false);
                 autoLoginRectangle.setVisible(false);
                 autoLoginButton2.setVisible(false);
             }
         });
-        
-        /* ===================== ANNULER AUTOLOGIN ===================== */
+
         this.autoLoginButton2 = new LauncherButton(root);
         this.autoLoginButton2.setText(AUTOLOGIN_START);
         this.autoLoginButton2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
@@ -663,20 +877,17 @@ public class LauncherPanel extends IScreen {
         this.autoLoginButton2.setStyle("-fx-background-color: rgba(15, 209, 70, 0.4); -fx-text-fill: black;");
         this.autoLoginButton2.setVisible(false);
         this.autoLoginButton2.setOnAction(event -> {
-        	if (!engine.getGameMaintenance().isAccessBlocked()) {
-                autoLoginTimer.cancel();
+            if (!engine.getGameMaintenance().isAccessBlocked()) {
+                if (autoLoginTimer != null) autoLoginTimer.cancel();
                 autoLoginLabel.setVisible(false);
                 autoLoginButton.setVisible(false);
                 autoLoginRectangle.setVisible(false);
                 autoLoginButton2.setVisible(false);
-                if ((boolean) config.getValue(EnumConfig.USE_CONNECT)) {
-                	System.out.println("c ici");
-                    engine.reg(App.getGameConnect());
-                }
+                if ((boolean) config.getValue(EnumConfig.USE_CONNECT)) engine.reg(App.getGameConnect());
                 checkAutoLogin(root);
-        	}
+            }
         });
-        
+
         if (this.config.getValue(EnumConfig.AUTOLOGIN).equals(true)) {
             Platform.runLater(() -> {
                 autoLoginTimer = new Timer();
@@ -685,61 +896,50 @@ public class LauncherPanel extends IScreen {
                     int elapsed = 0;
 
                     @Override
-
                     public void run() {
-                    	elapsed++;
-                    	if (elapsed % waitTime == 0) {
-                    		if (!engine.getGameMaintenance().isAccessBlocked()) {
+                        elapsed++;
+                        if (elapsed % waitTime == 0) {
+                            if (!engine.getGameMaintenance().isAccessBlocked()) {
                                 autoLoginTimer.cancel();
                                 autoLoginLabel.setVisible(false);
                                 autoLoginButton.setVisible(false);
                                 autoLoginRectangle.setVisible(false);
                                 autoLoginButton2.setVisible(false);
                                 checkAutoLogin(root);
-                    		}
-                    	}
-                        else {
+                            }
+                        } else {
                             final int time = (waitTime - (elapsed % waitTime));
                             Platform.runLater(() -> autoLoginLabel.setText(String.format(AUTOLOGIN_COUNTDOWN, time)));
                         }
                     }
-                    
-
                 };
+
                 autoLoginTimer.schedule(timerTask, 0, 1000);
                 autoLoginLabel.setVisible(true);
                 autoLoginRectangle.setVisible(true);
                 autoLoginButton.setVisible(true);
                 autoLoginButton2.setVisible(true);
-               });
-
+            });
         }
     }
 
     private void setupUpdateGUI(Pane root) {
-        /* ===================== RECTANGLE DE MISE A JOURS ===================== */
-        this.updateRectangle = new LauncherRectangle(root, engine.getWidth() / 2 - 175, engine.getHeight() / 2 - 80,
-                350, 180);
-        this.updateRectangle.setArcWidth(50.0);
-        this.updateRectangle.setArcHeight(50.0);
-        this.updateRectangle.setFill(Color.rgb(0, 0, 0, 0.60));
+        this.updateRectangle = new LauncherRectangle(root, engine.getWidth() / 2 - 175, engine.getHeight() / 2 - 80, 350, 180);
+        applyModernCardStyle(this.updateRectangle, 0.62);
         this.updateRectangle.setVisible(false);
 
-        /* =============== LABEL TITRE MISE A JOUR =============== **/
         this.updateLabel = new LauncherLabel(root);
         this.updateLabel.setText(UPDATE_LABEL_TEXT);
         this.updateLabel.setAlignment(Pos.CENTER);
         this.updateLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
         this.updateLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: orange;");
         this.updateLabel.setPosition(engine.getWidth() / 2 - 95, engine.getHeight() / 2 - 75);
-        this.updateLabel.setOpacity(1);
         this.updateLabel.setSize(190, 40);
         this.updateLabel.setVisible(false);
 
-        /* =============== ETAPE DE MISE A JOUR =============== **/
         this.currentStep = new LauncherLabel(root);
         this.currentStep.setText(UPDATE_STEP_TEXT);
-        this.currentStep.setFont(Font.font("Verdana", FontPosture.ITALIC, 18F)); // FontPosture.ITALIC
+        this.currentStep.setFont(Font.font("Verdana", FontPosture.ITALIC, 18F));
         this.currentStep.setStyle("-fx-background-color: transparent; -fx-text-fill: orange;");
         this.currentStep.setAlignment(Pos.CENTER);
         this.currentStep.setPosition(engine.getWidth() / 2 - 160, engine.getHeight() / 2 + 63);
@@ -747,7 +947,6 @@ public class LauncherPanel extends IScreen {
         this.currentStep.setSize(320, 40);
         this.currentStep.setVisible(false);
 
-        /* =============== FICHIER ACTUEL EN TELECHARGEMENT =============== **/
         this.currentFileLabel = new LauncherLabel(root);
         this.currentFileLabel.setText("launchwrapper-12.0.jar");
         this.currentFileLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 18F));
@@ -758,7 +957,6 @@ public class LauncherPanel extends IScreen {
         this.currentFileLabel.setSize(320, 40);
         this.currentFileLabel.setVisible(false);
 
-        /* =============== POURCENTAGE =============== **/
         this.percentageLabel = new LauncherLabel(root);
         this.percentageLabel.setText("0%");
         this.percentageLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 30F));
@@ -769,103 +967,101 @@ public class LauncherPanel extends IScreen {
         this.percentageLabel.setSize(100, 40);
         this.percentageLabel.setVisible(false);
 
-        /* ===================== BARRE DE CHARGEMENT ===================== */
         this.bar = new JFXProgressBar();
-        this.bar.setLayoutX((float) engine.getWidth() / 2 - 125);
-        this.bar.setLayoutY((float) engine.getHeight() / 2 + 40);
+        this.bar.setLayoutX(engine.getWidth() / 2 - 125);
+        this.bar.setLayoutY(engine.getHeight() / 2 + 40);
         this.bar.getStyleClass().add("jfx-progress-bar");
-        // this.bar.setSize(250, 20);
         this.bar.setVisible(false);
         root.getChildren().add(this.bar);
     }
 
-
     public void update() {
-        new ZoomOutDown(this.microsoftButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.infoButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.settingsButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.titleCrack).setResetOnFinished(false).play();
-        new ZoomOutDown(this.usernameField).setResetOnFinished(false).play();
-        new ZoomOutDown(this.boutiqueButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.avatar).setResetOnFinished(false).play();
-        new ZoomOutDown(this.minestratorButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.twitterButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.tiktokButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.youtubeButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.deadButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.rememberMe).setResetOnFinished(false).play();
-        new ZoomOutDown(this.loginButton).setResetOnFinished(false).play();
-        //new ZoomOutDown(this.siteButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.voteButton).setResetOnFinished(false).play();
-        new ZoomOutDown(this.connexionRectangle).setResetOnFinished(false).play();
-        new ZoomOutDown(this.lolButton2).setResetOnFinished(false).play();
+        if (microsoftButton != null) new ZoomOutDown(microsoftButton).setResetOnFinished(false).play();
+        if (infoButton != null) new ZoomOutDown(infoButton).setResetOnFinished(false).play();
+        if (settingsButton != null) new ZoomOutDown(settingsButton).setResetOnFinished(false).play();
+        if (packsButton != null) new ZoomOutDown(packsButton).setResetOnFinished(false).play();
+        
+        if (microsoftHintLabel != null) new ZoomOutDown(microsoftHintLabel).setResetOnFinished(false).play();
 
-        this.usernameField.setDisable(true);
-        this.connexionRectangle.setDisable(true);
-        this.rememberMe.setDisable(true);
-        this.loginButton.setDisable(true);
-        this.settingsButton.setDisable(true);
+        if (heroLogo != null) new ZoomOutDown(heroLogo).setResetOnFinished(false).play();
+        if (heroTitleLabel != null) new ZoomOutDown(heroTitleLabel).setResetOnFinished(false).play();
+        if (heroSubtitleLabel != null) new ZoomOutDown(heroSubtitleLabel).setResetOnFinished(false).play();
+        if (heroTextLine1 != null) new ZoomOutDown(heroTextLine1).setResetOnFinished(false).play();
+        if (heroTextLine2 != null) new ZoomOutDown(heroTextLine2).setResetOnFinished(false).play();
 
-        this.updateRectangle.setVisible(true);
-        this.updateLabel.setVisible(true);
-        this.currentStep.setVisible(true);
-        this.currentFileLabel.setVisible(true);
-        this.percentageLabel.setVisible(true);
-        this.bar.setVisible(true);
-        avatar.setVisible(false);
-        new ZoomInDown(this.updateRectangle).play();
-        new ZoomInDown(this.updateLabel).play();
-        new ZoomInDown(this.currentStep).play();
-        new ZoomInDown(this.currentFileLabel).play();
-        new ZoomInDown(this.percentageLabel).play();
-        new ZoomInDown(this.bar).play();
-        new ZoomInDown(updateAvatar).play();
-        updateAvatar.setVisible(true);
-        engine.getGameLinks().JSON_URL = engine.getGameLinks().BASE_URL
-                + this.config.getValue(EnumConfig.VERSION) + ".json";
+        if (titleCrack != null) new ZoomOutDown(titleCrack).setResetOnFinished(false).play();
+        if (usernameField != null) new ZoomOutDown(usernameField).setResetOnFinished(false).play();
+        if (rememberMe != null) new ZoomOutDown(rememberMe).setResetOnFinished(false).play();
+        if (loginButton != null) new ZoomOutDown(loginButton).setResetOnFinished(false).play();
+        if (connexionRectangle != null) new ZoomOutDown(connexionRectangle).setResetOnFinished(false).play();
+
+        if (voteButton != null) new ZoomOutDown(voteButton).setResetOnFinished(false).play();
+        if (boutiqueButton != null) new ZoomOutDown(boutiqueButton).setResetOnFinished(false).play();
+
+        if (tiktokButton != null) new ZoomOutDown(tiktokButton).setResetOnFinished(false).play();
+        if (minestratorButton != null) new ZoomOutDown(minestratorButton).setResetOnFinished(false).play();
+        if (twitterButton != null) new ZoomOutDown(twitterButton).setResetOnFinished(false).play();
+        if (youtubeButton != null) new ZoomOutDown(youtubeButton).setResetOnFinished(false).play();
+
+        if (avatar != null) new ZoomOutDown(avatar).setResetOnFinished(false).play();
+
+        if (usernameField != null) usernameField.setDisable(true);
+        if (connexionRectangle != null) connexionRectangle.setDisable(true);
+        if (rememberMe != null) rememberMe.setDisable(true);
+        if (loginButton != null) loginButton.setDisable(true);
+        if (settingsButton != null) settingsButton.setDisable(true);
+        if (microsoftHintLabel != null) microsoftHintLabel.setVisible(false);
+
+        updateRectangle.setVisible(true);
+        updateLabel.setVisible(true);
+        currentStep.setVisible(true);
+        currentFileLabel.setVisible(true);
+        percentageLabel.setVisible(true);
+        bar.setVisible(true);
+
+        if (avatar != null) avatar.setVisible(false);
+
+        new ZoomInDown(updateRectangle).play();
+        new ZoomInDown(updateLabel).play();
+        new ZoomInDown(currentStep).play();
+        new ZoomInDown(currentFileLabel).play();
+        new ZoomInDown(percentageLabel).play();
+        new ZoomInDown(bar).play();
+
+        if (updateAvatar != null) {
+            new ZoomInDown(updateAvatar).play();
+            updateAvatar.setVisible(true);
+        }
+
+        String version = (String) config.getValue(EnumConfig.VERSION);
+        engine.reg(new GameLinks("https://majestycraft.com/minecraft" + urlModifier(version), version + ".json"));
+
         this.gameUpdater.reg(engine);
         this.gameUpdater.reg(auth.getSession());
 
-        /*
-         * Change settings in GameEngine from launcher_config.json
-         */
         engine.reg(GameMemory.getMemory(Double.parseDouble((String) this.config.getValue(EnumConfig.RAM))));
         engine.reg(GameSize.getWindowSize(Integer.parseInt((String) this.config.getValue(EnumConfig.GAME_SIZE))));
-        
-        if ((boolean) config.getValue(EnumConfig.USE_CONNECT)) {
-        	System.out.println("true");
-            engine.reg(App.getGameConnect());
-        }
+
+        if ((boolean) config.getValue(EnumConfig.USE_CONNECT)) engine.reg(App.getGameConnect());
 
         boolean useVmArgs = (Boolean) config.getValue(EnumConfig.USE_VM_ARGUMENTS);
         String vmArgs = (String) config.getValue(EnumConfig.VM_ARGUMENTS);
-        String[] s = null;
-        if (useVmArgs) {
-            if (vmArgs.length() > 3) {
-                s = vmArgs.split(" ");
-            }
-            assert s != null;
-            JVMArguments arguments = new JVMArguments(s);
-            engine.reg(arguments);
+        if (useVmArgs && vmArgs != null && vmArgs.length() > 3) {
+            String[] s = vmArgs.split(" ");
+            engine.reg(new JVMArguments(s));
         }
-        /* END */
 
         engine.reg(this.gameUpdater);
 
         Thread updateThread = new Thread(() -> engine.getGameUpdater().start());
         updateThread.start();
 
-        /*
-         * ===================== REFAICHIR LE NOM DU FICHIER, PROGRESSBAR, POURCENTAGE
-         * =====================
-         **/
         Timeline timeline = new Timeline(
                 new KeyFrame(javafx.util.Duration.seconds(0.0D), event -> timelineUpdate(engine)),
-                new KeyFrame(javafx.util.Duration.seconds(0.1D)));
-
+                new KeyFrame(javafx.util.Duration.seconds(0.1D))
+        );
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.play();
-
     }
 
     private double percent;
@@ -882,7 +1078,7 @@ public class LauncherPanel extends IScreen {
 
     private Parent createSettingsPanel(Pane root) {
         root = new LauncherPane(engine);
-        Rectangle rect = new Rectangle(1000, 750);
+        Rectangle rect = new Rectangle(1000, 1000);
         rect.setArcHeight(15.0);
         rect.setArcWidth(15.0);
         root.setClip(rect);
@@ -892,10 +1088,9 @@ public class LauncherPanel extends IScreen {
         return root;
     }
 
-
     private Parent createInfoPanel() {
         Pane root = new LauncherPane(engine);
-        javafx.scene.shape.Rectangle rect = new Rectangle(1500, 900);
+        Rectangle rect = new Rectangle(1500, 900);
         rect.setArcHeight(15.0);
         rect.setArcWidth(15.0);
         root.setClip(rect);
@@ -904,10 +1099,10 @@ public class LauncherPanel extends IScreen {
         new ZoomInLeft(rect).setResetOnFinished(true).play();
         return root;
     }
-    
+
     private Parent createPacksPanel(Pane root) {
         root = new LauncherPane(engine);
-        Rectangle rect = new Rectangle(1000, 750);
+        Rectangle rect = new Rectangle(1180, 820);
         rect.setArcHeight(15.0);
         rect.setArcWidth(15.0);
         root.setClip(rect);
@@ -919,17 +1114,17 @@ public class LauncherPanel extends IScreen {
 
     public void connectAccountCrack(Pane root) {
         avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png"));
-        avatar.setBounds(engine.getWidth() / 2 - 182, engine.getHeight() / 2 - 42, 50, 60);
+        avatar.setBounds(connX + 35, connY + 116, 68, 68);
     }
 
     public void connectAccountPremium(String username, Pane root) {
         avatar = new LauncherImage(root, new Image("https://minotar.net/cube/" + username + ".png"));
-        avatar.setBounds(engine.getWidth() / 2 - 182, engine.getHeight() / 2 - 42, 50, 60);
+        avatar.setBounds(connX + 35, connY + 116, 68, 68);
     }
 
     public void connectAccountPremiumOFF(Pane root) {
         avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png"));
-        avatar.setBounds(engine.getWidth() / 2 - 182, engine.getHeight() / 2 - 42, 50, 60);
+        avatar.setBounds(connX + 35, connY + 116, 68, 68);
     }
 
     public void connectAccountCrackCO(Pane root) {
@@ -945,18 +1140,17 @@ public class LauncherPanel extends IScreen {
         updateAvatar.setVisible(false);
     }
 
-
-    private void showMicrosoftAuth(Pane root) {   // ← nouveau paramètre
+    private void showMicrosoftAuth(Pane root) {
         startMicrosoftLogin(root);
     }
 
     private String urlModifier(String version) {
-        if ((boolean)(config.getValue(EnumConfig.USE_FORGE))) {
+        if ((boolean) (config.getValue(EnumConfig.USE_FORGE))) {
             return "/" + version + "/forge/";
-        } else if ((boolean)(config.getValue(EnumConfig.USE_OPTIFINE))) {
+        } else if ((boolean) (config.getValue(EnumConfig.USE_OPTIFINE))) {
             return "/" + version + "/";
         } else {
-            return "/";
+            return "/" + version + "/";
         }
     }
 
@@ -968,10 +1162,10 @@ public class LauncherPanel extends IScreen {
         return mediaPlayer;
     }
 
-    public Discord getRpc(){
+    public Discord getRpc() {
         return rpc;
     }
-    
+
     private void showConnectionErrorAlert() {
         Platform.runLater(() -> new LauncherAlert(AUTH_ERROR_TITLE, CONNECTION_ERROR_MSG));
     }
@@ -979,10 +1173,8 @@ public class LauncherPanel extends IScreen {
     private void showAuthErrorAlert() {
         Platform.runLater(() -> new LauncherAlert(AUTH_ERROR_TITLE, AUTH_ERROR_MSG));
     }
-    
-    private void startMicrosoftLogin(Pane root) {
 
-        /* ===================== Fenêtre ===================== */
+    private void startMicrosoftLogin(Pane root) {
         Stage authStage = new Stage();
         authStage.initModality(Modality.APPLICATION_MODAL);
         authStage.setTitle("Connexion Microsoft");
@@ -995,8 +1187,8 @@ public class LauncherPanel extends IScreen {
         title.setFont(Font.font("System", FontWeight.BOLD, 16));
 
         Label info = new Label(
-                "Un navigateur s’est ouvert automatiquement.\n"
-              + "Saisis le code ci-dessous sur la page Microsoft :"
+                "Un navigateur s’est ouvert automatiquement.\n" +
+                "Saisis le code ci-dessous sur la page Microsoft :"
         );
         info.setWrapText(true);
         info.setAlignment(Pos.CENTER);
@@ -1010,28 +1202,18 @@ public class LauncherPanel extends IScreen {
 
         Label waitLabel = new Label("⏳ En attente de validation…");
 
-        VBox box = new VBox(
-                15,
-                title,
-                info,
-                codeLabel,
-                copyBtn,
-                spinner,
-                waitLabel
-        );
+        VBox box = new VBox(15, title, info, codeLabel, copyBtn, spinner, waitLabel);
         box.setPadding(new Insets(20));
         box.setAlignment(Pos.CENTER);
 
         authStage.setScene(new Scene(box, 420, 260));
         authStage.show();
 
-        /* ===================== Thread Auth ===================== */
         new Thread(() -> {
             try {
                 MicrosoftOAuthClient deviceAuth = new MicrosoftOAuthClient();
                 MicrosoftOAuthClient.DeviceCode deviceCode = deviceAuth.requestDeviceCode();
 
-                /* UI : affiche le code */
                 Platform.runLater(() -> {
                     codeLabel.setText(deviceCode.getUserCode());
                     copyBtn.setDisable(false);
@@ -1043,26 +1225,18 @@ public class LauncherPanel extends IScreen {
                     });
                 });
 
-                /* Ouvre le navigateur */
-                Desktop.getDesktop().browse(
-                        URI.create(deviceCode.getVerificationUri())
-                );
+                Desktop.getDesktop().browse(URI.create(deviceCode.getVerificationUri()));
 
-                /* Poll token */
                 MicrosoftModel model = deviceAuth.pollForToken(deviceCode);
-                
-                /* 🔑 SAUVEGARDE DES TOKENS */
+
                 AuthConfig authConfig = new AuthConfig(engine);
                 authConfig.createConfigFile(model);
 
-                /* Xbox → Minecraft */
                 MicrosoftXboxAuth msAuth = new MicrosoftXboxAuth();
                 Session session = msAuth.getLiveToken(model.getAccess_token());
 
-                /* Succès */
                 Platform.runLater(() -> {
                     authStage.close();
-
                     connectAccountPremiumCO(session.getUsername(), root);
                     config.updateValue("useMicrosoft", true);
                     update();
@@ -1078,8 +1252,11 @@ public class LauncherPanel extends IScreen {
         }).start();
     }
 
+	public int getCenterX() {
+		return centerX;
+	}
 
-
-
-
+	public void setCenterX(int centerX) {
+		this.centerX = centerX;
+	}
 }
