@@ -95,9 +95,12 @@ public class LauncherSettings extends IScreen {
             "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json";
 
     private static final int MAX_SNAPSHOTS = 50;
+    private static final String FORGE_PROMOTIONS_URL =
+            "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json";
 
     private final Map<String, String> mojangVersionUrlById = new HashMap<>();
     private final Map<String, String> mojangVersionTypeById = new HashMap<>();
+    private final Set<String> forgeVersionsAvailable = Collections.synchronizedSet(new HashSet<>());
 
     @SuppressWarnings("unused")
     private final Gson gson = new Gson();
@@ -110,10 +113,8 @@ public class LauncherSettings extends IScreen {
             "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11"
     );
 
-    private static final Set<String> FORGE_UNSUPPORTED_VERSIONS = new HashSet<>(Arrays.asList(
-            "1.8", "1.19.2", "1.19.3", "1.19.4", "1.20", "1.20.1", "1.20.2", "1.20.3", "1.20.4",
-            "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5",
-            "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11"
+    private static final Set<String> FORGE_UNSUPPORTED_VERSIONS = new HashSet<>(Collections.singletonList(
+            "1.8"
     ));
 
     private static final Set<String> OPTIFINE_UNSUPPORTED_VERSIONS = new HashSet<>(Arrays.asList(
@@ -486,6 +487,7 @@ public class LauncherSettings extends IScreen {
         });
         root.getChildren().add(this.includeSnapshots);
 
+        loadForgeAvailableVersionsAsync(pane);
         populateVersionListFromMojang(pane, (String) pane.getConfig().getValue(EnumConfig.VERSION));
         this.versionList.setOnAction(event -> applyModRestrictionsForVersion(versionList.getValue(), pane));
 
@@ -776,27 +778,31 @@ public class LauncherSettings extends IScreen {
     }
 
     private GameLinks buildGameLinks(String version, boolean forge, boolean optifine) {
-        if (forge || optifine) {
-            return new GameLinks("https://majestycraft.com/minecraft" + urlModifier(), version + ".json");
+        if (optifine) {
+            return new GameLinks("https://majestycraft.com/minecraft" + urlModifier(version, false), version + ".json");
         }
 
         String fullUrl = mojangVersionUrlById.get(version);
         if (fullUrl == null || fullUrl.trim().isEmpty()) {
-            return new GameLinks("https://majestycraft.com/minecraft" + urlModifier(), version + ".json");
+            return new GameLinks("https://majestycraft.com/minecraft" + urlModifier(version, forge), version + ".json");
         }
 
-        int idx = fullUrl.lastIndexOf('/');
-        if (idx <= 0 || idx >= fullUrl.length() - 1) {
-            return new GameLinks("https://majestycraft.com/minecraft" + urlModifier(), version + ".json");
-        }
-
-        String base = fullUrl.substring(0, idx + 1);
-        String file = fullUrl.substring(idx + 1);
-        return new GameLinks(base, file);
+        String serverBase = "https://majestycraft.com/minecraft/" + version + (forge ? "/forge/" : "/");
+        return new GameLinks(
+                fullUrl,
+                serverBase + "ignore.cfg",
+                serverBase + "delete.cfg",
+                serverBase + "status.cfg",
+                serverBase + "files/"
+        );
     }
 
     private String urlModifier() {
-        return "/" + versionList.getValue() + (useForge.isSelected() ? "/forge/" : "/");
+        return urlModifier(versionList.getValue(), useForge.isSelected());
+    }
+
+    private String urlModifier(String version, boolean forge) {
+        return "/" + version + (forge ? "/forge/" : "/");
     }
 
     private void populateVersionListFromMojang(final LauncherPanel pane, final String preferredSelection) {
@@ -921,7 +927,7 @@ public class LauncherSettings extends IScreen {
 
         boolean snapshot = isSnapshot(version);
 
-        boolean forgeAllowed = !snapshot && FORGE_SUPPORTED_VERSIONS.contains(version);
+        boolean forgeAllowed = !snapshot && isForgeAvailableForVersion(version);
         boolean optifineAllowed = !snapshot && OPTIFINE_SUPPORTED_VERSIONS.contains(version);
 
         boolean forgeRestricted = !forgeAllowed;
@@ -940,6 +946,58 @@ public class LauncherSettings extends IScreen {
         }
         useOptifine.setDisable(optifineRestricted);
         useOptifine.setOpacity(optifineRestricted ? 0.35 : 1.0);
+    }
+
+
+
+    private void loadForgeAvailableVersionsAsync(final LauncherPanel pane) {
+        Thread loader = new Thread(() -> {
+            Set<String> loaded = new HashSet<>();
+            try {
+                String json = downloadText(FORGE_PROMOTIONS_URL);
+                JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+                JsonObject promos = root.getAsJsonObject("promos");
+                if (promos != null) {
+                    for (Map.Entry<String, JsonElement> entry : promos.entrySet()) {
+                        String key = entry.getKey();
+                        if (key.endsWith("-latest")) {
+                            loaded.add(key.substring(0, key.length() - 7));
+                        } else if (key.endsWith("-recommended")) {
+                            loaded.add(key.substring(0, key.length() - 12));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            synchronized (forgeVersionsAvailable) {
+                forgeVersionsAvailable.clear();
+                if (!loaded.isEmpty()) {
+                    forgeVersionsAvailable.addAll(loaded);
+                } else {
+                    forgeVersionsAvailable.addAll(FORGE_SUPPORTED_VERSIONS);
+                }
+            }
+
+            Platform.runLater(() -> applyModRestrictionsForVersion(versionList.getValue(), pane));
+        }, "MajestyLauncher-ForgeVersions");
+
+        loader.setDaemon(true);
+        loader.start();
+    }
+
+    private boolean isForgeAvailableForVersion(String version) {
+        if (version == null || version.trim().isEmpty()) return false;
+        if (FORGE_UNSUPPORTED_VERSIONS.contains(version)) return false;
+
+        synchronized (forgeVersionsAvailable) {
+            if (!forgeVersionsAvailable.isEmpty()) {
+                return forgeVersionsAvailable.contains(version);
+            }
+        }
+
+        return FORGE_SUPPORTED_VERSIONS.contains(version);
     }
 
     private void populateSizeList() {

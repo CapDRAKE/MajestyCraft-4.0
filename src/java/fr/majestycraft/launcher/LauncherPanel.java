@@ -39,16 +39,22 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.*;
+import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
@@ -62,6 +68,7 @@ import java.net.URI;
 import java.text.DecimalFormat;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.prefs.Preferences;
 
 public class LauncherPanel extends IScreen {
 
@@ -77,7 +84,7 @@ public class LauncherPanel extends IScreen {
 
     private final Discord rpc = new Discord();
     private GameAuth auth;
-    private final GameUpdater gameUpdater = new GameUpdater();
+    private GameUpdater gameUpdater;
 
     private MediaPlayer mediaPlayer;
 
@@ -94,6 +101,8 @@ public class LauncherPanel extends IScreen {
     private LauncherButton microsoftButton;
     private LauncherButton settingsButton;
     private LauncherButton packsButton;
+    private LauncherButton modsButton;
+    private LauncherButton shadersButton;
 
     private LauncherButton minestratorButton;
     private LauncherButton twitterButton;
@@ -152,6 +161,9 @@ public class LauncherPanel extends IScreen {
     private int centerX;
     private int socialY;
 
+    private final Preferences uiPreferences = Preferences.userNodeForPackage(LauncherPanel.class);
+    private static final String SIDEBAR_HINT_PREFIX = "sidebar_hint_closed.";
+
     public LauncherPanel(Pane root, GameEngine engine) {
         this.engine = engine;
 
@@ -167,6 +179,7 @@ public class LauncherPanel extends IScreen {
         initMusic();
 
         setupButtons(root);
+        installSidebarHints(root);
         setupConnectionsGUI(root);
         setupUpdateGUI(root);
 
@@ -323,6 +336,8 @@ public class LauncherPanel extends IScreen {
         animateFromLeft(infoButton, 120);
         animateFromLeft(settingsButton, 180);
         animateFromLeft(packsButton, 240);
+        animateFromLeft(modsButton, 300);
+        animateFromLeft(shadersButton, 360);
 
         animateFromBottom(heroLogo, 90);
         animateFromBottom(heroTitleLabel, 160);
@@ -386,6 +401,11 @@ public class LauncherPanel extends IScreen {
     }
 
     private void checkAutoLogin(Pane root) {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(() -> checkAutoLogin(root));
+            return;
+        }
+
         if (!isAutoLoginEnabled()) return;
 
         String username = usernameField.getText();
@@ -426,6 +446,16 @@ public class LauncherPanel extends IScreen {
 
     private void authenticateMicrosoft(Pane root) {
         auth = new GameAuth(AccountType.MICROSOFT);
+
+        if (auth.trySilentRefresh(engine)) {
+            Session s = auth.getSession();
+            connectAccountPremiumCO(s.getUsername(), root);
+            config.updateValue("username", s.getUsername());
+            config.updateValue("useMicrosoft", true);
+            update();
+            return;
+        }
+
         showMicrosoftAuth(root);
     }
 
@@ -670,6 +700,48 @@ public class LauncherPanel extends IScreen {
         });
         installHoverScale(this.packsButton);
 
+        this.modsButton = new LauncherButton(root);
+        styleSidebarButton(this.modsButton);
+        LauncherImage modsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "mods.png"));
+        modsImg.setSize(22, 22);
+        this.modsButton.setGraphic(modsImg);
+        this.modsButton.setPosition(sbX, sbY + step * 4);
+        this.modsButton.setSize(size, size);
+        this.modsButton.setOnAction(event -> {
+            Scene scene = new Scene(createModsPanel(root));
+            Stage stage = new Stage();
+            scene.setFill(Color.TRANSPARENT);
+            stage.setResizable(false);
+            stage.initStyle(StageStyle.TRANSPARENT);
+            stage.setTitle("Mods Launcher");
+            stage.setWidth(1240);
+            stage.setHeight(840);
+            stage.setScene(scene);
+            stage.showAndWait();
+        });
+        installHoverScale(this.modsButton);
+
+        this.shadersButton = new LauncherButton(root);
+        styleSidebarButton(this.shadersButton);
+        LauncherImage shadersImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "shaderpacks.png"));
+        shadersImg.setSize(22, 22);
+        this.shadersButton.setGraphic(shadersImg);
+        this.shadersButton.setPosition(sbX, sbY + step * 5);
+        this.shadersButton.setSize(size, size);
+        this.shadersButton.setOnAction(event -> {
+            Scene scene = new Scene(createShadersPanel(root));
+            Stage stage = new Stage();
+            scene.setFill(Color.TRANSPARENT);
+            stage.setResizable(false);
+            stage.initStyle(StageStyle.TRANSPARENT);
+            stage.setTitle("Shaderpacks Launcher");
+            stage.setWidth(1180);
+            stage.setHeight(820);
+            stage.setScene(scene);
+            stage.showAndWait();
+        });
+        installHoverScale(this.shadersButton);
+
         int quickW = 155;
         int quickH = 40;
         int quickGap = 16;
@@ -900,12 +972,14 @@ public class LauncherPanel extends IScreen {
                         elapsed++;
                         if (elapsed % waitTime == 0) {
                             if (!engine.getGameMaintenance().isAccessBlocked()) {
-                                autoLoginTimer.cancel();
-                                autoLoginLabel.setVisible(false);
-                                autoLoginButton.setVisible(false);
-                                autoLoginRectangle.setVisible(false);
-                                autoLoginButton2.setVisible(false);
-                                checkAutoLogin(root);
+                                Platform.runLater(() -> {
+                                    autoLoginTimer.cancel();
+                                    autoLoginLabel.setVisible(false);
+                                    autoLoginButton.setVisible(false);
+                                    autoLoginRectangle.setVisible(false);
+                                    autoLoginButton2.setVisible(false);
+                                    checkAutoLogin(root);
+                                });
                             }
                         } else {
                             final int time = (waitTime - (elapsed % waitTime));
@@ -980,6 +1054,8 @@ public class LauncherPanel extends IScreen {
         if (infoButton != null) new ZoomOutDown(infoButton).setResetOnFinished(false).play();
         if (settingsButton != null) new ZoomOutDown(settingsButton).setResetOnFinished(false).play();
         if (packsButton != null) new ZoomOutDown(packsButton).setResetOnFinished(false).play();
+        if (modsButton != null) new ZoomOutDown(modsButton).setResetOnFinished(false).play();
+        if (shadersButton != null) new ZoomOutDown(shadersButton).setResetOnFinished(false).play();
         
         if (microsoftHintLabel != null) new ZoomOutDown(microsoftHintLabel).setResetOnFinished(false).play();
 
@@ -1033,9 +1109,15 @@ public class LauncherPanel extends IScreen {
             updateAvatar.setVisible(true);
         }
 
-        String version = (String) config.getValue(EnumConfig.VERSION);
-        engine.reg(new GameLinks("https://majestycraft.com/minecraft" + urlModifier(version), version + ".json"));
+        // IMPORTANT:
+        // Do NOT override GameLinks here with the MajestyCraft JSON URL.
+        // The selected links are already resolved earlier:
+        // - vanilla => Mojang source JSON
+        // - forge => Mojang version JSON + official Forge metadata/libraries
+        // - optifine => MajestyCraft server JSON
+        // LauncherSettings and App already register the correct GameLinks in the engine.
 
+        this.gameUpdater = new GameUpdater();
         this.gameUpdater.reg(engine);
         this.gameUpdater.reg(auth.getSession());
 
@@ -1053,8 +1135,7 @@ public class LauncherPanel extends IScreen {
 
         engine.reg(this.gameUpdater);
 
-        Thread updateThread = new Thread(() -> engine.getGameUpdater().start());
-        updateThread.start();
+        this.gameUpdater.start();
 
         Timeline timeline = new Timeline(
                 new KeyFrame(javafx.util.Duration.seconds(0.0D), event -> timelineUpdate(engine)),
@@ -1067,12 +1148,17 @@ public class LauncherPanel extends IScreen {
     private double percent;
 
     public void timelineUpdate(GameEngine engine) {
-        if (engine.getGameUpdater().downloadedFiles > 0) {
+        if (engine.getGameUpdater() != null && engine.getGameUpdater().filesToDownload > 0) {
             this.percent = engine.getGameUpdater().downloadedFiles * 100.0D / engine.getGameUpdater().filesToDownload;
             this.percentageLabel.setText(decimalFormat.format(percent) + "%");
+        } else {
+            this.percent = 0;
+            this.percentageLabel.setText("0%");
         }
-        this.currentFileLabel.setText(engine.getGameUpdater().getCurrentFile());
-        this.currentStep.setText(engine.getGameUpdater().getCurrentInfo());
+        if (engine.getGameUpdater() != null) {
+            this.currentFileLabel.setText(engine.getGameUpdater().getCurrentFile());
+            this.currentStep.setText(engine.getGameUpdater().getCurrentInfo());
+        }
         this.bar.setProgress(percent / 100.0D);
     }
 
@@ -1111,6 +1197,31 @@ public class LauncherPanel extends IScreen {
         new ZoomInLeft(rect).play();
         return root;
     }
+
+    private Parent createModsPanel(Pane root) {
+        root = new LauncherPane(engine);
+        Rectangle rect = new Rectangle(1240, 840);
+        rect.setArcHeight(15.0);
+        rect.setArcWidth(15.0);
+        root.setClip(rect);
+        root.setStyle("-fx-background-color: transparent;");
+        new LauncherMods(root, engine, this);
+        new ZoomInLeft(rect).play();
+        return root;
+    }
+
+    private Parent createShadersPanel(Pane root) {
+        root = new LauncherPane(engine);
+        Rectangle rect = new Rectangle(1180, 820);
+        rect.setArcHeight(15.0);
+        rect.setArcWidth(15.0);
+        root.setClip(rect);
+        root.setStyle("-fx-background-color: transparent;");
+        new LauncherShaders(root, engine, this);
+        new ZoomInLeft(rect).play();
+        return root;
+    }
+
 
     public void connectAccountCrack(Pane root) {
         avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png"));
@@ -1238,6 +1349,7 @@ public class LauncherPanel extends IScreen {
                 Platform.runLater(() -> {
                     authStage.close();
                     connectAccountPremiumCO(session.getUsername(), root);
+                    config.updateValue("username", session.getUsername());
                     config.updateValue("useMicrosoft", true);
                     update();
                 });
@@ -1259,4 +1371,129 @@ public class LauncherPanel extends IScreen {
 	public void setCenterX(int centerX) {
 		this.centerX = centerX;
 	}
+    private void installSidebarHints(Pane root) {
+        addSidebarHint(root, microsoftButton, "Compte", "Connecte ton compte Microsoft pour récupérer ton pseudo et ton skin.", "microsoft", 0);
+        addSidebarHint(root, infoButton, "Infos", "Retrouve les nouveautés du launcher et les informations utiles du serveur.", "info", 1);
+        addSidebarHint(root, settingsButton, "Paramètres", "Ajuste la RAM, la taille de fenêtre et les options du launcher.", "settings", 2);
+        addSidebarHint(root, packsButton, "Ressources", "Ajoute et gère tes resource packs directement depuis le launcher.", "packs", 3);
+        addSidebarHint(root, modsButton, "Mods", "Parcours un catalogue de mods, ajoute des .jar ou des .zip et gère-les facilement.", "mods", 4);
+        addSidebarHint(root, shadersButton, "Shaders", "Installe tes shaderpacks, explore le catalogue et améliore le rendu du jeu.", "shaders", 5);
+    }
+
+    private void addSidebarHint(Pane root, Node anchor, String title, String description, String keySuffix, int order) {
+        if (anchor == null || isSidebarHintDismissed(keySuffix)) {
+            return;
+        }
+
+        Pane bubble = buildSidebarHintBubble(title, description, keySuffix);
+        bubble.setMouseTransparent(false);
+        bubble.setManaged(false);
+        bubble.setOpacity(0);
+
+        double anchorX = anchor.getLayoutX();
+        double anchorY = anchor.getLayoutY();
+        double anchorHeight = anchor instanceof Region ? ((Region) anchor).getPrefHeight() : 50;
+
+        bubble.setLayoutX(anchorX + 66);
+        bubble.setLayoutY(anchorY + Math.max(0, (anchorHeight - 72) / 2.0));
+
+        root.getChildren().add(bubble);
+
+        FadeTransition fadeTransition = new FadeTransition(javafx.util.Duration.millis(320), bubble);
+        fadeTransition.setFromValue(0);
+        fadeTransition.setToValue(1);
+        fadeTransition.setDelay(javafx.util.Duration.millis(850 + order * 140L));
+        fadeTransition.play();
+    }
+
+    private Pane buildSidebarHintBubble(String title, String description, String keySuffix) {
+        final double bubbleWidth = 332;
+        final double bubbleHeight = 72;
+
+        Pane bubble = new Pane();
+        bubble.setPrefSize(bubbleWidth, bubbleHeight);
+        bubble.setMinSize(bubbleWidth, bubbleHeight);
+        bubble.setMaxSize(bubbleWidth, bubbleHeight);
+
+        Rectangle background = new Rectangle(bubbleWidth, bubbleHeight);
+        background.setArcWidth(28);
+        background.setArcHeight(28);
+        background.setFill(Color.rgb(10, 14, 22, 0.94));
+        background.setStroke(Color.rgb(255, 255, 255, 0.14));
+        background.setStrokeWidth(1.0);
+        background.setEffect(new DropShadow(24, Color.rgb(0, 0, 0, 0.48)));
+
+        Polygon pointer = new Polygon(
+                0.0, bubbleHeight / 2.0,
+                16.0, bubbleHeight / 2.0 - 11,
+                16.0, bubbleHeight / 2.0 + 11
+        );
+        pointer.setFill(Color.rgb(10, 14, 22, 0.94));
+        pointer.setStroke(Color.rgb(255, 255, 255, 0.14));
+        pointer.setStrokeWidth(1.0);
+        pointer.setLayoutX(-14);
+        pointer.setLayoutY(0);
+
+        Label titleLabel = new Label(title);
+        titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
+        titleLabel.setTextFill(Color.WHITE);
+        titleLabel.setStyle("-fx-font-weight: bold;");
+        titleLabel.setLayoutX(18);
+        titleLabel.setLayoutY(10);
+
+        Label descriptionLabel = new Label(description);
+        descriptionLabel.setFont(FontLoader.loadFont("Roboto-Light.ttf", "Roboto", 12F));
+        descriptionLabel.setTextFill(Color.rgb(230, 235, 240, 0.94));
+        descriptionLabel.setWrapText(true);
+        descriptionLabel.setPrefWidth(258);
+        descriptionLabel.setMaxWidth(258);
+        descriptionLabel.setLayoutX(18);
+        descriptionLabel.setLayoutY(31);
+
+        Button closeButton = new Button("×");
+        closeButton.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 14));
+        closeButton.setTextFill(Color.WHITE);
+        closeButton.setContentDisplay(ContentDisplay.CENTER);
+        closeButton.setMnemonicParsing(false);
+        closeButton.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.10);" +
+                "-fx-background-radius: 16;" +
+                "-fx-text-fill: white;" +
+                "-fx-padding: 0;" +
+                "-fx-border-color: rgba(255,255,255,0.16);" +
+                "-fx-border-radius: 16;" +
+                "-fx-border-width: 1;"
+        );
+        closeButton.setLayoutX(288);
+        closeButton.setLayoutY(20);
+        closeButton.setPrefSize(28, 28);
+        closeButton.setMinSize(28, 28);
+        closeButton.setMaxSize(28, 28);
+        closeButton.setFocusTraversable(false);
+        installHoverScale(closeButton);
+        closeButton.setOnAction(event -> dismissSidebarHint(keySuffix, bubble));
+
+        bubble.getChildren().addAll(pointer, background, titleLabel, descriptionLabel, closeButton);
+        return bubble;
+    }
+
+    private boolean isSidebarHintDismissed(String keySuffix) {
+        return uiPreferences.getBoolean(SIDEBAR_HINT_PREFIX + keySuffix, false);
+    }
+
+    private void dismissSidebarHint(String keySuffix, Node bubble) {
+        uiPreferences.putBoolean(SIDEBAR_HINT_PREFIX + keySuffix, true);
+
+        FadeTransition fadeTransition = new FadeTransition(javafx.util.Duration.millis(180), bubble);
+        fadeTransition.setFromValue(bubble.getOpacity());
+        fadeTransition.setToValue(0);
+        fadeTransition.setOnFinished(e -> {
+            Parent parent = bubble.getParent();
+            if (parent instanceof Pane) {
+                ((Pane) parent).getChildren().remove(bubble);
+            }
+        });
+        fadeTransition.play();
+    }
+
 }

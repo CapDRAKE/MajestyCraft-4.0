@@ -165,34 +165,34 @@ public class App extends AlternativeBase {
         boolean useForge = getBooleanConfig(EnumConfig.USE_FORGE);
         boolean useOptifine = getBooleanConfig(EnumConfig.USE_OPTIFINE);
 
-        // Si Forge/Optifine => serveur direct (pas Mojang)
-        if (useForge || useOptifine) {
-            GameLinks serverLinks = buildServerGameLinks(version, useForge);
+        // OptiFine reste sur le serveur MajestyCraft.
+        if (useOptifine) {
+            GameLinks serverLinks = buildServerGameLinks(version, false);
             this.gameEngine.reg(serverLinks);
             return;
         }
 
-        // Vanilla : on tente Mojang en arrière-plan, sinon fallback serveur
+        // Vanilla et Forge utilisent le JSON de version Mojang.
+        // Forge garde quand même ses fichiers custom côté MajestyCraft via /<version>/forge/.
         final String finalVersion = version;
+        final boolean finalUseForge = useForge;
 
         EXECUTOR_SERVICE.submit(() -> {
             try {
-                // si pas de réseau, inutile de tenter Mojang
                 if (!netIsAvailable()) {
-                    GameLinks fallback = buildServerGameLinks(finalVersion, false);
+                    GameLinks fallback = buildServerGameLinks(finalVersion, finalUseForge);
                     Platform.runLater(() -> this.gameEngine.reg(fallback));
                     return;
                 }
 
                 String mojangJsonUrl = resolveMojangVersionJsonUrl(finalVersion);
                 if (mojangJsonUrl == null) {
-                    GameLinks fallback = buildServerGameLinks(finalVersion, false);
+                    GameLinks fallback = buildServerGameLinks(finalVersion, finalUseForge);
                     Platform.runLater(() -> this.gameEngine.reg(fallback));
                     return;
                 }
 
-                // On garde tes URLs custom sur ton serveur (si tu as ignore/delete/status/files)
-                String serverBaseForVersion = GAME_LINK_BASE_URL + "/" + finalVersion + "/";
+                String serverBaseForVersion = GAME_LINK_BASE_URL + "/" + finalVersion + (finalUseForge ? "/forge/" : "/");
 
                 GameLinks links = new GameLinks(
                         mojangJsonUrl,
@@ -205,8 +205,8 @@ public class App extends AlternativeBase {
                 Platform.runLater(() -> this.gameEngine.reg(links));
 
             } catch (Exception e) {
-                LOGGER.warning("Impossible d'appliquer les GameLinks Mojang, fallback serveur. " + e.getMessage());
-                GameLinks fallback = buildServerGameLinks(finalVersion, false);
+                LOGGER.warning("Impossible d'appliquer les GameLinks source, fallback serveur. " + e.getMessage());
+                GameLinks fallback = buildServerGameLinks(finalVersion, finalUseForge);
                 Platform.runLater(() -> this.gameEngine.reg(fallback));
             }
         });
