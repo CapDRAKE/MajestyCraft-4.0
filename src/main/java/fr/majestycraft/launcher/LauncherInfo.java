@@ -45,8 +45,8 @@ public class LauncherInfo extends IScreen {
 
     private static final boolean CHANGE_1 = true;
     private static final boolean CHANGE_2 = true;
-    private static final boolean CHANGE_3 = false;
-    private static final boolean CHANGE_4 = false;
+    private static final boolean CHANGE_3 = true;
+    private static final boolean CHANGE_4 = true;
 
     private LauncherImage heroLogo;
     private LauncherLabel heroTitle;
@@ -139,7 +139,7 @@ public class LauncherInfo extends IScreen {
         LauncherRectangle tag1Bg = new LauncherRectangle(root, heroX + 30, heroY + 350, 190, 34);
         styleMiniCard(tag1Bg);
         this.heroTag1 = new LauncherLabel(root);
-        this.heroTag1.setText("Interface modernisée");
+        this.heroTag1.setText("Interface modernisÃ©e");
         this.heroTag1.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
         this.heroTag1.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.90)");
         this.heroTag1.setPosition(heroX + 30, heroY + 357);
@@ -149,7 +149,7 @@ public class LauncherInfo extends IScreen {
         LauncherRectangle tag2Bg = new LauncherRectangle(root, heroX + 30, heroY + 394, 190, 34);
         styleMiniCard(tag2Bg);
         this.heroTag2 = new LauncherLabel(root);
-        this.heroTag2.setText("Suivi des nouveautés");
+        this.heroTag2.setText("Suivi des nouveautÃ©s");
         this.heroTag2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
         this.heroTag2.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.90)");
         this.heroTag2.setPosition(heroX + 30, heroY + 401);
@@ -173,7 +173,7 @@ public class LauncherInfo extends IScreen {
         this.pageTitle.setAlignment(Pos.CENTER);
 
         this.pageSubtitle = new LauncherLabel(root);
-        this.pageSubtitle.setText("Équipe, remarques et changelogs");
+        this.pageSubtitle.setText("Equipe, remarques et changelogs");
         this.pageSubtitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         this.pageSubtitle.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.45);");
         this.pageSubtitle.setPosition(mainX, mainY + 54);
