@@ -101,6 +101,8 @@ public class LauncherSettings extends IScreen {
     private final Map<String, String> mojangVersionUrlById = new HashMap<>();
     private final Map<String, String> mojangVersionTypeById = new HashMap<>();
     private final Set<String> forgeVersionsAvailable = Collections.synchronizedSet(new HashSet<>());
+    private final Set<String> optifineVersionsAvailable = Collections.synchronizedSet(new HashSet<>());
+    private volatile boolean optifineVersionsLoaded = false;
 
     @SuppressWarnings("unused")
     private final Gson gson = new Gson();
@@ -117,18 +119,10 @@ public class LauncherSettings extends IScreen {
             "1.8"
     ));
 
-    private static final Set<String> OPTIFINE_UNSUPPORTED_VERSIONS = new HashSet<>(Arrays.asList(
-            "1.8", "1.20.2", "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21", "1.21.2", "1.21.5", "1.21.11"
-    ));
-
     private static final Set<String> FORGE_SUPPORTED_VERSIONS = new HashSet<>();
-    private static final Set<String> OPTIFINE_SUPPORTED_VERSIONS = new HashSet<>();
     static {
         FORGE_SUPPORTED_VERSIONS.addAll(VANILLA_SUPPORTED_RELEASES);
         FORGE_SUPPORTED_VERSIONS.removeAll(FORGE_UNSUPPORTED_VERSIONS);
-
-        OPTIFINE_SUPPORTED_VERSIONS.addAll(VANILLA_SUPPORTED_RELEASES);
-        OPTIFINE_SUPPORTED_VERSIONS.removeAll(OPTIFINE_UNSUPPORTED_VERSIONS);
     }
 
     private static final int W = 1000;
@@ -488,6 +482,7 @@ public class LauncherSettings extends IScreen {
         root.getChildren().add(this.includeSnapshots);
 
         loadForgeAvailableVersionsAsync(pane);
+        loadOptiFineAvailableVersionsAsync(pane);
         populateVersionListFromMojang(pane, (String) pane.getConfig().getValue(EnumConfig.VERSION));
         this.versionList.setOnAction(event -> applyModRestrictionsForVersion(versionList.getValue(), pane));
 
@@ -663,8 +658,20 @@ public class LauncherSettings extends IScreen {
             engine.reg(GameSize.getWindowSize(Integer.parseInt((String) pane.getConfig().getValue(EnumConfig.GAME_SIZE))));
 
             String selectedVersion = String.valueOf(pane.getConfig().getValue(EnumConfig.VERSION));
-            GameLinks links = buildGameLinks(selectedVersion, useForge.isSelected(), useOptifine.isSelected());
-            engine.reg(links);
+            try {
+                if (useOptifine.isSelected()) {
+                    App.ensureOptiFineRuntime(selectedVersion);
+                }
+
+                GameLinks links = buildGameLinks(selectedVersion, useForge.isSelected(), useOptifine.isSelected());
+                engine.reg(links);
+            } catch (Exception e) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setHeaderText("Impossible de préparer la version sélectionnée");
+                alert.setContentText(e.getMessage() != null ? e.getMessage() : "Erreur inconnue lors de la préparation du jeu.");
+                alert.showAndWait();
+                return;
+            }
 
             Utils.regGameStyle(engine, pane.getConfig());
 
@@ -777,12 +784,19 @@ public class LauncherSettings extends IScreen {
         );
     }
 
-    private GameLinks buildGameLinks(String version, boolean forge, boolean optifine) {
-        if (optifine) {
-            return new GameLinks("https://majestycraft.com/minecraft" + urlModifier(version, false), version + ".json");
+    private GameLinks buildGameLinks(String version, boolean forge, boolean optifine) throws IOException {
+        String fullUrl = mojangVersionUrlById.get(version);
+        if ((fullUrl == null || fullUrl.trim().isEmpty()) && App.netIsAvailable()) {
+            fullUrl = App.resolveMojangVersionJsonUrlStatic(version);
         }
 
-        String fullUrl = mojangVersionUrlById.get(version);
+        if (optifine) {
+            if (fullUrl == null || fullUrl.trim().isEmpty()) {
+                throw new IOException("Impossible de résoudre le JSON Mojang pour OptiFine " + version);
+            }
+            return App.buildOptiFineGameLinksFromResolvedJson(fullUrl, version);
+        }
+
         if (fullUrl == null || fullUrl.trim().isEmpty()) {
             return new GameLinks("https://majestycraft.com/minecraft" + urlModifier(version, forge), version + ".json");
         }
@@ -928,7 +942,7 @@ public class LauncherSettings extends IScreen {
         boolean snapshot = isSnapshot(version);
 
         boolean forgeAllowed = !snapshot && isForgeAvailableForVersion(version);
-        boolean optifineAllowed = !snapshot && OPTIFINE_SUPPORTED_VERSIONS.contains(version);
+        boolean optifineAllowed = !snapshot && isOptiFineAvailableForVersion(version);
 
         boolean forgeRestricted = !forgeAllowed;
         boolean optifineRestricted = !optifineAllowed;
@@ -998,6 +1012,42 @@ public class LauncherSettings extends IScreen {
         }
 
         return FORGE_SUPPORTED_VERSIONS.contains(version);
+    }
+
+    private void loadOptiFineAvailableVersionsAsync(final LauncherPanel pane) {
+        Thread loader = new Thread(() -> {
+            Set<String> loaded = new HashSet<>();
+            try {
+                loaded.addAll(App.fetchAvailableOptiFineVersions());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            if (!loaded.isEmpty()) {
+                synchronized (optifineVersionsAvailable) {
+                    optifineVersionsAvailable.clear();
+                    optifineVersionsAvailable.addAll(loaded);
+                    optifineVersionsLoaded = true;
+                }
+            }
+
+            Platform.runLater(() -> applyModRestrictionsForVersion(versionList.getValue(), pane));
+        }, "MajestyLauncher-OptiFineVersions");
+
+        loader.setDaemon(true);
+        loader.start();
+    }
+
+    private boolean isOptiFineAvailableForVersion(String version) {
+        if (version == null || version.trim().isEmpty()) return false;
+
+        synchronized (optifineVersionsAvailable) {
+            if (optifineVersionsLoaded) {
+                return optifineVersionsAvailable.contains(version);
+            }
+        }
+
+        return true;
     }
 
     private void populateSizeList() {
