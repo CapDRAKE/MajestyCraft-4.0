@@ -1047,7 +1047,7 @@ public class LauncherSettings extends IScreen {
             }
         }
 
-        return true;
+        return false;
     }
 
     private void populateSizeList() {

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>fr.majestycraft</groupId>
+    <artifactId>majestycraft-launcher</artifactId>
+    <version>4.0</version>
+    <packaging>jar</packaging>
+    <name>MajestyCraft-Launcher</name>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+
+        <!-- AlternativeAPI (inclut AlternativeAuth transitivement) -->
+        <dependency>
+            <groupId>fr.trxyy.alternative</groupId>
+            <artifactId>alternative-api</artifactId>
+            <version>1.5.4</version>
+        </dependency>
+
+        <!-- JavaFX -->
+		<dependency>
+    		<groupId>com.oracle</groupId>
+    		<artifactId>javafx</artifactId>
+    		<version>2.2</version>
+		</dependency>
+
+        <!-- Discord RPC - installé manuellement dans .m2 -->
+        <dependency>
+            <groupId>com.jagrosh</groupId>
+            <artifactId>java-discord-rpc</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+
+        <!-- AnimateFX -->
+        <dependency>
+            <groupId>io.github.typhon0</groupId>
+            <artifactId>AnimateFX</artifactId>
+            <version>1.2.2</version>
+        </dependency>
+
+        <!-- JFoenix -->
+        <dependency>
+            <groupId>com.jfoenix</groupId>
+            <artifactId>jfoenix</artifactId>
+            <version>8.0.10</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <finalName>MajestyCraft</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+            </plugin>
+
+            <!-- Shade plugin : produit un fat JAR avec tout dedans -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <!-- Evite les conflits de signatures -->
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <!-- Définit la classe principale -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>fr.majestycraft.Main</mainClass>
+                                </transformer>
+                                <!-- Fusionne les fichiers de services -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
