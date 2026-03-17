@@ -53,6 +53,13 @@
             <artifactId>jfoenix</artifactId>
             <version>8.0.10</version>
         </dependency>
+        
+        <!-- Webp-Imageio -->
+        <dependency>
+    		<groupId>org.sejda.imageio</groupId>
+    		<artifactId>webp-imageio</artifactId>
+    		<version>0.1.6</version>
+		</dependency>
 
     </dependencies>
 

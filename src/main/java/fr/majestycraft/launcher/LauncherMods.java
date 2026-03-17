@@ -29,6 +29,11 @@ import javafx.scene.control.ListView;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.embed.swing.SwingFXUtils;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -264,10 +269,10 @@ public class LauncherMods extends IScreen {
         this.heroSubtitle.setSize(heroW, 22);
         this.heroSubtitle.setAlignment(Pos.CENTER);
 
-        this.heroLine1 = createHeroLine(root, heroX, heroY + 300, heroW, "• Liste les mods installés");
-        this.heroLine2 = createHeroLine(root, heroX, heroY + 330, heroW, "• Ajoute des .jar ou .zip depuis ton PC");
-        this.heroLine3 = createHeroLine(root, heroX, heroY + 360, heroW, "• Recherche et télécharge via Modrinth");
-        this.heroLine4 = createHeroLine(root, heroX, heroY + 390, heroW, "• Active, désactive ou supprime un mod");
+        this.heroLine1 = createHeroLine(root, heroX, heroY + 300, heroW, "â€¢ Liste les mods installÃ©s");
+        this.heroLine2 = createHeroLine(root, heroX, heroY + 330, heroW, "â€¢ Ajoute des .jar ou .zip depuis ton PC");
+        this.heroLine3 = createHeroLine(root, heroX, heroY + 360, heroW, "â€¢ Recherche et tÃ©lÃ©charge via Modrinth");
+        this.heroLine4 = createHeroLine(root, heroX, heroY + 390, heroW, "â€¢ Active, dÃ©sactive ou supprime un mod");
     }
 
     private LauncherLabel createHeroLine(Pane root, int heroX, int y, int heroW, String text) {
@@ -298,14 +303,14 @@ public class LauncherMods extends IScreen {
         titleLabel.setAlignment(Pos.CENTER);
 
         LauncherLabel subTitleLabel = new LauncherLabel(root);
-        subTitleLabel.setText("Un panneau façon CurseForge pour rechercher, installer et gérer tes mods");
+        subTitleLabel.setText("Un panneau faÃ§on CurseForge pour rechercher, installer et gÃ©rer tes mods");
         subTitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         subTitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.45);");
         subTitleLabel.setPosition(mainX, mainY + 54);
         subTitleLabel.setSize(mainW, 18);
         subTitleLabel.setAlignment(Pos.CENTER);
 
-        this.localTabButton = new JFXButton("Installés");
+        this.localTabButton = new JFXButton("InstallÃ©s");
         styleTabButton(this.localTabButton, false);
         this.localTabButton.setLayoutX(mainX + 34);
         this.localTabButton.setLayoutY(mainY + 96);
@@ -533,7 +538,7 @@ public class LauncherMods extends IScreen {
         versionApplyButton.setVisible(discover);
         versionApplyButton.setManaged(discover);
 
-        searchField.setPromptText(discover ? "Rechercher un mod..." : "Filtrer les mods installés...");
+        searchField.setPromptText(discover ? "Rechercher un mod..." : "Filtrer les mods installÃ©s...");
         refreshButton.setText(discover ? "Rechercher" : "Filtrer");
 
         applyTabState(this.localTabButton, !discover);
@@ -716,7 +721,7 @@ public class LauncherMods extends IScreen {
             }
         }
 
-        localStatusLabel.setText(shownCount + " mod(s) affiché(s) • " + enabledCount + " actif(s) • " + shortenPath(modsDir, 34));
+        localStatusLabel.setText(shownCount + " mod(s) affichÃ©(s) â€¢ " + enabledCount + " actif(s) â€¢ " + shortenPath(modsDir, 34));
     }
 
     private boolean isModFile(File file) {
@@ -864,7 +869,7 @@ public class LauncherMods extends IScreen {
 
     private void addLocalMod() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Sélectionner un mod ou un pack zip");
+        fileChooser.setTitle("SÃ©lectionner un mod ou un pack zip");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Mods Minecraft", "*.jar", "*.zip"));
 
         Stage currentStage = null;
@@ -880,15 +885,15 @@ public class LauncherMods extends IScreen {
                     int imported = importModsFromZip(selectedFile);
                     loadLocalMods();
                     if (imported <= 0) {
-                        showErrorDialog("Archive vide", "Aucun .jar trouvé dans cette archive.");
+                        showErrorDialog("Archive vide", "Aucun .jar trouvÃ© dans cette archive.");
                     } else {
-                        showInfoDialog("Import terminé", imported + " mod(s) ont été ajoutés depuis l'archive.");
+                        showInfoDialog("Import terminÃ©", imported + " mod(s) ont Ã©tÃ© ajoutÃ©s depuis l'archive.");
                     }
                 } else {
                     File destFile = uniqueDestination(new File(modsDir, selectedFile.getName()));
                     Files.copy(selectedFile.toPath(), destFile.toPath());
                     loadLocalMods();
-                    showInfoDialog("Mod ajouté", destFile.getName() + " a bien été ajouté.");
+                    showInfoDialog("Mod ajoutÃ©", destFile.getName() + " a bien Ã©tÃ© ajoutÃ©.");
                 }
             } catch (IOException e) {
                 showErrorDialog("Erreur", "Impossible d'ajouter ce mod ou cette archive.");
@@ -970,12 +975,12 @@ public class LauncherMods extends IScreen {
 
         File target = new File(item.file.getParentFile(), targetName);
         if (target.exists()) {
-            showErrorDialog("Conflit", "Un fichier avec ce nom existe déjà dans le dossier mods.");
+            showErrorDialog("Conflit", "Un fichier avec ce nom existe dÃ©jÃ  dans le dossier mods.");
             return;
         }
 
         if (!item.file.renameTo(target)) {
-            showErrorDialog("Erreur", "Impossible de modifier l'état de ce mod.");
+            showErrorDialog("Erreur", "Impossible de modifier l'Ã©tat de ce mod.");
             return;
         }
 
@@ -983,7 +988,7 @@ public class LauncherMods extends IScreen {
     }
 
     private void deleteLocalMod(LocalModItem item) {
-        if (!showConfirmationDialog("Suppression", "Supprimer définitivement ce mod du dossier ?")) {
+        if (!showConfirmationDialog("Suppression", "Supprimer dÃ©finitivement ce mod du dossier ?")) {
             return;
         }
 
@@ -1041,10 +1046,10 @@ public class LauncherMods extends IScreen {
                 }
 
                 titleLabel.setText(item.displayName);
-                metaLabel.setText((item.enabled ? "Actif" : "Inactif") + " • " + item.loaderLabel + " • " + readableSize(item.size));
-                fileLabel.setText(item.fileName + " • modifié le " + item.modifiedAt);
+                metaLabel.setText((item.enabled ? "Actif" : "Inactif") + " â€¢ " + item.loaderLabel + " â€¢ " + readableSize(item.size));
+                fileLabel.setText(item.fileName + " â€¢ modifiÃ© le " + item.modifiedAt);
 
-                toggleButton.setText(item.enabled ? "Désactiver" : "Activer");
+                toggleButton.setText(item.enabled ? "DÃ©sactiver" : "Activer");
                 stylePillButton(toggleButton, item.enabled);
                 toggleButton.setOnAction(event -> toggleLocalMod(item));
                 deleteButton.setOnAction(event -> deleteLocalMod(item));
@@ -1064,7 +1069,7 @@ public class LauncherMods extends IScreen {
             private final Label statsLabel = new Label();
             private final VBox textBox = new VBox(titleLabel, authorLabel, descLabel, statsLabel);
             private final JFXButton openButton = new JFXButton("Page");
-            private final JFXButton downloadButton = new JFXButton("Télécharger");
+            private final JFXButton downloadButton = new JFXButton("TÃ©lÃ©charger");
             private final VBox actionsBox = new VBox(openButton, downloadButton);
             private final HBox row = new HBox(14, iconView, textBox, actionsBox);
 
@@ -1112,7 +1117,7 @@ public class LauncherMods extends IScreen {
                 }
 
                 if (item.iconUrl != null && !item.iconUrl.isEmpty()) {
-                    iconView.setImage(new Image(item.iconUrl, true));
+                    iconView.setImage(loadRemoteImageSafe(item.iconUrl, fallbackIcon));
                 } else {
                     iconView.setImage(fallbackIcon);
                 }
@@ -1120,7 +1125,7 @@ public class LauncherMods extends IScreen {
                 titleLabel.setText(item.title);
                 authorLabel.setText("par " + item.author);
                 descLabel.setText(item.description == null || item.description.trim().isEmpty() ? "Aucune description." : item.description);
-                statsLabel.setText(item.loaderLabel + " • " + item.downloads + " téléchargements");
+                statsLabel.setText(item.loaderLabel + " â€¢ " + item.downloads + " tÃ©lÃ©chargements");
 
                 openButton.setOnAction(event -> openExternalLink(MODRINTH_WEB_MOD + item.slug));
                 downloadButton.setOnAction(event -> downloadOnlineMod(item));
@@ -1221,9 +1226,9 @@ public class LauncherMods extends IScreen {
                         @Override
                         public void run() {
                             if (onlineListView.getItems().isEmpty()) {
-                                onlineStatusLabel.setText("Aucun mod trouvé pour " + mcVersion + " en " + formatLoader(loader) + ".");
+                                onlineStatusLabel.setText("Aucun mod trouvÃ© pour " + mcVersion + " en " + formatLoader(loader) + ".");
                             } else {
-                                onlineStatusLabel.setText(onlineListView.getItems().size() + " mod(s) trouvés pour " + mcVersion + " en " + formatLoader(loader) + ".");
+                                onlineStatusLabel.setText(onlineListView.getItems().size() + " mod(s) trouvÃ©s pour " + mcVersion + " en " + formatLoader(loader) + ".");
                             }
                         }
                     });
@@ -1269,7 +1274,7 @@ public class LauncherMods extends IScreen {
     }
 
     private void downloadOnlineMod(final OnlineModItem item) {
-        onlineStatusLabel.setText("Téléchargement de " + item.title + "...");
+        onlineStatusLabel.setText("TÃ©lÃ©chargement de " + item.title + "...");
 
         Thread downloadThread = new Thread(new Runnable() {
             @Override
@@ -1290,7 +1295,7 @@ public class LauncherMods extends IScreen {
                         Platform.runLater(new Runnable() {
                             @Override
                             public void run() {
-                                showErrorDialog("Aucun fichier", "Aucune version compatible trouvée pour " + mcVersion + ".");
+                                showErrorDialog("Aucun fichier", "Aucune version compatible trouvÃ©e pour " + mcVersion + ".");
                             }
                         });
                         return;
@@ -1302,7 +1307,7 @@ public class LauncherMods extends IScreen {
                         Platform.runLater(new Runnable() {
                             @Override
                             public void run() {
-                                showErrorDialog("Aucun fichier", "Aucun fichier téléchargeable trouvé.");
+                                showErrorDialog("Aucun fichier", "Aucun fichier tÃ©lÃ©chargeable trouvÃ©.");
                             }
                         });
                         return;
@@ -1338,7 +1343,7 @@ public class LauncherMods extends IScreen {
                         Platform.runLater(new Runnable() {
                             @Override
                             public void run() {
-                                showErrorDialog("Erreur", "Impossible de récupérer le fichier du mod.");
+                                showErrorDialog("Erreur", "Impossible de rÃ©cupÃ©rer le fichier du mod.");
                             }
                         });
                         return;
@@ -1351,16 +1356,16 @@ public class LauncherMods extends IScreen {
                         @Override
                         public void run() {
                             loadLocalMods();
-                            onlineStatusLabel.setText(item.title + " téléchargé.");
-                            showInfoDialog("Téléchargement terminé", item.title + " a été ajouté dans le dossier mods.");
+                            onlineStatusLabel.setText(item.title + " tÃ©lÃ©chargÃ©.");
+                            showInfoDialog("TÃ©lÃ©chargement terminÃ©", item.title + " a Ã©tÃ© ajoutÃ© dans le dossier mods.");
                         }
                     });
                 } catch (Exception e) {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            onlineStatusLabel.setText("Échec du téléchargement.");
-                            showErrorDialog("Erreur", "Impossible de télécharger ce mod.");
+                            onlineStatusLabel.setText("Ã‰chec du tÃ©lÃ©chargement.");
+                            showErrorDialog("Erreur", "Impossible de tÃ©lÃ©charger ce mod.");
                         }
                     });
                 }
@@ -1626,4 +1631,30 @@ public class LauncherMods extends IScreen {
             this.loaderLabel = loaderLabel;
         }
     }
+    private Image loadRemoteImageSafe(String url, Image fallback) {
+        if (url == null || url.trim().isEmpty()) return fallback;
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setInstanceFollowRedirects(true);
+            connection.setRequestProperty("User-Agent", "MajestyCraft-Launcher/4.0");
+            connection.setConnectTimeout(7000);
+            connection.setReadTimeout(7000);
+            try (InputStream in = new BufferedInputStream(connection.getInputStream())) {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                byte[] chunk = new byte[4096];
+                int read;
+                while ((read = in.read(chunk)) != -1) buffer.write(chunk, 0, read);
+                byte[] bytes = buffer.toByteArray();
+                Image img = new Image(new ByteArrayInputStream(bytes), 52, 52, true, true);
+                if (!img.isError() && img.getWidth() > 1) return img;
+                BufferedImage bi = ImageIO.read(new ByteArrayInputStream(bytes));
+                if (bi != null) {
+                    Image fxImg = SwingFXUtils.toFXImage(bi, null);
+                    if (fxImg != null && !fxImg.isError() && fxImg.getWidth() > 1) return fxImg;
+                }
+            }
+        } catch (Exception ignored) {}
+        return fallback;
+    }
+
 }

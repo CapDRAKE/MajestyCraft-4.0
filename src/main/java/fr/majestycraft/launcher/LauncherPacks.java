@@ -33,6 +33,11 @@ import javafx.scene.control.ListView;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.embed.swing.SwingFXUtils;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -222,21 +227,21 @@ public class LauncherPacks extends IScreen {
         this.heroSubtitle.setAlignment(Pos.CENTER);
 
         this.heroLine1 = new LauncherLabel(root);
-        this.heroLine1.setText("• Importe tes packs localement");
+        this.heroLine1.setText("â€¢ Importe tes packs localement");
         this.heroLine1.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
         this.heroLine1.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.68)");
         this.heroLine1.setPosition(heroX + 24, heroY + 300);
         this.heroLine1.setSize(heroW - 48, 20);
 
         this.heroLine2 = new LauncherLabel(root);
-        this.heroLine2.setText("• Découvre des packs via Modrinth");
+        this.heroLine2.setText("â€¢ DÃ©couvre des packs via Modrinth");
         this.heroLine2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
         this.heroLine2.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.56)");
         this.heroLine2.setPosition(heroX + 24, heroY + 328);
         this.heroLine2.setSize(heroW - 48, 20);
 
         this.heroLine3 = new LauncherLabel(root);
-        this.heroLine3.setText("• Télécharge directement dans le launcher");
+        this.heroLine3.setText("â€¢ TÃ©lÃ©charge directement dans le launcher");
         this.heroLine3.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
         this.heroLine3.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.44)");
         this.heroLine3.setPosition(heroX + 24, heroY + 356);
@@ -261,7 +266,7 @@ public class LauncherPacks extends IScreen {
         titleLabel.setAlignment(Pos.CENTER);
 
         LauncherLabel subTitleLabel = new LauncherLabel(root);
-        subTitleLabel.setText("Gère tes packs ou explore des packs compatibles");
+        subTitleLabel.setText("GÃ¨re tes packs ou explore des packs compatibles");
         subTitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         subTitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.45);");
         subTitleLabel.setPosition(mainX, mainY + 54);
@@ -314,7 +319,7 @@ public class LauncherPacks extends IScreen {
         root.getChildren().add(this.refreshButton);
 
         this.versionHintLabel = new LauncherLabel(root);
-        this.versionHintLabel.setText("Version ciblée : " + getSelectedMinecraftVersion());
+        this.versionHintLabel.setText("Version ciblÃ©e : " + getSelectedMinecraftVersion());
         this.versionHintLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         this.versionHintLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,176,0,0.90);");
         this.versionHintLabel.setPosition(mainX + 34, mainY + 142);
@@ -629,7 +634,7 @@ public class LauncherPacks extends IScreen {
             private final VBox textBox = new VBox(titleLabel, authorLabel, descLabel, statsLabel);
 
             private final JFXButton openButton = new JFXButton("Page");
-            private final JFXButton downloadButton = new JFXButton("Télécharger");
+            private final JFXButton downloadButton = new JFXButton("TÃ©lÃ©charger");
             private final VBox actionsBox = new VBox(openButton, downloadButton);
 
             private final HBox row = new HBox(14, iconView, textBox, actionsBox);
@@ -682,7 +687,7 @@ public class LauncherPacks extends IScreen {
                 }
 
                 if (item.iconUrl != null && !item.iconUrl.isEmpty()) {
-                    iconView.setImage(new Image(item.iconUrl, true));
+                    iconView.setImage(loadRemoteImageSafe(item.iconUrl, new Image(getClass().getResource("/resources/launchergifpng.png").toExternalForm())));
                 } else {
                     iconView.setImage(new Image(getClass().getResource("/resources/launchergifpng.png").toExternalForm()));
                 }
@@ -690,7 +695,7 @@ public class LauncherPacks extends IScreen {
                 titleLabel.setText(item.title);
                 authorLabel.setText("par " + item.author);
                 descLabel.setText(item.description == null || item.description.isEmpty() ? "Aucune description." : item.description);
-                statsLabel.setText(item.downloads + " téléchargements");
+                statsLabel.setText(item.downloads + " tÃ©lÃ©chargements");
 
                 openButton.setOnAction(e -> openExternalLink(MODRINTH_WEB_RESOURCEPACK + item.slug));
                 downloadButton.setOnAction(e -> downloadOnlinePack(item));
@@ -702,7 +707,7 @@ public class LauncherPacks extends IScreen {
     }
 
     private void searchOnlinePacks(String query, String mcVersion) {
-        onlineStatusLabel.setText("Chargement des packs…");
+        onlineStatusLabel.setText("Chargement des packsÂ…");
         onlineListView.getItems().clear();
 
         Thread searchThread = new Thread(() -> {
@@ -737,9 +742,9 @@ public class LauncherPacks extends IScreen {
 
                 Platform.runLater(() -> {
                     if (onlineListView.getItems().isEmpty()) {
-                        onlineStatusLabel.setText("Aucun pack trouvé pour " + mcVersion + ".");
+                        onlineStatusLabel.setText("Aucun pack trouvÃ© pour " + mcVersion + ".");
                     } else {
-                        onlineStatusLabel.setText(onlineListView.getItems().size() + " pack(s) trouvés pour " + mcVersion + ".");
+                        onlineStatusLabel.setText(onlineListView.getItems().size() + " pack(s) trouvÃ©s pour " + mcVersion + ".");
                     }
                 });
             } catch (Exception e) {
@@ -752,7 +757,7 @@ public class LauncherPacks extends IScreen {
     }
 
     private void downloadOnlinePack(OnlinePackItem item) {
-        onlineStatusLabel.setText("Téléchargement de " + item.title + "…");
+        onlineStatusLabel.setText("TÃ©lÃ©chargement de " + item.title + "Â…");
 
         Thread downloadThread = new Thread(() -> {
             try {
@@ -765,7 +770,7 @@ public class LauncherPacks extends IScreen {
                 JsonArray versions = JsonParser.parseString(json).getAsJsonArray();
 
                 if (versions == null || versions.size() == 0) {
-                    Platform.runLater(() -> showErrorDialog("Aucun fichier", "Aucune version compatible trouvée pour " + mcVersion + "."));
+                    Platform.runLater(() -> showErrorDialog("Aucun fichier", "Aucune version compatible trouvÃ©e pour " + mcVersion + "."));
                     return;
                 }
 
@@ -773,7 +778,7 @@ public class LauncherPacks extends IScreen {
                 JsonArray files = selectedVersion.getAsJsonArray("files");
 
                 if (files == null || files.size() == 0) {
-                    Platform.runLater(() -> showErrorDialog("Aucun fichier", "Aucun fichier téléchargeable trouvé."));
+                    Platform.runLater(() -> showErrorDialog("Aucun fichier", "Aucun fichier tÃ©lÃ©chargeable trouvÃ©."));
                     return;
                 }
 
@@ -790,7 +795,7 @@ public class LauncherPacks extends IScreen {
                 String fileUrl = getAsString(chosenFile, "url");
                 String fileName = getAsString(chosenFile, "filename");
                 if (fileUrl == null || fileUrl.trim().isEmpty() || fileName == null || fileName.trim().isEmpty()) {
-                    Platform.runLater(() -> showErrorDialog("Erreur", "Impossible de récupérer le fichier du pack."));
+                    Platform.runLater(() -> showErrorDialog("Erreur", "Impossible de rÃ©cupÃ©rer le fichier du pack."));
                     return;
                 }
 
@@ -799,13 +804,13 @@ public class LauncherPacks extends IScreen {
 
                 Platform.runLater(() -> {
                     loadResourcePacks();
-                    onlineStatusLabel.setText(item.title + " téléchargé.");
-                    showInfoDialog("Téléchargement terminé", item.title + " a été ajouté dans tes resource packs.");
+                    onlineStatusLabel.setText(item.title + " tÃ©lÃ©chargÃ©.");
+                    showInfoDialog("TÃ©lÃ©chargement terminÃ©", item.title + " a Ã©tÃ© ajoutÃ© dans tes resource packs.");
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    onlineStatusLabel.setText("Échec du téléchargement.");
-                    showErrorDialog("Erreur", "Impossible de télécharger ce pack.");
+                    onlineStatusLabel.setText("Ã‰chec du tÃ©lÃ©chargement.");
+                    showErrorDialog("Erreur", "Impossible de tÃ©lÃ©charger ce pack.");
                 });
             }
         }, "MajestyLauncher-PackDownload");
@@ -979,4 +984,30 @@ public class LauncherPacks extends IScreen {
             this.downloads = downloads;
         }
     }
+    private Image loadRemoteImageSafe(String url, Image fallback) {
+        if (url == null || url.trim().isEmpty()) return fallback;
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setInstanceFollowRedirects(true);
+            connection.setRequestProperty("User-Agent", "MajestyCraft-Launcher/4.0");
+            connection.setConnectTimeout(7000);
+            connection.setReadTimeout(7000);
+            try (InputStream in = new BufferedInputStream(connection.getInputStream())) {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                byte[] chunk = new byte[4096];
+                int read;
+                while ((read = in.read(chunk)) != -1) buffer.write(chunk, 0, read);
+                byte[] bytes = buffer.toByteArray();
+                Image img = new Image(new ByteArrayInputStream(bytes), 52, 52, true, true);
+                if (!img.isError() && img.getWidth() > 1) return img;
+                BufferedImage bi = ImageIO.read(new ByteArrayInputStream(bytes));
+                if (bi != null) {
+                    Image fxImg = SwingFXUtils.toFXImage(bi, null);
+                    if (fxImg != null && !fxImg.isError() && fxImg.getWidth() > 1) return fxImg;
+                }
+            }
+        } catch (Exception ignored) {}
+        return fallback;
+    }
+
 }

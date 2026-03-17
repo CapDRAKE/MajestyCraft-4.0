@@ -29,6 +29,11 @@ import javafx.scene.control.ListView;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.embed.swing.SwingFXUtils;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -247,10 +252,10 @@ public class LauncherShaders extends IScreen {
         this.heroSubtitle.setSize(heroW - 20, 22);
         this.heroSubtitle.setAlignment(Pos.CENTER);
 
-        this.heroLine1 = createHeroLine(root, heroX + 22, heroY + 302, "• Liste les shaderpacks installés");
-        this.heroLine2 = createHeroLine(root, heroX + 22, heroY + 332, "• Ajoute des .zip ou dossiers");
-        this.heroLine3 = createHeroLine(root, heroX + 22, heroY + 362, "• Recherche et télécharge en ligne");
-        this.heroLine4 = createHeroLine(root, heroX + 22, heroY + 392, "• Active, désactive ou supprime");
+        this.heroLine1 = createHeroLine(root, heroX + 22, heroY + 302, "â€¢ Liste les shaderpacks installÃ©s");
+        this.heroLine2 = createHeroLine(root, heroX + 22, heroY + 332, "â€¢ Ajoute des .zip ou dossiers");
+        this.heroLine3 = createHeroLine(root, heroX + 22, heroY + 362, "â€¢ Recherche et tÃ©lÃ©charge en ligne");
+        this.heroLine4 = createHeroLine(root, heroX + 22, heroY + 392, "â€¢ Active, dÃ©sactive ou supprime");
     }
 
     private LauncherLabel createHeroLine(Pane root, int x, int y, String text) {
@@ -281,14 +286,14 @@ public class LauncherShaders extends IScreen {
         title.setAlignment(Pos.CENTER);
 
         LauncherLabel subtitle = new LauncherLabel(root);
-        subtitle.setText("Ajoute, explore et gère tes shaders pour OptiFine / Iris");
+        subtitle.setText("Ajoute, explore et gÃ¨re tes shaders pour OptiFine / Iris");
         subtitle.setFont(FontLoader.loadFont("Poppins-Regular.ttf", "Poppins", 13F));
         subtitle.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.52)");
         subtitle.setPosition(mainX + 118, mainY + 64);
         subtitle.setSize(mainW - 236, 20);
         subtitle.setAlignment(Pos.CENTER);
 
-        this.localTabButton = new JFXButton("Installés");
+        this.localTabButton = new JFXButton("InstallÃ©s");
         styleTabButton(this.localTabButton, true);
         this.localTabButton.setLayoutX(mainX + 34);
         this.localTabButton.setLayoutY(mainY + 96);
@@ -305,7 +310,7 @@ public class LauncherShaders extends IScreen {
         root.getChildren().add(this.onlineTabButton);
 
         this.localFilterField = new JFXTextField();
-        this.localFilterField.setPromptText("Filtrer les shaderpacks installés...");
+        this.localFilterField.setPromptText("Filtrer les shaderpacks installÃ©s...");
         styleSearchField(this.localFilterField);
         this.localFilterField.setLayoutX(mainX + 410);
         this.localFilterField.setLayoutY(mainY + 98);
@@ -350,21 +355,21 @@ public class LauncherShaders extends IScreen {
         this.versionCaptionLabel.setText("Version Minecraft");
         this.versionCaptionLabel.setFont(FontLoader.loadFont("Poppins-Regular.ttf", "Poppins", 12F));
         this.versionCaptionLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: #ffb400");
-        this.versionCaptionLabel.setPosition(mainX + 538, mainY + 144);
-        this.versionCaptionLabel.setSize(110, 18);
+        this.versionCaptionLabel.setPosition(mainX + 390, mainY + 144);
+        this.versionCaptionLabel.setSize(120, 18);
 
         this.versionField = new JFXTextField();
         styleSearchField(this.versionField);
         this.versionField.setPromptText("1.21.11");
-        this.versionField.setLayoutX(mainX + 648);
+        this.versionField.setLayoutX(mainX + 516);
         this.versionField.setLayoutY(mainY + 140);
-        this.versionField.setPrefWidth(86);
+        this.versionField.setPrefWidth(100);
         this.versionField.setPrefHeight(32);
         this.versionField.setOnAction(e -> applyVersionChange());
         root.getChildren().add(this.versionField);
 
         this.versionApplyButton = createGhostButton("Valider", 94, 32);
-        this.versionApplyButton.setLayoutX(mainX + 742);
+        this.versionApplyButton.setLayoutX(mainX + 626);
         this.versionApplyButton.setLayoutY(mainY + 140);
         this.versionApplyButton.setOnAction(e -> applyVersionChange());
         root.getChildren().add(this.versionApplyButton);
@@ -466,10 +471,10 @@ public class LauncherShaders extends IScreen {
                 Label title = new Label(item.displayName);
                 title.setStyle("-fx-text-fill: rgba(255,255,255,0.96); -fx-font-size: 15px; -fx-font-family: 'Comfortaa';");
 
-                Label meta = new Label(item.typeLabel + " • " + formatSize(item.size) + " • " + dateFormat.format(item.lastModified));
+                Label meta = new Label(item.typeLabel + " â€¢ " + formatSize(item.size) + " â€¢ " + dateFormat.format(item.lastModified));
                 meta.setStyle("-fx-text-fill: rgba(255,255,255,0.55); -fx-font-size: 11px; -fx-font-family: 'Poppins';");
 
-                Label state = new Label(item.enabled ? "Actif" : "Désactivé");
+                Label state = new Label(item.enabled ? "Actif" : "DÃ©sactivÃ©");
                 state.setStyle(item.enabled
                         ? "-fx-text-fill: #ffb400; -fx-font-size: 12px; -fx-font-family: 'Poppins';"
                         : "-fx-text-fill: rgba(255,255,255,0.42); -fx-font-size: 12px; -fx-font-family: 'Poppins';");
@@ -477,7 +482,7 @@ public class LauncherShaders extends IScreen {
                 textBox.getChildren().addAll(title, meta, state);
                 HBox.setHgrow(textBox, Priority.ALWAYS);
 
-                JFXButton toggleButton = createCellButton(item.enabled ? "Désactiver" : "Activer", false);
+                JFXButton toggleButton = createCellButton(item.enabled ? "DÃ©sactiver" : "Activer", false);
                 toggleButton.setOnAction(e -> toggleShader(item));
 
                 JFXButton deleteButton = createCellButton("Supprimer", true);
@@ -531,7 +536,7 @@ public class LauncherShaders extends IScreen {
                 desc.setMaxWidth(430);
                 desc.setStyle("-fx-text-fill: rgba(255,255,255,0.80); -fx-font-size: 12px; -fx-font-family: 'Poppins';");
 
-                Label meta = new Label(item.categoriesLabel + " • " + item.downloads + " téléchargements");
+                Label meta = new Label(item.categoriesLabel + " â€¢ " + item.downloads + " tÃ©lÃ©chargements");
                 meta.setStyle("-fx-text-fill: rgba(255,255,255,0.45); -fx-font-size: 11px; -fx-font-family: 'Poppins';");
 
                 textBox.getChildren().addAll(title, author, desc, meta);
@@ -543,7 +548,7 @@ public class LauncherShaders extends IScreen {
                 pageButton.setMaxSize(78, 32);
                 pageButton.setOnAction(e -> openProjectPage(item));
 
-                JFXButton downloadButton = createCellButton("Télécharger", false);
+                JFXButton downloadButton = createCellButton("TÃ©lÃ©charger", false);
                 downloadButton.setPrefSize(118, 32);
                 downloadButton.setMinSize(118, 32);
                 downloadButton.setMaxSize(118, 32);
@@ -611,7 +616,7 @@ public class LauncherShaders extends IScreen {
         for (LocalShaderItem item : this.localListView.getItems()) {
             if (item.enabled) enabledCount++;
         }
-        this.localStatusLabel.setText(shownCount + " shaderpack(s) affiché(s) • " + enabledCount + " actif(s) • " + shortenPath(shaderpacksDir, 34));
+        this.localStatusLabel.setText(shownCount + " shaderpack(s) affichÃ©(s) â€¢ " + enabledCount + " actif(s) â€¢ " + shortenPath(shaderpacksDir, 34));
     }
 
     private void setDiscoverMode(boolean discover) {
@@ -703,9 +708,9 @@ public class LauncherShaders extends IScreen {
                         @Override
                         public void run() {
                             if (onlineListView.getItems().isEmpty()) {
-                                onlineStatusLabel.setText("Aucun shader trouvé pour " + mcVersion + ".");
+                                onlineStatusLabel.setText("Aucun shader trouvÃ© pour " + mcVersion + ".");
                             } else {
-                                onlineStatusLabel.setText(onlineListView.getItems().size() + " shader(s) trouvés pour " + mcVersion + ".");
+                                onlineStatusLabel.setText(onlineListView.getItems().size() + " shader(s) trouvÃ©s pour " + mcVersion + ".");
                             }
                         }
                     });
@@ -824,32 +829,31 @@ public class LauncherShaders extends IScreen {
 
     private Image loadRemoteImage(String url) {
         if (url == null || url.trim().isEmpty()) return fallbackIcon;
-
         Image cached = remoteImageCache.get(url);
-        if (cached != null) {
-            return cached;
-        }
-
+        if (cached != null) return cached;
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
             connection.setInstanceFollowRedirects(true);
             connection.setRequestProperty("User-Agent", MODRINTH_USER_AGENT);
             connection.setConnectTimeout(7000);
             connection.setReadTimeout(7000);
-
             try (InputStream in = new BufferedInputStream(connection.getInputStream())) {
-                Image image = new Image(in, 52, 52, true, true);
-                if (image.isError() || image.getWidth() <= 1) {
-                    remoteImageCache.put(url, fallbackIcon);
-                    return fallbackIcon;
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                byte[] chunk = new byte[4096];
+                int read;
+                while ((read = in.read(chunk)) != -1) buffer.write(chunk, 0, read);
+                byte[] bytes = buffer.toByteArray();
+                Image img = new Image(new ByteArrayInputStream(bytes), 52, 52, true, true);
+                if (!img.isError() && img.getWidth() > 1) { remoteImageCache.put(url, img); return img; }
+                BufferedImage bi = ImageIO.read(new ByteArrayInputStream(bytes));
+                if (bi != null) {
+                    Image fxImg = SwingFXUtils.toFXImage(bi, null);
+                    if (fxImg != null && !fxImg.isError() && fxImg.getWidth() > 1) { remoteImageCache.put(url, fxImg); return fxImg; }
                 }
-                remoteImageCache.put(url, image);
-                return image;
             }
-        } catch (Exception ignored) {
-            remoteImageCache.put(url, fallbackIcon);
-            return fallbackIcon;
-        }
+        } catch (Exception ignored) {}
+        remoteImageCache.put(url, fallbackIcon);
+        return fallbackIcon;
     }
 
     private String sanitizeThreadName(String value) {
@@ -872,7 +876,7 @@ public class LauncherShaders extends IScreen {
     }
 
     private void downloadOnlineShader(final OnlineShaderItem item) {
-        onlineStatusLabel.setText("Téléchargement de " + item.title + "...");
+        onlineStatusLabel.setText("TÃ©lÃ©chargement de " + item.title + "...");
 
         Thread downloadThread = new Thread(new Runnable() {
             @Override
@@ -889,7 +893,7 @@ public class LauncherShaders extends IScreen {
                         Platform.runLater(new Runnable() {
                             @Override
                             public void run() {
-                                showError("Aucun fichier", "Aucune version compatible trouvée pour " + mcVersion + ".");
+                                showError("Aucun fichier", "Aucune version compatible trouvÃ©e pour " + mcVersion + ".");
                             }
                         });
                         return;
@@ -901,7 +905,7 @@ public class LauncherShaders extends IScreen {
                         Platform.runLater(new Runnable() {
                             @Override
                             public void run() {
-                                showError("Aucun fichier", "Aucun fichier téléchargeable trouvé.");
+                                showError("Aucun fichier", "Aucun fichier tÃ©lÃ©chargeable trouvÃ©.");
                             }
                         });
                         return;
@@ -937,7 +941,7 @@ public class LauncherShaders extends IScreen {
                         Platform.runLater(new Runnable() {
                             @Override
                             public void run() {
-                                showError("Erreur", "Impossible de récupérer le fichier du shader.");
+                                showError("Erreur", "Impossible de rÃ©cupÃ©rer le fichier du shader.");
                             }
                         });
                         return;
@@ -950,16 +954,16 @@ public class LauncherShaders extends IScreen {
                         @Override
                         public void run() {
                             loadShaders();
-                            onlineStatusLabel.setText(item.title + " téléchargé.");
-                            showInfo("Téléchargement terminé", item.title + " a été ajouté dans le dossier shaderpacks.");
+                            onlineStatusLabel.setText(item.title + " tÃ©lÃ©chargÃ©.");
+                            showInfo("TÃ©lÃ©chargement terminÃ©", item.title + " a Ã©tÃ© ajoutÃ© dans le dossier shaderpacks.");
                         }
                     });
                 } catch (Exception e) {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            onlineStatusLabel.setText("Échec du téléchargement.");
-                            showError("Erreur", "Impossible de télécharger ce shader.");
+                            onlineStatusLabel.setText("Ã‰chec du tÃ©lÃ©chargement.");
+                            showError("Erreur", "Impossible de tÃ©lÃ©charger ce shader.");
                         }
                     });
                 }
@@ -983,7 +987,7 @@ public class LauncherShaders extends IScreen {
         if (chosen != null) {
             try {
                 copyFileIntoDirectory(chosen.toPath(), shaderpacksDir.toPath());
-                showInfo("Shaderpack ajouté", chosen.getName() + " a bien été copié dans le dossier shaderpacks.");
+                showInfo("Shaderpack ajoutÃ©", chosen.getName() + " a bien Ã©tÃ© copiÃ© dans le dossier shaderpacks.");
                 loadShaders();
             } catch (IOException e) {
                 showError("Import impossible", "Impossible de copier le shaderpack : " + e.getMessage());
@@ -997,7 +1001,7 @@ public class LauncherShaders extends IScreen {
         if (chosenDirectory != null) {
             try {
                 copyDirectoryIntoDirectory(chosenDirectory.toPath(), shaderpacksDir.toPath());
-                showInfo("Dossier ajouté", chosenDirectory.getName() + " a bien été copié dans le dossier shaderpacks.");
+                showInfo("Dossier ajoutÃ©", chosenDirectory.getName() + " a bien Ã©tÃ© copiÃ© dans le dossier shaderpacks.");
                 loadShaders();
             } catch (IOException e) {
                 showError("Import impossible", "Impossible de copier le dossier : " + e.getMessage());
@@ -1019,7 +1023,7 @@ public class LauncherShaders extends IScreen {
             Files.move(item.file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
             loadShaders();
         } catch (IOException e) {
-            showError("Action impossible", "Impossible de changer l'état du shaderpack : " + e.getMessage());
+            showError("Action impossible", "Impossible de changer l'Ã©tat du shaderpack : " + e.getMessage());
         }
     }
 
@@ -1027,7 +1031,7 @@ public class LauncherShaders extends IScreen {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Supprimer le shaderpack");
         alert.setHeaderText(item.displayName);
-        alert.setContentText("Confirmer la suppression de cet élément ?");
+        alert.setContentText("Confirmer la suppression de cet Ã©lÃ©ment ?");
         Optional<ButtonType> result = alert.showAndWait();
         if (!result.isPresent() || result.get() != ButtonType.OK) return;
 
