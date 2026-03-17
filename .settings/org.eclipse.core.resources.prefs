@@ -1,5 +1,6 @@
 eclipse.preferences.version=1
-encoding//src/java/fr/majestycraft/App.java=UTF-8
-encoding//src/java/fr/majestycraft/launcher/LauncherPanel.java=UTF-8
-encoding//src/java/fr/majestycraft/launcher/LauncherSettings.java=UTF-8
-encoding/<project>=windows-1252
+encoding//src/main/java=UTF-8
+encoding//src/main/resources=UTF-8
+encoding//src/test/java=UTF-8
+encoding//src/test/resources=UTF-8
+encoding/<project>=UTF-8
