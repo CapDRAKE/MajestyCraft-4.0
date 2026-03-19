@@ -34,7 +34,7 @@ public class Main {
         config.loadConfiguration();
     }
     /**
-     * Point d'entrée du programme
+     * Point d'entrï¿½e du programme
      *
      * @param args Les arguments de la ligne de commande
      */
@@ -42,15 +42,19 @@ public class Main {
         configureLogging();
         loadConfiguration(new GameEngine(null, null, null, null));
         language = (String) config.getValue(EnumConfig.LANGUAGE);
+        if (language == null) language = "FranÃ§ais";
         switch (language) {
-            case "Français":
+            case "FranÃ§ais":
             	Locale.setDefault(new Locale("fr", "FR"));
                 break;
             case "English":
             	Locale.setDefault(new Locale("en", "US"));
                 break;
-            case "Español":
+            case "EspaÃ±ol":
             	Locale.setDefault(new Locale("es", "ES"));
+                break;
+            default:
+            	Locale.setDefault(new Locale("fr", "FR"));
                 break;
         }
         bundle = ResourceBundle.getBundle("resources.messages", Locale.getDefault());
@@ -75,7 +79,7 @@ public class Main {
     }
 
     /**
-     * Affiche la pop-up au démarrage de l'application
+     * Affiche la pop-up au dï¿½marrage de l'application
      */
     static void showStartupPopup() {
         Preferences prefs = Preferences.userNodeForPackage(App.class);

@@ -437,7 +437,7 @@ public class LauncherPanel extends IScreen {
     }
 
     private boolean isMicrosoftAccount() {
-        return (boolean) config.getValue(EnumConfig.USE_MICROSOFT);
+        return cfgBool(EnumConfig.USE_MICROSOFT);
     }
 
     private void authenticateOffline(String username) {
@@ -571,11 +571,11 @@ public class LauncherPanel extends IScreen {
     }
 
     private void initConfig(Pane root) {
-        boolean useDiscord = (boolean) config.getValue(EnumConfig.USE_DISCORD);
-        boolean useMusic = (boolean) config.getValue(EnumConfig.USE_MUSIC);
-        boolean useConnect = (boolean) config.getValue(EnumConfig.USE_CONNECT);
-        boolean useMicrosoft = (boolean) config.getValue(EnumConfig.USE_MICROSOFT);
-        boolean usePremium = (boolean) config.getValue(EnumConfig.USE_PREMIUM);
+        boolean useDiscord = cfgBool(EnumConfig.USE_DISCORD);
+        boolean useMusic = cfgBool(EnumConfig.USE_MUSIC);
+        boolean useConnect = cfgBool(EnumConfig.USE_CONNECT);
+        boolean useMicrosoft = cfgBool(EnumConfig.USE_MICROSOFT);
+        boolean usePremium = cfgBool(EnumConfig.USE_PREMIUM);
         String username = (String) config.getValue(EnumConfig.USERNAME);
 
         if (useDiscord) rpc.start();
@@ -844,14 +844,14 @@ public class LauncherPanel extends IScreen {
         this.usernameField.setPromptText(INPUT_PSEUDO_OR_EMAIL);
         styleUsernameField(this.usernameField);
 
-        if (!(boolean) config.getValue(EnumConfig.USE_MICROSOFT)) {
+        if (!cfgBool(EnumConfig.USE_MICROSOFT)) {
             this.usernameField.setText((String) this.config.getValue(EnumConfig.USERNAME));
         }
         root.getChildren().add(this.usernameField);
 
         this.rememberMe = new JFXToggleButton();
         this.rememberMe.setText(LABEL_REMEMBER_ME);
-        this.rememberMe.setSelected((boolean) config.getValue(EnumConfig.REMEMBER_ME));
+        this.rememberMe.setSelected(cfgBool(EnumConfig.REMEMBER_ME));
         this.rememberMe.getStyleClass().add("jfx-toggle-button");
         this.rememberMe.setLayoutX(connX + 112);
         this.rememberMe.setLayoutY(connY + 205);
@@ -876,22 +876,14 @@ public class LauncherPanel extends IScreen {
             config.updateValue("useMicrosoft", false);
 
             String username = usernameField.getText();
-            String password = "";
 
             if (username.length() <= 3) {
                 new LauncherAlert(AUTH_FAILED, USERNAME_ALERT);
                 return;
             }
 
-            if (password.isEmpty()) {
-                auth = new GameAuth(username, password, AccountType.OFFLINE);
-                connectAccountCrackCO(root);
-            } else {
-                auth = new GameAuth(username, password, AccountType.MOJANG);
-                connectAccountPremiumCO(username, root);
-                if ((boolean) config.getValue(EnumConfig.REMEMBER_ME)) config.updateValue("password", password);
-                else config.updateValue("password", "");
-            }
+            auth = new GameAuth(username, "", AccountType.OFFLINE);
+            connectAccountCrackCO(root);
 
             if (auth.isLogged()) {
                 config.updateValue("username", username);
@@ -955,14 +947,14 @@ public class LauncherPanel extends IScreen {
                 autoLoginButton.setVisible(false);
                 autoLoginRectangle.setVisible(false);
                 autoLoginButton2.setVisible(false);
-                if ((boolean) config.getValue(EnumConfig.USE_CONNECT)) engine.reg(App.getGameConnect());
+                if (cfgBool(EnumConfig.USE_CONNECT)) engine.reg(App.getGameConnect());
                 checkAutoLogin(root);
             }
         });
 
         if (this.config.getValue(EnumConfig.AUTOLOGIN).equals(true)) {
             Platform.runLater(() -> {
-                autoLoginTimer = new Timer();
+                autoLoginTimer = new Timer("MajestyLauncher-AutoLogin", true);
                 TimerTask timerTask = new TimerTask() {
                     final int waitTime = 7;
                     int elapsed = 0;
@@ -1124,7 +1116,7 @@ public class LauncherPanel extends IScreen {
         engine.reg(GameMemory.getMemory(Double.parseDouble((String) this.config.getValue(EnumConfig.RAM))));
         engine.reg(GameSize.getWindowSize(Integer.parseInt((String) this.config.getValue(EnumConfig.GAME_SIZE))));
 
-        if ((boolean) config.getValue(EnumConfig.USE_CONNECT)) engine.reg(App.getGameConnect());
+        if (cfgBool(EnumConfig.USE_CONNECT)) engine.reg(App.getGameConnect());
 
         boolean useVmArgs = (Boolean) config.getValue(EnumConfig.USE_VM_ARGUMENTS);
         String vmArgs = (String) config.getValue(EnumConfig.VM_ARGUMENTS);
@@ -1256,13 +1248,12 @@ public class LauncherPanel extends IScreen {
     }
 
     private String urlModifier(String version) {
-        if ((boolean) (config.getValue(EnumConfig.USE_FORGE))) {
+        Object forgeVal = config.getValue(EnumConfig.USE_FORGE);
+        boolean useForge = forgeVal instanceof Boolean ? (Boolean) forgeVal : false;
+        if (useForge) {
             return "/" + version + "/forge/";
-        } else if ((boolean) (config.getValue(EnumConfig.USE_OPTIFINE))) {
-            return "/" + version + "/";
-        } else {
-            return "/" + version + "/";
         }
+        return "/" + version + "/";
     }
 
     public LauncherConfig getConfig() {
@@ -1479,6 +1470,11 @@ public class LauncherPanel extends IScreen {
 
     private boolean isSidebarHintDismissed(String keySuffix) {
         return uiPreferences.getBoolean(SIDEBAR_HINT_PREFIX + keySuffix, false);
+    }
+
+    private boolean cfgBool(EnumConfig key) {
+        Object v = config.getValue(key);
+        return v instanceof Boolean ? (Boolean) v : false;
     }
 
     private void dismissSidebarHint(String keySuffix, Node bubble) {

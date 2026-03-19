@@ -7,8 +7,10 @@ public class Utils {
 
     public static void regGameStyle(GameEngine engine, LauncherConfig config) {
         String version = (String) config.getValue(EnumConfig.VERSION);
-        boolean useForge = (boolean) (config.getValue(EnumConfig.USE_FORGE));
-        boolean useOptifine = (boolean) (config.getValue(EnumConfig.USE_OPTIFINE));
+        Object forgeVal = config.getValue(EnumConfig.USE_FORGE);
+        Object optifineVal = config.getValue(EnumConfig.USE_OPTIFINE);
+        boolean useForge = forgeVal instanceof Boolean ? (Boolean) forgeVal : false;
+        boolean useOptifine = optifineVal instanceof Boolean ? (Boolean) optifineVal : false;
 
         engine.setGameStyle(determineGameStyle(version, useForge, useOptifine));
     }
