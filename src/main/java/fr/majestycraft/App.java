@@ -82,6 +82,13 @@ public class App extends AlternativeBase {
             Pattern.CASE_INSENSITIVE
     );
 
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            EXECUTOR_SERVICE.shutdownNow();
+            NET_CHECK_EXECUTOR.shutdownNow();
+        }, "MajestyLauncher-ShutdownHook"));
+    }
+
     private static App instance;
     private Scene scene;
 
@@ -96,8 +103,10 @@ public class App extends AlternativeBase {
 
     private static final GameConnect GAME_CONNECT = new GameConnect(PARTNER_IP, PARTNER_PORT);
 
-    // 2 threads : un pour netIsAvailable, un pour les résolutions Mojang / autres tâches
+    // Pool principal pour les résolutions Mojang / autres tâches
     private static final ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(2);
+    // Pool dédié à la vérification réseau (évite les deadlocks si appelé depuis EXECUTOR_SERVICE)
+    private static final ExecutorService NET_CHECK_EXECUTOR = Executors.newSingleThreadExecutor();
 
     /**
      * Lance le launcher.
@@ -557,15 +566,11 @@ public class App extends AlternativeBase {
                 StandardOpenOption.TRUNCATE_EXISTING);
     }
 
-    private static String ensureTrailingSlash(String value) {
-        return value.endsWith("/") ? value : value + "/";
-    }
-
     private static String htmlDecode(String value) {
         return value == null ? null : value.replace("&amp;", "&");
     }
 
-    private static String downloadTextStatic(String urlStr) throws IOException {
+    public static String downloadTextStatic(String urlStr) throws IOException {
         return downloadTextResponse(urlStr, null, null).body;
     }
 
@@ -685,7 +690,7 @@ public class App extends AlternativeBase {
      * Vérifie si la connexion Internet est disponible.
      */
     public static boolean netIsAvailable() {
-        Future<Boolean> future = EXECUTOR_SERVICE.submit(() -> {
+        Future<Boolean> future = NET_CHECK_EXECUTOR.submit(() -> {
             try {
                 URL url = new URL("http://www.google.com");
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
