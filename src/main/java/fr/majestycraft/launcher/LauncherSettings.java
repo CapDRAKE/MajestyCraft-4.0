@@ -29,9 +29,6 @@ import javafx.util.Duration;
 
 import java.awt.Desktop;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -103,9 +100,6 @@ public class LauncherSettings extends IScreen {
     private final Set<String> forgeVersionsAvailable = Collections.synchronizedSet(new HashSet<>());
     private final Set<String> optifineVersionsAvailable = Collections.synchronizedSet(new HashSet<>());
     private volatile boolean optifineVersionsLoaded = false;
-
-    @SuppressWarnings("unused")
-    private final Gson gson = new Gson();
 
     private static final List<String> VANILLA_SUPPORTED_RELEASES = Arrays.asList(
             "1.8", "1.9", "1.10.2", "1.11.2", "1.12.2", "1.13.2", "1.14.4", "1.15.2",
@@ -903,31 +897,7 @@ public class LauncherSettings extends IScreen {
     }
 
     private String downloadText(String urlStr) throws IOException {
-        HttpURLConnection connection = null;
-        InputStream is = null;
-        try {
-            URL url = new URL(urlStr);
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(8000);
-            connection.setReadTimeout(12000);
-            connection.setRequestProperty("User-Agent", "MajestyLauncher");
-
-            int code = connection.getResponseCode();
-            is = (code >= 200 && code < 300) ? connection.getInputStream() : connection.getErrorStream();
-            if (is == null) throw new IOException("HTTP " + code + " sans body");
-
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) sb.append(line);
-                if (code < 200 || code >= 300) throw new IOException("HTTP " + code + " -> " + sb);
-                return sb.toString();
-            }
-        } finally {
-            if (is != null) try { is.close(); } catch (Exception ignored) {}
-            if (connection != null) connection.disconnect();
-        }
+        return App.downloadTextStatic(urlStr);
     }
 
     private boolean isSnapshot(String versionId) {
