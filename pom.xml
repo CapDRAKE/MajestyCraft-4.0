@@ -19,11 +19,10 @@
 
     <dependencies>
 
-        <!-- AlternativeAPI (inclut AlternativeAuth transitivement) -->
         <dependency>
             <groupId>fr.trxyy.alternative</groupId>
             <artifactId>alternative-api</artifactId>
-            <version>1.5.4</version>
+            <version>1.6</version>
         </dependency>
 
         <!-- JavaFX -->
