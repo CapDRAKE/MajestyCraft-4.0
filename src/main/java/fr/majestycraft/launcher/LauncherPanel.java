@@ -1248,12 +1248,7 @@ public class LauncherPanel extends IScreen {
     }
 
     private String urlModifier(String version) {
-        Object forgeVal = config.getValue(EnumConfig.USE_FORGE);
-        boolean useForge = forgeVal instanceof Boolean ? (Boolean) forgeVal : false;
-        if (useForge) {
-            return "/" + version + "/forge/";
-        }
-        return "/" + version + "/";
+        return Utils.resolveServerPath(version, Utils.resolveSelectedModloader(config));
     }
 
     public LauncherConfig getConfig() {

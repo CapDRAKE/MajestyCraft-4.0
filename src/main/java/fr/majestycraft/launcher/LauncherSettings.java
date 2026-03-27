@@ -46,7 +46,11 @@ public class LauncherSettings extends IScreen {
 
     private final JFXCheckBox autoLogin;
     private final JFXCheckBox connect;
+    private static JFXCheckBox useVanilla;
     private static JFXCheckBox useForge;
+    private static JFXCheckBox useFabric;
+    private static JFXCheckBox useQuilt;
+    private static JFXCheckBox useNeoForge;
     private static JFXCheckBox useOptifine;
     private final JFXCheckBox useDiscord;
     private final JFXCheckBox useMusic;
@@ -66,6 +70,8 @@ public class LauncherSettings extends IScreen {
     private LauncherLabel heroLine1;
     private LauncherLabel heroLine2;
     private LauncherLabel heroLine3;
+    private LauncherLabel modloaderLabel;
+    private boolean updatingModloaderSelection;
 
     private static final String LABEL_SETTINGS = Main.bundle.getString("LABEL_SETTINGS");
     private static final String LABEL_WINDOW_SIZE = Main.bundle.getString("LABEL_WINDOW_SIZE");
@@ -94,11 +100,24 @@ public class LauncherSettings extends IScreen {
     private static final int MAX_SNAPSHOTS = 50;
     private static final String FORGE_PROMOTIONS_URL =
             "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json";
+    private static final String FABRIC_GAME_VERSIONS_URL =
+            "https://meta.fabricmc.net/v2/versions/game";
+    private static final String QUILT_GAME_VERSIONS_URL =
+            "https://meta.quiltmc.org/v3/versions/game";
+    private static final String NEOFORGE_MAVEN_METADATA_URL =
+            "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml";
+    private static final String SERVER_GAME_BASE_URL = "https://majestycraft.com/minecraft";
 
     private final Map<String, String> mojangVersionUrlById = new HashMap<>();
     private final Map<String, String> mojangVersionTypeById = new HashMap<>();
     private final Set<String> forgeVersionsAvailable = Collections.synchronizedSet(new HashSet<>());
+    private final Set<String> fabricVersionsAvailable = Collections.synchronizedSet(new HashSet<>());
+    private final Set<String> quiltVersionsAvailable = Collections.synchronizedSet(new HashSet<>());
+    private final Set<String> neoForgeVersionsAvailable = Collections.synchronizedSet(new HashSet<>());
     private final Set<String> optifineVersionsAvailable = Collections.synchronizedSet(new HashSet<>());
+    private volatile boolean fabricVersionsLoaded = false;
+    private volatile boolean quiltVersionsLoaded = false;
+    private volatile boolean neoForgeVersionsLoaded = false;
     private volatile boolean optifineVersionsLoaded = false;
 
     private static final List<String> VANILLA_SUPPORTED_RELEASES = Arrays.asList(
@@ -183,28 +202,28 @@ public class LauncherSettings extends IScreen {
         this.heroSubtitle.setSize(260, 24);
 
         this.heroLine1 = new LauncherLabel(root);
-        this.heroLine1.setText("• Versions vanilla, Forge et Optifine");
-        this.heroLine1.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        this.heroLine1.setText("• Vanilla, Forge, Fabric, Quilt, NeoForge, OptiFine");
+        this.heroLine1.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         this.heroLine1.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.70)");
         this.heroLine1.setPosition(120, 362);
         this.heroLine1.setSize(260, 20);
 
         this.heroLine2 = new LauncherLabel(root);
         this.heroLine2.setText("• RAM, fenêtre, langue...");
-        this.heroLine2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        this.heroLine2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         this.heroLine2.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.58)");
         this.heroLine2.setPosition(120, 388);
         this.heroLine2.setSize(280, 20);
 
         this.heroLine3 = new LauncherLabel(root);
         this.heroLine3.setText("• Connexion auto et Discord");
-        this.heroLine3.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        this.heroLine3.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         this.heroLine3.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.46)");
         this.heroLine3.setPosition(120, 414);
         this.heroLine3.setSize(270, 20);
 
         final int cardW = 565;
-        final int cardH = 620;
+        final int cardH = 660;
         final int cardX = 360;
         final int cardY = 65;
 
@@ -476,6 +495,9 @@ public class LauncherSettings extends IScreen {
         root.getChildren().add(this.includeSnapshots);
 
         loadForgeAvailableVersionsAsync(pane);
+        loadFabricAvailableVersionsAsync(pane);
+        loadQuiltAvailableVersionsAsync(pane);
+        loadNeoForgeAvailableVersionsAsync(pane);
         loadOptiFineAvailableVersionsAsync(pane);
         populateVersionListFromMojang(pane, (String) pane.getConfig().getValue(EnumConfig.VERSION));
         this.versionList.setOnAction(event -> applyModRestrictionsForVersion(versionList.getValue(), pane));
@@ -524,36 +546,36 @@ public class LauncherSettings extends IScreen {
         this.memorySliderLabel.setText((int) this.memorySlider.getValue() + " GB");
 
         /* ===== Toggles ===== */
-        useForge = new JFXCheckBox("Forge");
-        Object cfgForge = pane.getConfig().getValue(EnumConfig.USE_FORGE);
-        useForge.setSelected(cfgForge instanceof Boolean ? (Boolean) cfgForge : false);
-        styleCheckBox(useForge);
-        useForge.setLayoutX(leftX);
-        useForge.setLayoutY(cardY + 382);
-        useForge.setOnAction(e -> {
-            if (useOptifine != null) useOptifine.setSelected(false);
-            pane.getConfig().updateValue("useForge", useForge.isSelected());
-        });
-        root.getChildren().add(useForge);
+        this.modloaderLabel = new LauncherLabel(root);
+        this.modloaderLabel.setText("Modloader");
+        this.modloaderLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        this.modloaderLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
+        this.modloaderLabel.setSize(fieldW, 22);
+        this.modloaderLabel.setPosition(leftX, cardY + 356);
 
-        useOptifine = new JFXCheckBox("Optifine");
-        Object cfgOpti = pane.getConfig().getValue(EnumConfig.USE_OPTIFINE);
-        useOptifine.setSelected(cfgOpti instanceof Boolean ? (Boolean) cfgOpti : false);
-        styleCheckBox(useOptifine);
-        useOptifine.setLayoutX(leftX);
-        useOptifine.setLayoutY(cardY + 414);
-        useOptifine.setOnAction(e -> {
-            if (useForge != null) useForge.setSelected(false);
-            pane.getConfig().updateValue("useOptifine", useOptifine.isSelected());
-        });
+        final int modloaderCol2X = leftX + 118;
+        useVanilla = createModloaderCheckBox("Vanilla", leftX, cardY + 382, Utils.ModloaderType.VANILLA);
+        useForge = createModloaderCheckBox("Forge", leftX, cardY + 414, Utils.ModloaderType.FORGE);
+        useFabric = createModloaderCheckBox("Fabric", leftX, cardY + 446, Utils.ModloaderType.FABRIC);
+        useQuilt = createModloaderCheckBox("Quilt", modloaderCol2X, cardY + 382, Utils.ModloaderType.QUILT);
+        useNeoForge = createModloaderCheckBox("NeoForge", modloaderCol2X, cardY + 414, Utils.ModloaderType.NEOFORGE);
+        useOptifine = createModloaderCheckBox("OptiFine", modloaderCol2X, cardY + 446, Utils.ModloaderType.OPTIFINE);
+
+        root.getChildren().add(useVanilla);
+        root.getChildren().add(useForge);
+        root.getChildren().add(useFabric);
+        root.getChildren().add(useQuilt);
+        root.getChildren().add(useNeoForge);
         root.getChildren().add(useOptifine);
+
+        setSelectedModloader(resolveConfiguredModloader(pane));
 
         this.useMusic = new JFXCheckBox(LABEL_PLAY_MUSIC);
         Object cfgMusic = pane.getConfig().getValue(EnumConfig.USE_MUSIC);
         this.useMusic.setSelected(cfgMusic instanceof Boolean ? (Boolean) cfgMusic : false);
         styleCheckBox(this.useMusic);
-        this.useMusic.setLayoutX(leftX);
-        this.useMusic.setLayoutY(cardY + 446);
+        this.useMusic.setLayoutX(rightX);
+        this.useMusic.setLayoutY(cardY + 478);
         this.useMusic.setOnAction(e -> {
             pane.getConfig().updateValue("usemusic", useMusic.isSelected());
             pane.getMediaPlayer().setMute(!useMusic.isSelected());
@@ -591,7 +613,7 @@ public class LauncherSettings extends IScreen {
         this.vmArguments = new LauncherTextField(root);
         this.vmArguments.setText((String) pane.getConfig().getValue(EnumConfig.VM_ARGUMENTS));
         this.vmArguments.setSize(cardW - 80, 30);
-        this.vmArguments.setPosition(leftX, cardY + 496);
+        this.vmArguments.setPosition(leftX, cardY + 526);
         this.vmArguments.setStyle(
                 "-fx-background-color: rgba(255,255,255,0.08);" +
                 "-fx-text-fill: rgba(255,255,255,0.92);" +
@@ -609,7 +631,9 @@ public class LauncherSettings extends IScreen {
         this.connect.setSelected(cfgConnect instanceof Boolean ? (Boolean) cfgConnect : false);
         styleCheckBox(this.connect);
         this.connect.setLayoutX(leftX);
-        this.connect.setLayoutY(cardY + 540);
+        this.connect.setLayoutY(cardY + 570);
+        this.connect.setPrefWidth(cardW - 80);
+        this.connect.setWrapText(true);
         this.connect.setOnAction(e -> {
             pane.getConfig().updateValue("useConnect", connect.isSelected());
             if (connect.isSelected()) engine.reg(App.getGameConnect());
@@ -632,6 +656,7 @@ public class LauncherSettings extends IScreen {
         saveButton.setPrefWidth(210);
         saveButton.setOnAction(event -> {
             HashMap<String, String> configMap = new HashMap<>();
+            Utils.ModloaderType selectedModloader = getSelectedModloaderFromControls();
             configMap.put("allocatedram", String.valueOf(memorySlider.getValue()));
             configMap.put("gamesize", "" + GameSize.getWindowSize(windowsSizeList.getValue()));
             configMap.put("autologin", "" + autoLogin.isSelected());
@@ -639,8 +664,11 @@ public class LauncherSettings extends IScreen {
             configMap.put("vmarguments", "" + vmArguments.getText());
             configMap.put("version", "" + versionList.getValue());
             configMap.put("language", "" + LanguageList.getValue());
-            configMap.put("useforge", "" + useForge.isSelected());
-            configMap.put("useOptifine", "" + useOptifine.isSelected());
+            configMap.put(EnumConfig.USE_FORGE.getOption(), "" + (selectedModloader == Utils.ModloaderType.FORGE));
+            configMap.put(EnumConfig.USE_FABRIC.getOption(), "" + (selectedModloader == Utils.ModloaderType.FABRIC));
+            configMap.put(EnumConfig.USE_QUILT.getOption(), "" + (selectedModloader == Utils.ModloaderType.QUILT));
+            configMap.put(EnumConfig.USE_NEOFORGE.getOption(), "" + (selectedModloader == Utils.ModloaderType.NEOFORGE));
+            configMap.put(EnumConfig.USE_OPTIFINE.getOption(), "" + (selectedModloader == Utils.ModloaderType.OPTIFINE));
             configMap.put("usemusic", "" + useMusic.isSelected());
             configMap.put("usediscord", "" + useDiscord.isSelected());
             configMap.put(EnumConfig.USE_CONNECT.getOption(), "" + connect.isSelected());
@@ -653,11 +681,11 @@ public class LauncherSettings extends IScreen {
 
             String selectedVersion = String.valueOf(pane.getConfig().getValue(EnumConfig.VERSION));
             try {
-                if (useOptifine.isSelected()) {
+                if (selectedModloader == Utils.ModloaderType.OPTIFINE) {
                     App.ensureOptiFineRuntime(selectedVersion);
                 }
 
-                GameLinks links = buildGameLinks(selectedVersion, useForge.isSelected(), useOptifine.isSelected());
+                GameLinks links = buildGameLinks(selectedVersion, selectedModloader);
                 engine.reg(links);
             } catch (Exception e) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -704,16 +732,21 @@ public class LauncherSettings extends IScreen {
             animateIn(this.memorySlider, 18, 0, 480);
             animateIn(this.memorySliderLabel, 18, 0, 500);
 
-            animateIn(useForge, 12, 0, 520);
-            animateIn(useOptifine, 12, 0, 545);
-            animateIn(useMusic, 12, 0, 570);
-            animateIn(autoLogin, 12, 0, 595);
-            animateIn(useDiscord, 12, 0, 620);
-            animateIn(useVMArguments, 12, 0, 645);
-            animateIn(vmArguments, 12, 0, 670);
-            animateIn(connect, 12, 0, 695);
-            animateIn(openGameDirButton, 0, 14, 720);
-            animateIn(saveButton, 0, 14, 750);
+            animateIn(modloaderLabel, 12, 0, 520);
+            animateIn(useVanilla, 12, 0, 545);
+            animateIn(useForge, 12, 0, 570);
+            animateIn(useFabric, 12, 0, 595);
+            animateIn(useQuilt, 12, 0, 620);
+            animateIn(useNeoForge, 12, 0, 645);
+            animateIn(useOptifine, 12, 0, 670);
+            animateIn(autoLogin, 12, 0, 545);
+            animateIn(useDiscord, 12, 0, 570);
+            animateIn(useVMArguments, 12, 0, 595);
+            animateIn(useMusic, 12, 0, 620);
+            animateIn(vmArguments, 12, 0, 695);
+            animateIn(connect, 12, 0, 720);
+            animateIn(openGameDirButton, 0, 14, 745);
+            animateIn(saveButton, 0, 14, 770);
         });
     }
 
@@ -778,13 +811,33 @@ public class LauncherSettings extends IScreen {
         );
     }
 
-    private GameLinks buildGameLinks(String version, boolean forge, boolean optifine) throws IOException {
+    private GameLinks buildGameLinks(String version, Utils.ModloaderType modloaderType) throws IOException {
+        if (modloaderType == Utils.ModloaderType.FABRIC
+                || modloaderType == Utils.ModloaderType.QUILT
+                || modloaderType == Utils.ModloaderType.NEOFORGE) {
+            return App.buildOfficialModloaderGameLinks(version, modloaderType);
+        }
+
+        String serverBase = SERVER_GAME_BASE_URL + Utils.resolveServerPath(version, modloaderType);
+
+        if (modloaderType == Utils.ModloaderType.OPTIFINE) {
+            String fullUrl = mojangVersionUrlById.get(version);
+            if ((fullUrl == null || fullUrl.trim().isEmpty()) && App.netIsAvailable()) {
+                fullUrl = App.resolveMojangVersionJsonUrlStatic(version);
+            }
+            if (fullUrl == null || fullUrl.trim().isEmpty()) {
+                throw new IOException("Impossible de rÃ©soudre le JSON Mojang pour OptiFine " + version);
+            }
+            return App.buildOptiFineGameLinksFromResolvedJson(fullUrl, version);
+        }
+
+
         String fullUrl = mojangVersionUrlById.get(version);
         if ((fullUrl == null || fullUrl.trim().isEmpty()) && App.netIsAvailable()) {
             fullUrl = App.resolveMojangVersionJsonUrlStatic(version);
         }
 
-        if (optifine) {
+        if (modloaderType == Utils.ModloaderType.OPTIFINE) {
             if (fullUrl == null || fullUrl.trim().isEmpty()) {
                 throw new IOException("Impossible de résoudre le JSON Mojang pour OptiFine " + version);
             }
@@ -792,10 +845,10 @@ public class LauncherSettings extends IScreen {
         }
 
         if (fullUrl == null || fullUrl.trim().isEmpty()) {
-            return new GameLinks("https://majestycraft.com/minecraft" + urlModifier(version, forge), version + ".json");
+            return new GameLinks(serverBase, version + ".json");
         }
 
-        String serverBase = "https://majestycraft.com/minecraft/" + version + (forge ? "/forge/" : "/");
+        serverBase = serverBase;
         return new GameLinks(
                 fullUrl,
                 serverBase + "ignore.cfg",
@@ -806,11 +859,11 @@ public class LauncherSettings extends IScreen {
     }
 
     private String urlModifier() {
-        return urlModifier(versionList.getValue(), useForge.isSelected());
+        return Utils.resolveServerPath(versionList.getValue(), getSelectedModloaderFromControls());
     }
 
-    private String urlModifier(String version, boolean forge) {
-        return "/" + version + (forge ? "/forge/" : "/");
+    private String urlModifier(String version, Utils.ModloaderType modloaderType) {
+        return Utils.resolveServerPath(version, modloaderType);
     }
 
     private void populateVersionListFromMojang(final LauncherPanel pane, final String preferredSelection) {
@@ -912,27 +965,30 @@ public class LauncherSettings extends IScreen {
         boolean snapshot = isSnapshot(version);
 
         boolean forgeAllowed = !snapshot && isForgeAvailableForVersion(version);
+        boolean fabricAllowed = !snapshot && isFabricAvailableForVersion(version);
+        boolean quiltAllowed = !snapshot && isQuiltAvailableForVersion(version);
+        boolean neoForgeAllowed = !snapshot && isNeoForgeAvailableForVersion(version);
         boolean optifineAllowed = !snapshot && isOptiFineAvailableForVersion(version);
+        Utils.ModloaderType selectedModloader = getSelectedModloaderFromControls();
 
-        boolean forgeRestricted = !forgeAllowed;
-        boolean optifineRestricted = !optifineAllowed;
+        applyModloaderAvailability(useVanilla, true);
+        applyModloaderAvailability(useForge, forgeAllowed);
+        applyModloaderAvailability(useFabric, fabricAllowed);
+        applyModloaderAvailability(useQuilt, quiltAllowed);
+        applyModloaderAvailability(useNeoForge, neoForgeAllowed);
+        applyModloaderAvailability(useOptifine, optifineAllowed);
 
-        if (forgeRestricted) {
-            useForge.setSelected(false);
-            pane.getConfig().updateValue("useForge", false);
+        boolean selectedUnavailable =
+                (selectedModloader == Utils.ModloaderType.FORGE && !forgeAllowed)
+                        || (selectedModloader == Utils.ModloaderType.FABRIC && !fabricAllowed)
+                        || (selectedModloader == Utils.ModloaderType.QUILT && !quiltAllowed)
+                        || (selectedModloader == Utils.ModloaderType.NEOFORGE && !neoForgeAllowed)
+                        || (selectedModloader == Utils.ModloaderType.OPTIFINE && !optifineAllowed);
+
+        if (selectedUnavailable || !hasNonVanillaSelection()) {
+            setSelectedModloader(Utils.ModloaderType.VANILLA);
         }
-        useForge.setDisable(forgeRestricted);
-        useForge.setOpacity(forgeRestricted ? 0.35 : 1.0);
-
-        if (optifineRestricted) {
-            useOptifine.setSelected(false);
-            pane.getConfig().updateValue("useOptifine", false);
-        }
-        useOptifine.setDisable(optifineRestricted);
-        useOptifine.setOpacity(optifineRestricted ? 0.35 : 1.0);
     }
-
-
 
     private void loadForgeAvailableVersionsAsync(final LauncherPanel pane) {
         Thread loader = new Thread(() -> {
@@ -984,6 +1040,82 @@ public class LauncherSettings extends IScreen {
         return FORGE_SUPPORTED_VERSIONS.contains(version);
     }
 
+    private void loadFabricAvailableVersionsAsync(final LauncherPanel pane) {
+        loadGameVersionSetAsync(
+                pane,
+                "MajestyLauncher-FabricVersions",
+                FABRIC_GAME_VERSIONS_URL,
+                fabricVersionsAvailable,
+                () -> fabricVersionsLoaded = true
+        );
+    }
+
+    private boolean isFabricAvailableForVersion(String version) {
+        return isVersionAvailableFromRemoteSet(version, fabricVersionsAvailable, fabricVersionsLoaded);
+    }
+
+    private void loadQuiltAvailableVersionsAsync(final LauncherPanel pane) {
+        loadGameVersionSetAsync(
+                pane,
+                "MajestyLauncher-QuiltVersions",
+                QUILT_GAME_VERSIONS_URL,
+                quiltVersionsAvailable,
+                () -> quiltVersionsLoaded = true
+        );
+    }
+
+    private boolean isQuiltAvailableForVersion(String version) {
+        return isVersionAvailableFromRemoteSet(version, quiltVersionsAvailable, quiltVersionsLoaded);
+    }
+
+    private void loadNeoForgeAvailableVersionsAsync(final LauncherPanel pane) {
+        Thread loader = new Thread(() -> {
+            Set<String> loaded = new HashSet<>();
+            try {
+                String metadata = downloadText(NEOFORGE_MAVEN_METADATA_URL);
+                int start = 0;
+                while (start >= 0) {
+                    int versionTagStart = metadata.indexOf("<version>", start);
+                    if (versionTagStart < 0) {
+                        break;
+                    }
+                    int versionTagEnd = metadata.indexOf("</version>", versionTagStart);
+                    if (versionTagEnd < 0) {
+                        break;
+                    }
+
+                    String artifactVersion = metadata
+                            .substring(versionTagStart + "<version>".length(), versionTagEnd)
+                            .trim();
+                    String minecraftVersion = toNeoForgeMinecraftVersion(artifactVersion);
+                    if (minecraftVersion != null) {
+                        loaded.add(minecraftVersion);
+                    }
+                    start = versionTagEnd + "</version>".length();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            if (!loaded.isEmpty()) {
+                synchronized (neoForgeVersionsAvailable) {
+                    neoForgeVersionsAvailable.clear();
+                    neoForgeVersionsAvailable.addAll(loaded);
+                    neoForgeVersionsLoaded = true;
+                }
+            }
+
+            Platform.runLater(() -> applyModRestrictionsForVersion(versionList.getValue(), pane));
+        }, "MajestyLauncher-NeoForgeVersions");
+
+        loader.setDaemon(true);
+        loader.start();
+    }
+
+    private boolean isNeoForgeAvailableForVersion(String version) {
+        return isVersionAvailableFromRemoteSet(version, neoForgeVersionsAvailable, neoForgeVersionsLoaded);
+    }
+
     private void loadOptiFineAvailableVersionsAsync(final LauncherPanel pane) {
         Thread loader = new Thread(() -> {
             Set<String> loaded = new HashSet<>();
@@ -1018,6 +1150,197 @@ public class LauncherSettings extends IScreen {
         }
 
         return true;
+    }
+
+    private JFXCheckBox createModloaderCheckBox(String label, int x, int y, Utils.ModloaderType modloaderType) {
+        JFXCheckBox checkBox = new JFXCheckBox(label);
+        styleCheckBox(checkBox);
+        checkBox.setPrefWidth(108);
+        checkBox.setLayoutX(x);
+        checkBox.setLayoutY(y);
+        checkBox.setOnAction(event -> handleModloaderToggle(modloaderType));
+        return checkBox;
+    }
+
+    private Utils.ModloaderType resolveConfiguredModloader(LauncherPanel pane) {
+        Utils.ModloaderType modloaderType = Utils.resolveSelectedModloader(pane.getConfig());
+        return modloaderType == null ? Utils.ModloaderType.VANILLA : modloaderType;
+    }
+
+    private void handleModloaderToggle(Utils.ModloaderType modloaderType) {
+        if (updatingModloaderSelection) {
+            return;
+        }
+
+        JFXCheckBox target = getCheckBoxForModloader(modloaderType);
+        if (target == null) {
+            return;
+        }
+
+        if (target.isDisabled()) {
+            setSelectedModloader(Utils.ModloaderType.VANILLA);
+            return;
+        }
+
+        if (target.isSelected()) {
+            setSelectedModloader(modloaderType);
+            return;
+        }
+
+        if (!hasNonVanillaSelection()) {
+            setSelectedModloader(Utils.ModloaderType.VANILLA);
+        }
+    }
+
+    private void setSelectedModloader(Utils.ModloaderType modloaderType) {
+        updatingModloaderSelection = true;
+        try {
+            if (useVanilla != null) useVanilla.setSelected(modloaderType == Utils.ModloaderType.VANILLA);
+            if (useForge != null) useForge.setSelected(modloaderType == Utils.ModloaderType.FORGE);
+            if (useFabric != null) useFabric.setSelected(modloaderType == Utils.ModloaderType.FABRIC);
+            if (useQuilt != null) useQuilt.setSelected(modloaderType == Utils.ModloaderType.QUILT);
+            if (useNeoForge != null) useNeoForge.setSelected(modloaderType == Utils.ModloaderType.NEOFORGE);
+            if (useOptifine != null) useOptifine.setSelected(modloaderType == Utils.ModloaderType.OPTIFINE);
+        } finally {
+            updatingModloaderSelection = false;
+        }
+    }
+
+    private Utils.ModloaderType getSelectedModloaderFromControls() {
+        return Utils.resolveSelectedModloader(
+                useForge != null && useForge.isSelected(),
+                useFabric != null && useFabric.isSelected(),
+                useQuilt != null && useQuilt.isSelected(),
+                useNeoForge != null && useNeoForge.isSelected(),
+                useOptifine != null && useOptifine.isSelected()
+        );
+    }
+
+    private boolean hasNonVanillaSelection() {
+        return (useForge != null && useForge.isSelected())
+                || (useFabric != null && useFabric.isSelected())
+                || (useQuilt != null && useQuilt.isSelected())
+                || (useNeoForge != null && useNeoForge.isSelected())
+                || (useOptifine != null && useOptifine.isSelected());
+    }
+
+    private JFXCheckBox getCheckBoxForModloader(Utils.ModloaderType modloaderType) {
+        if (modloaderType == Utils.ModloaderType.VANILLA) {
+            return useVanilla;
+        }
+        if (modloaderType == Utils.ModloaderType.FORGE) {
+            return useForge;
+        }
+        if (modloaderType == Utils.ModloaderType.FABRIC) {
+            return useFabric;
+        }
+        if (modloaderType == Utils.ModloaderType.QUILT) {
+            return useQuilt;
+        }
+        if (modloaderType == Utils.ModloaderType.NEOFORGE) {
+            return useNeoForge;
+        }
+        return useOptifine;
+    }
+
+    private void applyModloaderAvailability(JFXCheckBox checkBox, boolean allowed) {
+        if (checkBox == null) {
+            return;
+        }
+        if (!allowed) {
+            checkBox.setSelected(false);
+        }
+        checkBox.setDisable(!allowed);
+        checkBox.setOpacity(allowed ? 1.0 : 0.35);
+    }
+
+    private void loadGameVersionSetAsync(
+            final LauncherPanel pane,
+            String threadName,
+            String endpoint,
+            Set<String> destination,
+            Runnable onLoaded
+    ) {
+        Thread loader = new Thread(() -> {
+            Set<String> loaded = new HashSet<>();
+            try {
+                loaded.addAll(fetchVersionSetFromMeta(endpoint));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            if (!loaded.isEmpty()) {
+                synchronized (destination) {
+                    destination.clear();
+                    destination.addAll(loaded);
+                    onLoaded.run();
+                }
+            }
+
+            Platform.runLater(() -> applyModRestrictionsForVersion(versionList.getValue(), pane));
+        }, threadName);
+
+        loader.setDaemon(true);
+        loader.start();
+    }
+
+    private Set<String> fetchVersionSetFromMeta(String endpoint) throws IOException {
+        Set<String> versions = new HashSet<>();
+        JsonArray root = JsonParser.parseString(downloadText(endpoint)).getAsJsonArray();
+        for (JsonElement element : root) {
+            JsonObject object = element.getAsJsonObject();
+            if (object == null || !object.has("version")) {
+                continue;
+            }
+            String version = object.get("version").getAsString();
+            if (version != null && !version.trim().isEmpty()) {
+                versions.add(version.trim());
+            }
+        }
+        return versions;
+    }
+
+    private boolean isVersionAvailableFromRemoteSet(String version, Set<String> availableVersions, boolean versionsLoaded) {
+        if (version == null || version.trim().isEmpty()) {
+            return false;
+        }
+        synchronized (availableVersions) {
+            if (versionsLoaded) {
+                return availableVersions.contains(version);
+            }
+        }
+        return true;
+    }
+
+    private String toNeoForgeMinecraftVersion(String artifactVersion) {
+        if (artifactVersion == null || artifactVersion.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalized = artifactVersion.trim();
+        int qualifierIndex = normalized.indexOf('-');
+        if (qualifierIndex >= 0) {
+            normalized = normalized.substring(0, qualifierIndex);
+        }
+
+        String[] parts = normalized.split("\\.");
+        if (parts.length < 2) {
+            return null;
+        }
+
+        try {
+            int major = Integer.parseInt(parts[0]);
+            int minor = Integer.parseInt(parts[1]);
+            if (major < 20) {
+                return null;
+            }
+            if (minor == 0) {
+                return "1." + major;
+            }
+            return "1." + major + "." + minor;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private void populateSizeList() {

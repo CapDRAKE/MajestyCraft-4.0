@@ -71,6 +71,12 @@ public class App extends AlternativeBase {
     private static final String OPTIFINE_SITE_BASE = "https://optifine.net/";
     private static final String MULTIMC_LAUNCHWRAPPER_OF_MAVEN_BASE =
             "https://files.multimc.org/maven/net/minecraft/launchwrapper/";
+    private static final String FABRIC_LOADER_VERSIONS_URL = "https://meta.fabricmc.net/v2/versions/loader/";
+    private static final String QUILT_LOADER_VERSIONS_URL = "https://meta.quiltmc.org/v3/versions/loader/";
+    private static final String NEOFORGE_MAVEN_METADATA_URL =
+            "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml";
+    private static final String NEOFORGE_INSTALLER_BASE_URL =
+            "https://maven.neoforged.net/releases/net/neoforged/neoforge/";
 
     private static final Pattern OPTIFINE_REMOTE_FILE_PATTERN = Pattern.compile(
             "adloadx\\?f=((?:preview_)?OptiFine_([0-9][0-9.]+)_HD_U_[A-Za-z0-9_]+\\.jar)",
@@ -81,6 +87,13 @@ public class App extends AlternativeBase {
             "href\\s*=\\s*[\"'](downloadx\\?f=[^\"']+)[\"']",
             Pattern.CASE_INSENSITIVE
     );
+    
+
+    // Pool principal pour les résolutions Mojang / autres tâches
+    private static final ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(2);
+    // Pool dédié à la vérification réseau (évite les deadlocks si appelé depuis EXECUTOR_SERVICE)
+    private static final ExecutorService NET_CHECK_EXECUTOR = Executors.newSingleThreadExecutor();
+
 
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -102,11 +115,6 @@ public class App extends AlternativeBase {
     private LauncherPanel panel;
 
     private static final GameConnect GAME_CONNECT = new GameConnect(PARTNER_IP, PARTNER_PORT);
-
-    // Pool principal pour les résolutions Mojang / autres tâches
-    private static final ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(2);
-    // Pool dédié à la vérification réseau (évite les deadlocks si appelé depuis EXECUTOR_SERVICE)
-    private static final ExecutorService NET_CHECK_EXECUTOR = Executors.newSingleThreadExecutor();
 
     /**
      * Lance le launcher.
@@ -140,7 +148,7 @@ public class App extends AlternativeBase {
     }
 
     private LauncherPreferences createLauncherPreferences() {
-        return new LauncherPreferences("MajestyLauncher Optifine + Forge", 1050, 750, Mover.MOVE);
+        return new LauncherPreferences("MajestyLauncher Modloaders", 1050, 750, Mover.MOVE);
     }
 
     /**
@@ -200,16 +208,14 @@ public class App extends AlternativeBase {
             version = DEFAULT_VERSION_ID;
         }
 
-        boolean useForge = getBooleanConfig(EnumConfig.USE_FORGE);
-        boolean useOptifine = getBooleanConfig(EnumConfig.USE_OPTIFINE);
+        Utils.ModloaderType modloaderType = Utils.resolveSelectedModloader(this.panel.getConfig());
 
         final String finalVersion = version;
-        final boolean finalUseForge = useForge;
-        final boolean finalUseOptifine = useOptifine;
+        final Utils.ModloaderType finalModloaderType = modloaderType;
 
         EXECUTOR_SERVICE.submit(() -> {
             try {
-                if (finalUseOptifine) {
+                if (finalModloaderType == Utils.ModloaderType.OPTIFINE) {
                     String mojangJsonUrl = resolveMojangVersionJsonUrlStatic(finalVersion);
                     if (mojangJsonUrl == null) {
                         throw new IOException("JSON Mojang introuvable pour OptiFine " + finalVersion);
@@ -226,20 +232,26 @@ public class App extends AlternativeBase {
                     return;
                 }
 
+                if (isOfficialGeneratedModloader(finalModloaderType)) {
+                    GameLinks links = buildOfficialModloaderGameLinks(finalVersion, finalModloaderType);
+                    Platform.runLater(() -> this.gameEngine.reg(links));
+                    return;
+                }
+
                 if (!netIsAvailable()) {
-                    GameLinks fallback = buildServerGameLinks(finalVersion, finalUseForge);
+                    GameLinks fallback = buildServerGameLinks(finalVersion, finalModloaderType);
                     Platform.runLater(() -> this.gameEngine.reg(fallback));
                     return;
                 }
 
                 String mojangJsonUrl = resolveMojangVersionJsonUrlStatic(finalVersion);
                 if (mojangJsonUrl == null) {
-                    GameLinks fallback = buildServerGameLinks(finalVersion, finalUseForge);
+                    GameLinks fallback = buildServerGameLinks(finalVersion, finalModloaderType);
                     Platform.runLater(() -> this.gameEngine.reg(fallback));
                     return;
                 }
 
-                String serverBaseForVersion = GAME_LINK_BASE_URL + "/" + finalVersion + (finalUseForge ? "/forge/" : "/");
+                String serverBaseForVersion = GAME_LINK_BASE_URL + Utils.resolveServerPath(finalVersion, finalModloaderType);
 
                 GameLinks links = new GameLinks(
                         mojangJsonUrl,
@@ -253,25 +265,16 @@ public class App extends AlternativeBase {
 
             } catch (Exception e) {
                 LOGGER.warning("Impossible d'appliquer les GameLinks configurés : " + e.getMessage());
-                if (!finalUseOptifine) {
-                    GameLinks fallback = buildServerGameLinks(finalVersion, finalUseForge);
+                if (finalModloaderType != Utils.ModloaderType.OPTIFINE && !isOfficialGeneratedModloader(finalModloaderType)) {
+                    GameLinks fallback = buildServerGameLinks(finalVersion, finalModloaderType);
                     Platform.runLater(() -> this.gameEngine.reg(fallback));
                 }
             }
         });
     }
 
-    private boolean getBooleanConfig(EnumConfig key) {
-        Object v = this.panel.getConfig().getValue(key);
-        return (v instanceof Boolean) ? (Boolean) v : false;
-    }
-
-    /**
-     * Forge => /<version>/forge/
-     * Vanilla => /<version>/
-     */
-    private GameLinks buildServerGameLinks(String version, boolean forge) {
-        String base = GAME_LINK_BASE_URL + "/" + version + (forge ? "/forge/" : "/");
+    private GameLinks buildServerGameLinks(String version, Utils.ModloaderType modloaderType) {
+        String base = GAME_LINK_BASE_URL + Utils.resolveServerPath(version, modloaderType);
         String jsonName = version + ".json";
         return new GameLinks(base, jsonName);
     }
@@ -345,6 +348,19 @@ public class App extends AlternativeBase {
         return buildLocalOnlyGameLinks(mojangJsonUrl, version, "optifine");
     }
 
+    public static GameLinks buildOfficialModloaderGameLinks(String version, Utils.ModloaderType modloaderType) throws IOException {
+        if (modloaderType == Utils.ModloaderType.FABRIC) {
+            return buildFabricGameLinks(version);
+        }
+        if (modloaderType == Utils.ModloaderType.QUILT) {
+            return buildQuiltGameLinks(version);
+        }
+        if (modloaderType == Utils.ModloaderType.NEOFORGE) {
+            return buildNeoForgeGameLinks(version);
+        }
+        throw new IOException("Modloader officiel non géré: " + modloaderType);
+    }
+
     private static GameLinks buildLocalOnlyGameLinks(String mojangJsonUrl, String version, String profile) throws IOException {
         Path base = getLauncherRootPath().resolve(Paths.get("cache", "links", profile, version));
         Path ignore = base.resolve("ignore.cfg");
@@ -363,6 +379,93 @@ public class App extends AlternativeBase {
                 status.toUri().toString(),
                 null
         );
+    }
+
+    private static GameLinks buildFabricGameLinks(String version) throws IOException {
+        return buildMergedProfileGameLinks(
+                version,
+                "fabric",
+                "fabric-" + version + ".json",
+                downloadTextStatic(FABRIC_LOADER_VERSIONS_URL + version),
+                true,
+                null
+        );
+    }
+
+    private static GameLinks buildQuiltGameLinks(String version) throws IOException {
+        return buildMergedProfileGameLinks(
+                version,
+                "quilt",
+                "quilt-" + version + ".json",
+                downloadTextStatic(QUILT_LOADER_VERSIONS_URL + version),
+                false,
+                null
+        );
+    }
+
+    private static GameLinks buildNeoForgeGameLinks(String version) throws IOException {
+        Path base = getLauncherRootPath().resolve(Paths.get("cache", "links", "neoforge", version));
+        Path jsonFile = base.resolve("neoforge-" + version + ".json");
+        if (!netIsAvailable() && Files.exists(jsonFile)) {
+            return buildLocalOnlyGameLinks(jsonFile.toUri().toString(), version, "neoforge");
+        }
+
+        String selectedNeoForgeVersion = resolveLatestNeoForgeVersion(version);
+        if (selectedNeoForgeVersion == null || selectedNeoForgeVersion.trim().isEmpty()) {
+            throw new IOException("Aucune version NeoForge officielle trouvée pour " + version);
+        }
+
+        Path installerJar = base.resolve("neoforge-" + selectedNeoForgeVersion + "-installer.jar");
+        if (!Files.exists(installerJar) || Files.size(installerJar) == 0L) {
+            Files.createDirectories(installerJar.getParent());
+            downloadBinary(NEOFORGE_INSTALLER_BASE_URL + selectedNeoForgeVersion
+                    + "/neoforge-" + selectedNeoForgeVersion + "-installer.jar", installerJar, null, null);
+        }
+
+        String profileJson = readZipEntry(installerJar, "version.json");
+        if (profileJson == null || profileJson.trim().isEmpty()) {
+            throw new IOException("Le profil NeoForge officiel est introuvable pour " + version);
+        }
+
+        return buildMergedJsonGameLinks(version, "neoforge", jsonFile.getFileName().toString(), profileJson);
+    }
+
+    private static GameLinks buildMergedProfileGameLinks(
+            String version,
+            String profile,
+            String jsonFileName,
+            String loaderListJson,
+            boolean preferStable,
+            String fixedLoaderVersion
+    ) throws IOException {
+        Path base = getLauncherRootPath().resolve(Paths.get("cache", "links", profile, version));
+        Path jsonFile = base.resolve(jsonFileName);
+        if (!netIsAvailable() && Files.exists(jsonFile)) {
+            return buildLocalOnlyGameLinks(jsonFile.toUri().toString(), version, profile);
+        }
+
+        String loaderVersion = fixedLoaderVersion != null ? fixedLoaderVersion : resolveLoaderVersionFromMeta(loaderListJson, preferStable);
+        if (loaderVersion == null || loaderVersion.trim().isEmpty()) {
+            throw new IOException("Aucune version " + profile + " officielle trouvée pour " + version);
+        }
+
+        String profileEndpoint = ("fabric".equals(profile) ? FABRIC_LOADER_VERSIONS_URL : QUILT_LOADER_VERSIONS_URL)
+                + version + "/" + loaderVersion + "/profile/json";
+        String profileJson = downloadTextStatic(profileEndpoint);
+        return buildMergedJsonGameLinks(version, profile, jsonFileName, profileJson);
+    }
+
+    private static GameLinks buildMergedJsonGameLinks(String version, String profile, String jsonFileName, String profileJson) throws IOException {
+        Path base = getLauncherRootPath().resolve(Paths.get("cache", "links", profile, version));
+        Path jsonFile = base.resolve(jsonFileName);
+        String mojangJsonUrl = resolveMojangVersionJsonUrlStatic(version);
+        if (mojangJsonUrl == null || mojangJsonUrl.trim().isEmpty()) {
+            throw new IOException("JSON Mojang introuvable pour " + version);
+        }
+
+        String mergedJson = mergeVersionJson(downloadTextStatic(mojangJsonUrl), profileJson);
+        writeTextFile(jsonFile, mergedJson);
+        return buildLocalOnlyGameLinks(jsonFile.toUri().toString(), version, profile);
     }
 
     private static LinkedHashMap<String, String> fetchLatestOptiFineRemoteFilesByVersion() throws IOException {
@@ -564,6 +667,204 @@ public class App extends AlternativeBase {
                 content == null ? new byte[0] : content.getBytes(StandardCharsets.UTF_8),
                 StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    private static boolean isOfficialGeneratedModloader(Utils.ModloaderType modloaderType) {
+        return modloaderType == Utils.ModloaderType.FABRIC
+                || modloaderType == Utils.ModloaderType.QUILT
+                || modloaderType == Utils.ModloaderType.NEOFORGE;
+    }
+
+    private static String resolveLoaderVersionFromMeta(String loaderListJson, boolean preferStable) {
+        JsonArray root = JsonParser.parseString(loaderListJson).getAsJsonArray();
+        String fallback = null;
+        for (JsonElement element : root) {
+            JsonObject object = element.getAsJsonObject();
+            if (object == null || !object.has("loader")) {
+                continue;
+            }
+            JsonObject loader = object.getAsJsonObject("loader");
+            if (loader == null || !loader.has("version")) {
+                continue;
+            }
+
+            String version = loader.get("version").getAsString();
+            if (version == null || version.trim().isEmpty()) {
+                continue;
+            }
+            if (fallback == null) {
+                fallback = version;
+            }
+            if (preferStable && loader.has("stable") && loader.get("stable").getAsBoolean()) {
+                return version;
+            }
+            if (!preferStable) {
+                return version;
+            }
+        }
+        return fallback;
+    }
+
+    private static String resolveLatestNeoForgeVersion(String minecraftVersion) throws IOException {
+        String metadata = downloadTextStatic(NEOFORGE_MAVEN_METADATA_URL);
+        String latestStable = null;
+        String latestAny = null;
+        int start = 0;
+        while (start >= 0) {
+            int openTag = metadata.indexOf("<version>", start);
+            if (openTag < 0) {
+                break;
+            }
+            int closeTag = metadata.indexOf("</version>", openTag);
+            if (closeTag < 0) {
+                break;
+            }
+
+            String candidate = metadata.substring(openTag + "<version>".length(), closeTag).trim();
+            if (minecraftVersion.equals(toNeoForgeMinecraftVersion(candidate))) {
+                latestAny = candidate;
+                if (!candidate.contains("-")) {
+                    latestStable = candidate;
+                }
+            }
+            start = closeTag + "</version>".length();
+        }
+        return latestStable != null ? latestStable : latestAny;
+    }
+
+    private static String toNeoForgeMinecraftVersion(String artifactVersion) {
+        if (artifactVersion == null || artifactVersion.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalized = artifactVersion.trim();
+        int qualifierIndex = normalized.indexOf('-');
+        if (qualifierIndex >= 0) {
+            normalized = normalized.substring(0, qualifierIndex);
+        }
+
+        String[] parts = normalized.split("\\.");
+        if (parts.length < 2) {
+            return null;
+        }
+
+        try {
+            int major = Integer.parseInt(parts[0]);
+            int minor = Integer.parseInt(parts[1]);
+            if (major < 20) {
+                return null;
+            }
+            if (minor == 0) {
+                return "1." + major;
+            }
+            return "1." + major + "." + minor;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private static String readZipEntry(Path archive, String entryName) throws IOException {
+        if (archive == null || !Files.exists(archive) || entryName == null || entryName.trim().isEmpty()) {
+            return null;
+        }
+
+        try (java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(archive.toFile())) {
+            java.util.zip.ZipEntry entry = zipFile.getEntry(entryName);
+            if (entry == null) {
+                return null;
+            }
+            try (InputStream inputStream = zipFile.getInputStream(entry)) {
+                return readAllText(inputStream);
+            }
+        }
+    }
+
+    private static String mergeVersionJson(String baseJson, String overlayJson) {
+        JsonObject baseObject = JsonParser.parseString(baseJson).getAsJsonObject();
+        JsonObject overlayObject = JsonParser.parseString(overlayJson).getAsJsonObject();
+        JsonObject merged = mergeJsonObjects(baseObject, overlayObject);
+        merged.remove("inheritsFrom");
+        return merged.toString();
+    }
+
+    private static JsonObject mergeJsonObjects(JsonObject baseObject, JsonObject overlayObject) {
+        JsonObject merged = baseObject == null ? new JsonObject() : baseObject.deepCopy();
+        if (overlayObject == null) {
+            return merged;
+        }
+
+        for (Map.Entry<String, JsonElement> entry : overlayObject.entrySet()) {
+            String key = entry.getKey();
+            JsonElement overlayValue = entry.getValue();
+            JsonElement baseValue = merged.get(key);
+
+            if ("libraries".equals(key) && baseValue != null && baseValue.isJsonArray() && overlayValue.isJsonArray()) {
+                merged.add(key, mergeLibraryArrays(baseValue.getAsJsonArray(), overlayValue.getAsJsonArray()));
+                continue;
+            }
+
+            if (baseValue != null && baseValue.isJsonObject() && overlayValue.isJsonObject()) {
+                merged.add(key, mergeJsonObjects(baseValue.getAsJsonObject(), overlayValue.getAsJsonObject()));
+                continue;
+            }
+
+            if (baseValue != null && baseValue.isJsonArray() && overlayValue.isJsonArray()
+                    && ("game".equals(key) || "jvm".equals(key))) {
+                merged.add(key, mergeArgumentArrays(baseValue.getAsJsonArray(), overlayValue.getAsJsonArray()));
+                continue;
+            }
+
+            merged.add(key, overlayValue == null ? null : overlayValue.deepCopy());
+        }
+
+        return merged;
+    }
+
+    private static JsonArray mergeLibraryArrays(JsonArray baseLibraries, JsonArray overlayLibraries) {
+        LinkedHashMap<String, JsonElement> merged = new LinkedHashMap<>();
+        if (baseLibraries != null) {
+            for (JsonElement element : baseLibraries) {
+                String key = resolveLibraryKey(element);
+                merged.put(key, element.deepCopy());
+            }
+        }
+        if (overlayLibraries != null) {
+            for (JsonElement element : overlayLibraries) {
+                String key = resolveLibraryKey(element);
+                merged.put(key, element.deepCopy());
+            }
+        }
+
+        JsonArray out = new JsonArray();
+        for (JsonElement element : merged.values()) {
+            out.add(element);
+        }
+        return out;
+    }
+
+    private static JsonArray mergeArgumentArrays(JsonArray baseArguments, JsonArray overlayArguments) {
+        JsonArray out = new JsonArray();
+        if (baseArguments != null) {
+            for (JsonElement element : baseArguments) {
+                out.add(element.deepCopy());
+            }
+        }
+        if (overlayArguments != null) {
+            for (JsonElement element : overlayArguments) {
+                out.add(element.deepCopy());
+            }
+        }
+        return out;
+    }
+
+    private static String resolveLibraryKey(JsonElement element) {
+        if (element != null && element.isJsonObject()) {
+            JsonObject object = element.getAsJsonObject();
+            if (object.has("name")) {
+                return object.get("name").getAsString();
+            }
+        }
+        return element == null ? java.util.UUID.randomUUID().toString() : element.toString();
     }
 
     private static String htmlDecode(String value) {
