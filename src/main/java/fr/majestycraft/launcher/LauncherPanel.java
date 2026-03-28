@@ -43,6 +43,7 @@ import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.HBox;
@@ -95,6 +96,8 @@ public class LauncherPanel extends IScreen {
     private LauncherLabel heroSubtitleLabel;
     private LauncherLabel heroTextLine1;
     private LauncherLabel heroTextLine2;
+    private LauncherLabel connectionEyebrowLabel;
+    private LauncherLabel connectionSubtitleLabel;
     private LauncherLabel microsoftHintLabel;
 
     private LauncherButton infoButton;
@@ -117,6 +120,7 @@ public class LauncherPanel extends IScreen {
     private JFXTextField usernameField;
     private JFXToggleButton rememberMe;
     private JFXButton loginButton;
+    private JFXButton microsoftInlineButton;
 
     private LauncherRectangle autoLoginRectangle;
     private LauncherLabel autoLoginLabel;
@@ -199,9 +203,9 @@ public class LauncherPanel extends IScreen {
         setCenterX(engine.getWidth() / 2);
 
         connW = 430;
-        connH = 360;
+        connH = 398;
         connX = engine.getWidth() - connW - 85;
-        connY = 185;
+        connY = 168;
 
         socialY = engine.getHeight() - 95;
     }
@@ -253,26 +257,63 @@ public class LauncherPanel extends IScreen {
 
     private void stylePrimaryButton(JFXButton button) {
         button.setStyle(
-                "-fx-background-color: linear-gradient(#ff9f1a, #ff7a00);" +
-                "-fx-background-radius: 18;" +
+                "-fx-background-color: linear-gradient(#ffb347, #ff7a00);" +
+                "-fx-background-radius: 20;" +
                 "-fx-text-fill: white;" +
                 "-fx-font-size: 17px;" +
-                "-fx-font-weight: bold;"
+                "-fx-font-weight: bold;" +
+                "-fx-border-color: rgba(255,255,255,0.16);" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 20;"
         );
+        button.setEffect(new DropShadow(18, Color.rgb(255, 128, 0, 0.34)));
+    }
+
+    private void styleSecondaryButton(JFXButton button) {
+        button.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.08);" +
+                "-fx-background-radius: 20;" +
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 15px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-border-color: rgba(255,255,255,0.16);" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 20;"
+        );
+        button.setEffect(new DropShadow(16, Color.rgb(0, 0, 0, 0.20)));
     }
 
     private void styleUsernameField(JFXTextField field) {
         field.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-background-radius: 18;" +
-                "-fx-border-color: rgba(255,255,255,0.10);" +
-                "-fx-border-radius: 18;" +
+                "-fx-background-color: rgba(255,255,255,0.10);" +
+                "-fx-background-radius: 20;" +
+                "-fx-border-color: rgba(255,255,255,0.14);" +
+                "-fx-border-radius: 20;" +
                 "-fx-border-width: 1;" +
                 "-fx-text-fill: rgba(255,255,255,0.95);" +
-                "-fx-prompt-text-fill: rgba(255,255,255,0.45);" +
-                "-fx-padding: 0 16 0 16;" +
+                "-fx-prompt-text-fill: rgba(255,255,255,0.52);" +
+                "-fx-padding: 0 18 0 18;" +
                 "-jfx-focus-color: #ff8a00;" +
                 "-jfx-unfocus-color: rgba(255,255,255,0.18);"
+        );
+    }
+
+    private void styleModalActionButton(Button button, boolean primary) {
+        String style = primary
+                ? "-fx-background-color: linear-gradient(#ffb347, #ff7a00);"
+                + "-fx-text-fill: white;"
+                + "-fx-border-color: rgba(255,255,255,0.14);"
+                : "-fx-background-color: rgba(255,255,255,0.08);"
+                + "-fx-text-fill: white;"
+                + "-fx-border-color: rgba(255,255,255,0.16);";
+        button.setStyle(
+                style +
+                "-fx-background-radius: 18;" +
+                "-fx-border-radius: 18;" +
+                "-fx-border-width: 1;" +
+                "-fx-padding: 10 18 10 18;" +
+                "-fx-font-size: 13px;" +
+                "-fx-font-weight: bold;"
         );
     }
 
@@ -348,12 +389,15 @@ public class LauncherPanel extends IScreen {
         animateFromBottom(boutiqueButton, 430);
 
         animateFromRight(connexionRectangle, 120);
-        animateFromRight(titleCrack, 190);
+        animateFromRight(connectionEyebrowLabel, 170);
+        animateFromRight(titleCrack, 210);
+        animateFromRight(connectionSubtitleLabel, 250);
         animateFromRight(avatar, 230);
-        animateFromRight(usernameField, 260);
-        animateFromRight(rememberMe, 310);
-        animateFromRight(loginButton, 360);
-        animateFromRight(microsoftHintLabel, 420);
+        animateFromRight(usernameField, 300);
+        animateFromRight(rememberMe, 350);
+        animateFromRight(loginButton, 400);
+        animateFromRight(microsoftInlineButton, 450);
+        animateFromRight(microsoftHintLabel, 500);
 
         animateFromBottom(tiktokButton, 470);
         animateFromBottom(minestratorButton, 520);
@@ -457,6 +501,14 @@ public class LauncherPanel extends IScreen {
         }
 
         showMicrosoftAuth(root);
+    }
+
+    private void launchMicrosoftFlow(Pane root) {
+        if (!App.netIsAvailable()) {
+            showConnectionErrorAlert();
+            return;
+        }
+        authenticateMicrosoft(root);
     }
 
     private void showOfflineError() {
@@ -613,24 +665,7 @@ public class LauncherPanel extends IScreen {
         this.microsoftButton.setGraphic(microsoftImg);
         this.microsoftButton.setPosition(sbX, sbY);
         this.microsoftButton.setSize(size, size);
-        this.microsoftButton.setOnAction(event -> {
-            if (!App.netIsAvailable()) {
-                showConnectionErrorAlert();
-                return;
-            }
-
-            auth = new GameAuth(AccountType.MICROSOFT);
-
-            if (auth.trySilentRefresh(engine)) {
-                Session s = auth.getSession();
-                connectAccountPremiumCO(s.getUsername(), root);
-                config.updateValue("useMicrosoft", true);
-                update();
-                return;
-            }
-
-            showMicrosoftAuth(root);
-        });
+        this.microsoftButton.setOnAction(event -> launchMicrosoftFlow(root));
         installHoverScale(this.microsoftButton);
 
         this.infoButton = new LauncherButton(root);
@@ -815,11 +850,24 @@ public class LauncherPanel extends IScreen {
     }
 
     private void setupConnectionsGUI(Pane root) {
+        Rectangle connectionGlow = new Rectangle(connX - 22, connY - 22, connW + 44, connH + 44);
+        connectionGlow.setArcWidth(46);
+        connectionGlow.setArcHeight(46);
+        connectionGlow.setFill(new LinearGradient(
+                0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
+                new Stop(0, Color.rgb(255, 166, 0, 0.15)),
+                new Stop(0.50, Color.rgb(255, 255, 255, 0.03)),
+                new Stop(1, Color.rgb(255, 122, 0, 0.08))
+        ));
+        connectionGlow.setEffect(new DropShadow(54, Color.rgb(255, 132, 0, 0.18)));
+        connectionGlow.setMouseTransparent(true);
+        root.getChildren().add(connectionGlow);
+
         this.connexionRectangle = new LauncherRectangle(root, connX, connY, connW, connH);
-        applyModernCardStyle(this.connexionRectangle, 0.72);
+        applyModernCardStyle(this.connexionRectangle, 0.80);
         this.connexionRectangle.setMouseTransparent(true);
 
-        LauncherRectangle avatarCard = new LauncherRectangle(root, connX + 28, connY + 108, 82, 82);
+        LauncherRectangle avatarCard = new LauncherRectangle(root, connX + 28, connY + 148, 82, 82);
         avatarCard.setArcWidth(24);
         avatarCard.setArcHeight(24);
         avatarCard.setFill(Color.rgb(255, 255, 255, 0.06));
@@ -827,17 +875,37 @@ public class LauncherPanel extends IScreen {
         avatarCard.setStrokeWidth(1);
         avatarCard.setMouseTransparent(true);
 
+        this.connectionEyebrowLabel = new LauncherLabel(root);
+        this.connectionEyebrowLabel.setText("ESPACE COMPTE");
+        this.connectionEyebrowLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        this.connectionEyebrowLabel.setStyle(
+                "-fx-background-color: rgba(255,159,26,0.14);" +
+                "-fx-background-radius: 999;" +
+                "-fx-text-fill: rgba(255,207,138,0.95);"
+        );
+        this.connectionEyebrowLabel.setAlignment(Pos.CENTER);
+        this.connectionEyebrowLabel.setPosition(connX + 28, connY + 26);
+        this.connectionEyebrowLabel.setSize(118, 24);
+
         this.titleCrack = new LauncherLabel(root);
         this.titleCrack.setText(LABEL_CONNECTION);
         this.titleCrack.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 28F));
         this.titleCrack.setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
-        this.titleCrack.setAlignment(Pos.CENTER);
-        this.titleCrack.setPosition(connX, connY + 28);
-        this.titleCrack.setSize(connW, 40);
+        this.titleCrack.setAlignment(Pos.CENTER_LEFT);
+        this.titleCrack.setPosition(connX + 28, connY + 58);
+        this.titleCrack.setSize(connW - 56, 40);
+
+        this.connectionSubtitleLabel = new LauncherLabel(root);
+        this.connectionSubtitleLabel.setText("Connecte-toi avec ton pseudo hors-ligne ou passe par Microsoft pour retrouver ton profil.");
+        this.connectionSubtitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        this.connectionSubtitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.62);");
+        this.connectionSubtitleLabel.setAlignment(Pos.CENTER_LEFT);
+        this.connectionSubtitleLabel.setPosition(connX + 28, connY + 98);
+        this.connectionSubtitleLabel.setSize(connW - 56, 38);
 
         this.usernameField = new JFXTextField();
         this.usernameField.setLayoutX(connX + 126);
-        this.usernameField.setLayoutY(connY + 122);
+        this.usernameField.setLayoutY(connY + 162);
         this.usernameField.setPrefWidth(connW - 156);
         this.usernameField.setPrefHeight(54);
         this.usernameField.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
@@ -854,16 +922,16 @@ public class LauncherPanel extends IScreen {
         this.rememberMe.setSelected(cfgBool(EnumConfig.REMEMBER_ME));
         this.rememberMe.getStyleClass().add("jfx-toggle-button");
         this.rememberMe.setLayoutX(connX + 112);
-        this.rememberMe.setLayoutY(connY + 205);
+        this.rememberMe.setLayoutY(connY + 246);
         this.rememberMe.setOnAction(event -> config.updateValue("rememberme", rememberMe.isSelected()));
         root.getChildren().add(this.rememberMe);
 
         this.loginButton = new JFXButton(BUTTON_LOGIN);
         this.loginButton.setLayoutX(connX + 28);
-        this.loginButton.setLayoutY(connY + 248);
-        this.loginButton.setPrefWidth(connW - 56);
-        this.loginButton.setPrefHeight(46);
-        this.loginButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 17F));
+        this.loginButton.setLayoutY(connY + 288);
+        this.loginButton.setPrefWidth(176);
+        this.loginButton.setPrefHeight(50);
+        this.loginButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
         stylePrimaryButton(this.loginButton);
         installHoverScale(this.loginButton);
 
@@ -894,34 +962,67 @@ public class LauncherPanel extends IScreen {
         });
         root.getChildren().add(this.loginButton);
 
+        this.microsoftInlineButton = new JFXButton("Connexion Microsoft");
+        this.microsoftInlineButton.setLayoutX(connX + 224);
+        this.microsoftInlineButton.setLayoutY(connY + 288);
+        this.microsoftInlineButton.setPrefWidth(connW - 252);
+        this.microsoftInlineButton.setPrefHeight(50);
+        this.microsoftInlineButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        styleSecondaryButton(this.microsoftInlineButton);
+        ImageView microsoftInlineIcon = new ImageView(getResourceLocation().loadImage(engine, "microsoft.png"));
+        microsoftInlineIcon.setFitWidth(18);
+        microsoftInlineIcon.setFitHeight(18);
+        this.microsoftInlineButton.setGraphic(microsoftInlineIcon);
+        this.microsoftInlineButton.setGraphicTextGap(10);
+        this.microsoftInlineButton.setContentDisplay(ContentDisplay.LEFT);
+        this.microsoftInlineButton.setOnAction(event -> launchMicrosoftFlow(root));
+        installHoverScale(this.microsoftInlineButton);
+        root.getChildren().add(this.microsoftInlineButton);
+
         this.microsoftHintLabel = new LauncherLabel(root);
         this.microsoftHintLabel.setText("Connexion Microsoft via l’icône à gauche");
         this.microsoftHintLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        this.microsoftHintLabel.setText("Tu peux aussi utiliser l'icone Microsoft dans la barre laterale.");
         this.microsoftHintLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.48);");
-        this.microsoftHintLabel.setPosition(connX + 28, connY + 314);
+        this.microsoftHintLabel.setPosition(connX + 28, connY + 352);
         this.microsoftHintLabel.setSize(connW - 56, 18);
         this.microsoftHintLabel.setAlignment(Pos.CENTER);
 
-        this.autoLoginRectangle = new LauncherRectangle(root, 0, engine.getHeight() - 32, 2000, engine.getHeight());
-        this.autoLoginRectangle.setFill(Color.rgb(0, 0, 0, 0.70));
+        int autoCardWidth = 620;
+        int autoCardX = engine.getWidth() / 2 - autoCardWidth / 2;
+        int autoCardY = engine.getHeight() - 102;
+
+        this.autoLoginRectangle = new LauncherRectangle(root, autoCardX, autoCardY, autoCardWidth, 76);
+        this.autoLoginRectangle.setArcWidth(28);
+        this.autoLoginRectangle.setArcHeight(28);
+        this.autoLoginRectangle.setFill(Color.rgb(8, 12, 18, 0.90));
+        this.autoLoginRectangle.setStroke(Color.rgb(255, 255, 255, 0.12));
+        this.autoLoginRectangle.setStrokeWidth(1.0);
+        this.autoLoginRectangle.setEffect(new DropShadow(28, Color.rgb(0, 0, 0, 0.42)));
         this.autoLoginRectangle.setOpacity(1.0);
         this.autoLoginRectangle.setVisible(false);
 
         this.autoLoginLabel = new LauncherLabel(root);
         this.autoLoginLabel.setText(LABEL_OFFLINE_CONNECTION);
         this.autoLoginLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 18F));
-        this.autoLoginLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: red;");
-        this.autoLoginLabel.setPosition(engine.getWidth() / 2 - 280, engine.getHeight() - 34);
-        this.autoLoginLabel.setOpacity(0.7);
-        this.autoLoginLabel.setSize(700, 40);
+        this.autoLoginLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.92);");
+        this.autoLoginLabel.setPosition(autoCardX + 28, autoCardY + 18);
+        this.autoLoginLabel.setOpacity(0.95);
+        this.autoLoginLabel.setSize(340, 40);
         this.autoLoginLabel.setVisible(false);
 
         this.autoLoginButton = new LauncherButton(root);
         this.autoLoginButton.setText(BUTTON_CANCEL);
         this.autoLoginButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        this.autoLoginButton.setPosition(engine.getWidth() / 2 + 60, engine.getHeight() - 30);
-        this.autoLoginButton.setSize(100, 20);
-        this.autoLoginButton.setStyle("-fx-background-color: rgba(255, 0, 0, 0.4); -fx-text-fill: black;");
+        this.autoLoginButton.setPosition(autoCardX + autoCardWidth - 244, autoCardY + 20);
+        this.autoLoginButton.setSize(104, 34);
+        this.autoLoginButton.setStyle(
+                "-fx-background-color: rgba(255, 92, 92, 0.22);" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: rgba(255,255,255,0.12);" +
+                "-fx-border-radius: 18;" +
+                "-fx-text-fill: white;"
+        );
         this.autoLoginButton.setVisible(false);
         this.autoLoginButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
@@ -936,9 +1037,15 @@ public class LauncherPanel extends IScreen {
         this.autoLoginButton2 = new LauncherButton(root);
         this.autoLoginButton2.setText(AUTOLOGIN_START);
         this.autoLoginButton2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        this.autoLoginButton2.setPosition(engine.getWidth() / 2 + 170, engine.getHeight() - 30);
-        this.autoLoginButton2.setSize(100, 20);
-        this.autoLoginButton2.setStyle("-fx-background-color: rgba(15, 209, 70, 0.4); -fx-text-fill: black;");
+        this.autoLoginButton2.setPosition(autoCardX + autoCardWidth - 126, autoCardY + 20);
+        this.autoLoginButton2.setSize(104, 34);
+        this.autoLoginButton2.setStyle(
+                "-fx-background-color: rgba(255, 166, 0, 0.26);" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: rgba(255,255,255,0.12);" +
+                "-fx-border-radius: 18;" +
+                "-fx-text-fill: white;"
+        );
         this.autoLoginButton2.setVisible(false);
         this.autoLoginButton2.setOnAction(event -> {
             if (!engine.getGameMaintenance().isAccessBlocked()) {
@@ -1050,6 +1157,8 @@ public class LauncherPanel extends IScreen {
         if (shadersButton != null) new ZoomOutDown(shadersButton).setResetOnFinished(false).play();
         
         if (microsoftHintLabel != null) new ZoomOutDown(microsoftHintLabel).setResetOnFinished(false).play();
+        if (connectionEyebrowLabel != null) new ZoomOutDown(connectionEyebrowLabel).setResetOnFinished(false).play();
+        if (connectionSubtitleLabel != null) new ZoomOutDown(connectionSubtitleLabel).setResetOnFinished(false).play();
 
         if (heroLogo != null) new ZoomOutDown(heroLogo).setResetOnFinished(false).play();
         if (heroTitleLabel != null) new ZoomOutDown(heroTitleLabel).setResetOnFinished(false).play();
@@ -1061,6 +1170,7 @@ public class LauncherPanel extends IScreen {
         if (usernameField != null) new ZoomOutDown(usernameField).setResetOnFinished(false).play();
         if (rememberMe != null) new ZoomOutDown(rememberMe).setResetOnFinished(false).play();
         if (loginButton != null) new ZoomOutDown(loginButton).setResetOnFinished(false).play();
+        if (microsoftInlineButton != null) new ZoomOutDown(microsoftInlineButton).setResetOnFinished(false).play();
         if (connexionRectangle != null) new ZoomOutDown(connexionRectangle).setResetOnFinished(false).play();
 
         if (voteButton != null) new ZoomOutDown(voteButton).setResetOnFinished(false).play();
@@ -1077,8 +1187,10 @@ public class LauncherPanel extends IScreen {
         if (connexionRectangle != null) connexionRectangle.setDisable(true);
         if (rememberMe != null) rememberMe.setDisable(true);
         if (loginButton != null) loginButton.setDisable(true);
+        if (microsoftInlineButton != null) microsoftInlineButton.setDisable(true);
         if (settingsButton != null) settingsButton.setDisable(true);
         if (microsoftHintLabel != null) microsoftHintLabel.setVisible(false);
+        if (connectionSubtitleLabel != null) connectionSubtitleLabel.setVisible(false);
 
         updateRectangle.setVisible(true);
         updateLabel.setVisible(true);
@@ -1217,17 +1329,17 @@ public class LauncherPanel extends IScreen {
 
     public void connectAccountCrack(Pane root) {
         avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png"));
-        avatar.setBounds(connX + 35, connY + 116, 68, 68);
+        avatar.setBounds(connX + 35, connY + 156, 68, 68);
     }
 
     public void connectAccountPremium(String username, Pane root) {
         avatar = new LauncherImage(root, new Image("https://minotar.net/cube/" + username + ".png"));
-        avatar.setBounds(connX + 35, connY + 116, 68, 68);
+        avatar.setBounds(connX + 35, connY + 156, 68, 68);
     }
 
     public void connectAccountPremiumOFF(Pane root) {
         avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png"));
-        avatar.setBounds(connX + 35, connY + 116, 68, 68);
+        avatar.setBounds(connX + 35, connY + 156, 68, 68);
     }
 
     public void connectAccountCrackCO(Pane root) {
@@ -1274,36 +1386,91 @@ public class LauncherPanel extends IScreen {
     private void startMicrosoftLogin(Pane root) {
         Stage authStage = new Stage();
         authStage.initModality(Modality.APPLICATION_MODAL);
-        authStage.setTitle("Connexion Microsoft");
+        authStage.initStyle(StageStyle.TRANSPARENT);
         authStage.setResizable(false);
 
         ProgressIndicator spinner = new ProgressIndicator();
-        spinner.setPrefSize(40, 40);
+        spinner.setPrefSize(44, 44);
+        spinner.setStyle("-fx-progress-color: #ff8a00;");
+
+        Label badge = new Label("MICROSOFT");
+        badge.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        badge.setStyle(
+                "-fx-background-color: rgba(255,159,26,0.14);" +
+                "-fx-background-radius: 999;" +
+                "-fx-text-fill: rgba(255,207,138,0.95);" +
+                "-fx-padding: 6 12 6 12;"
+        );
 
         Label title = new Label("Connexion Microsoft");
-        title.setFont(Font.font("System", FontWeight.BOLD, 16));
+        title.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
+        title.setStyle("-fx-text-fill: white;");
 
         Label info = new Label(
                 "Un navigateur s’est ouvert automatiquement.\n" +
                 "Saisis le code ci-dessous sur la page Microsoft :"
         );
+        info.setText(
+                "Un navigateur s'ouvre automatiquement.\n" +
+                "Valide le code ci-dessous sur la page Microsoft pour connecter ton compte."
+        );
+        info.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        info.setStyle("-fx-text-fill: rgba(255,255,255,0.68);");
         info.setWrapText(true);
         info.setAlignment(Pos.CENTER);
 
         Label codeLabel = new Label("-----");
         codeLabel.setFont(Font.font("Consolas", FontWeight.BOLD, 28));
-        codeLabel.setStyle("-fx-background-color: #f2f2f2; -fx-padding: 10 20 10 20;");
+        codeLabel.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.08);" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: rgba(255,255,255,0.14);" +
+                "-fx-border-radius: 18;" +
+                "-fx-text-fill: white;" +
+                "-fx-padding: 12 24 12 24;"
+        );
 
         Button copyBtn = new Button("📋 Copier le code");
         copyBtn.setDisable(true);
+        copyBtn.setText("Copier le code");
+        styleModalActionButton(copyBtn, true);
+
+        Button openBtn = new Button("Ouvrir Microsoft");
+        openBtn.setDisable(true);
+        styleModalActionButton(openBtn, false);
 
         Label waitLabel = new Label("⏳ En attente de validation…");
+
+        waitLabel.setText("En attente de validation Microsoft...");
+        waitLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        waitLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.60);");
+
+        HBox actions = new HBox(12, copyBtn, openBtn);
+        actions.setAlignment(Pos.CENTER);
 
         VBox box = new VBox(15, title, info, codeLabel, copyBtn, spinner, waitLabel);
         box.setPadding(new Insets(20));
         box.setAlignment(Pos.CENTER);
 
-        authStage.setScene(new Scene(box, 420, 260));
+        box.getChildren().setAll(badge, title, info, codeLabel, actions, spinner, waitLabel);
+        box.setSpacing(16);
+        box.setPadding(new Insets(28));
+
+        Rectangle modalCard = new Rectangle(500, 340);
+        modalCard.setArcWidth(36);
+        modalCard.setArcHeight(36);
+        modalCard.setFill(Color.rgb(8, 12, 18, 0.96));
+        modalCard.setStroke(Color.rgb(255, 255, 255, 0.12));
+        modalCard.setStrokeWidth(1.0);
+        modalCard.setEffect(new DropShadow(45, Color.rgb(0, 0, 0, 0.48)));
+
+        StackPane modalRoot = new StackPane(modalCard, box);
+        modalRoot.setPadding(new Insets(18));
+
+        Scene authScene = new Scene(modalRoot, 540, 380);
+        authScene.setFill(Color.TRANSPARENT);
+
+        authStage.setScene(authScene);
         authStage.show();
 
         new Thread(() -> {
@@ -1314,12 +1481,16 @@ public class LauncherPanel extends IScreen {
                 Platform.runLater(() -> {
                     codeLabel.setText(deviceCode.getUserCode());
                     copyBtn.setDisable(false);
+                    openBtn.setDisable(false);
 
                     copyBtn.setOnAction(e -> {
                         ClipboardContent content = new ClipboardContent();
                         content.putString(deviceCode.getUserCode());
                         Clipboard.getSystemClipboard().setContent(content);
+                        copyBtn.setText("Code copie");
                     });
+
+                    openBtn.setOnAction(e -> openLink(deviceCode.getVerificationUri()));
                 });
 
                 Desktop.getDesktop().browse(URI.create(deviceCode.getVerificationUri()));

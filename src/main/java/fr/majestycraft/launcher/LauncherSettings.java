@@ -1,6 +1,5 @@
 package fr.majestycraft.launcher;
 
-import animatefx.animation.ZoomOutDown;
 import com.jfoenix.controls.*;
 
 import fr.majestycraft.*;
@@ -11,7 +10,9 @@ import fr.trxyy.alternative.alternative_api_ui.base.*;
 import fr.trxyy.alternative.alternative_api_ui.components.*;
 
 import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
 import javafx.animation.ParallelTransition;
+import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
@@ -261,15 +262,7 @@ public class LauncherSettings extends IScreen {
         );
         closeButton.setLayoutX(cardX + cardW - 50);
         closeButton.setLayoutY(cardY + 18);
-        closeButton.setOnAction(event -> {
-            final ZoomOutDown animation = new ZoomOutDown(root);
-            animation.setOnFinished(actionEvent -> {
-                Stage st = (Stage) closeButton.getScene().getWindow();
-                st.close();
-            });
-            animation.setResetOnFinished(true);
-            animation.play();
-        });
+        closeButton.setOnAction(event -> closeWithAnimation(root, (Stage) closeButton.getScene().getWindow()));
         root.getChildren().add(closeButton);
 
         LauncherLabel sectionGame = new LauncherLabel(root);
@@ -569,6 +562,7 @@ public class LauncherSettings extends IScreen {
         root.getChildren().add(useOptifine);
 
         setSelectedModloader(resolveConfiguredModloader(pane));
+        applyModRestrictionsForVersion(this.versionList.getValue(), pane);
 
         this.useMusic = new JFXCheckBox(LABEL_PLAY_MUSIC);
         Object cfgMusic = pane.getConfig().getValue(EnumConfig.USE_MUSIC);
@@ -697,13 +691,7 @@ public class LauncherSettings extends IScreen {
 
             Utils.regGameStyle(engine, pane.getConfig());
 
-            final ZoomOutDown animation = new ZoomOutDown(root);
-            animation.setOnFinished(actionEvent -> {
-                Stage st = (Stage) ((JFXButton) event.getSource()).getScene().getWindow();
-                st.close();
-            });
-            animation.setResetOnFinished(true);
-            animation.play();
+            closeWithAnimation(root, (Stage) ((JFXButton) event.getSource()).getScene().getWindow());
         });
         root.getChildren().add(saveButton);
 
@@ -747,6 +735,10 @@ public class LauncherSettings extends IScreen {
             animateIn(connect, 12, 0, 720);
             animateIn(openGameDirButton, 0, 14, 745);
             animateIn(saveButton, 0, 14, 770);
+
+            PauseTransition refreshAfterEntrance = new PauseTransition(Duration.millis(1220));
+            refreshAfterEntrance.setOnFinished(event -> applyModRestrictionsForVersion(this.versionList.getValue(), pane));
+            refreshAfterEntrance.play();
         });
     }
 
@@ -770,6 +762,49 @@ public class LauncherSettings extends IScreen {
         ParallelTransition pt = new ParallelTransition(ft, tt);
         pt.setDelay(Duration.millis(delayMs));
         pt.play();
+    }
+
+    private void closeWithAnimation(Pane root, Stage stage) {
+        if (root == null || stage == null) {
+            if (stage != null) stage.close();
+            return;
+        }
+
+        root.setDisable(true);
+
+        FadeTransition fade = new FadeTransition(Duration.millis(230), root);
+        fade.setFromValue(root.getOpacity());
+        fade.setToValue(0);
+
+        TranslateTransition slide = new TranslateTransition(Duration.millis(230), root);
+        slide.setFromY(root.getTranslateY());
+        slide.setToY(root.getTranslateY() + 18);
+
+        ScaleTransition scale = new ScaleTransition(Duration.millis(230), root);
+        scale.setFromX(root.getScaleX() == 0 ? 1.0 : root.getScaleX());
+        scale.setFromY(root.getScaleY() == 0 ? 1.0 : root.getScaleY());
+        scale.setToX(0.985);
+        scale.setToY(0.985);
+
+        ParallelTransition animation = new ParallelTransition(fade, slide, scale);
+
+        Node clip = root.getClip();
+        if (clip != null) {
+            TranslateTransition clipSlide = new TranslateTransition(Duration.millis(230), clip);
+            clipSlide.setFromY(clip.getTranslateY());
+            clipSlide.setToY(clip.getTranslateY() + 18);
+
+            ScaleTransition clipScale = new ScaleTransition(Duration.millis(230), clip);
+            clipScale.setFromX(clip.getScaleX() == 0 ? 1.0 : clip.getScaleX());
+            clipScale.setFromY(clip.getScaleY() == 0 ? 1.0 : clip.getScaleY());
+            clipScale.setToX(0.985);
+            clipScale.setToY(0.985);
+
+            animation.getChildren().addAll(clipSlide, clipScale);
+        }
+
+        animation.setOnFinished(actionEvent -> stage.close());
+        animation.play();
     }
 
     private void styleCombo(JFXComboBox<String> cb) {
