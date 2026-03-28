@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -50,6 +51,7 @@ public class App extends AlternativeBase {
 
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 
+    private static final String PARTNER_HOST = "play.majestycraft.com";
     private static final String PARTNER_IP = "91.197.6.34";
     private static final String PARTNER_PORT = "25601";
     private static final String ICON_IMAGE = "launchergifpng.png";
@@ -114,7 +116,7 @@ public class App extends AlternativeBase {
     private final GameMaintenance gameMaintenance = createGameMaintenance();
     private LauncherPanel panel;
 
-    private static final GameConnect GAME_CONNECT = new GameConnect(PARTNER_IP, PARTNER_PORT);
+    private static final GameConnect GAME_CONNECT = createGameConnect();
 
     /**
      * Lance le launcher.
@@ -1034,6 +1036,19 @@ public class App extends AlternativeBase {
 
     public static GameConnect getGameConnect() {
         return GAME_CONNECT;
+    }
+
+    private static GameConnect createGameConnect() {
+        return new GameConnect(resolvePartnerHost(), PARTNER_PORT);
+    }
+
+    private static String resolvePartnerHost() {
+        try {
+            InetAddress.getByName(PARTNER_HOST);
+            return PARTNER_HOST;
+        } catch (Exception ignored) {
+            return PARTNER_IP;
+        }
     }
 
     private static final class TextHttpResponse {
