@@ -115,7 +115,9 @@ public class LauncherPanel extends IScreen {
     private LauncherButton voteButton;
     private LauncherButton boutiqueButton;
 
+    private Rectangle connectionGlow;
     private LauncherRectangle connexionRectangle;
+    private LauncherRectangle avatarCard;
     private LauncherLabel titleCrack;
     private JFXTextField usernameField;
     private JFXToggleButton rememberMe;
@@ -388,10 +390,12 @@ public class LauncherPanel extends IScreen {
         animateFromBottom(voteButton, 380);
         animateFromBottom(boutiqueButton, 430);
 
+        animateFromRight(connectionGlow, 90);
         animateFromRight(connexionRectangle, 120);
         animateFromRight(connectionEyebrowLabel, 170);
         animateFromRight(titleCrack, 210);
         animateFromRight(connectionSubtitleLabel, 250);
+        animateFromRight(avatarCard, 200);
         animateFromRight(avatar, 230);
         animateFromRight(usernameField, 300);
         animateFromRight(rememberMe, 350);
@@ -850,30 +854,30 @@ public class LauncherPanel extends IScreen {
     }
 
     private void setupConnectionsGUI(Pane root) {
-        Rectangle connectionGlow = new Rectangle(connX - 22, connY - 22, connW + 44, connH + 44);
-        connectionGlow.setArcWidth(46);
-        connectionGlow.setArcHeight(46);
-        connectionGlow.setFill(new LinearGradient(
+        this.connectionGlow = new Rectangle(connX - 22, connY - 22, connW + 44, connH + 44);
+        this.connectionGlow.setArcWidth(46);
+        this.connectionGlow.setArcHeight(46);
+        this.connectionGlow.setFill(new LinearGradient(
                 0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
                 new Stop(0, Color.rgb(255, 166, 0, 0.15)),
                 new Stop(0.50, Color.rgb(255, 255, 255, 0.03)),
                 new Stop(1, Color.rgb(255, 122, 0, 0.08))
         ));
-        connectionGlow.setEffect(new DropShadow(54, Color.rgb(255, 132, 0, 0.18)));
-        connectionGlow.setMouseTransparent(true);
-        root.getChildren().add(connectionGlow);
+        this.connectionGlow.setEffect(new DropShadow(54, Color.rgb(255, 132, 0, 0.18)));
+        this.connectionGlow.setMouseTransparent(true);
+        root.getChildren().add(this.connectionGlow);
 
         this.connexionRectangle = new LauncherRectangle(root, connX, connY, connW, connH);
         applyModernCardStyle(this.connexionRectangle, 0.80);
         this.connexionRectangle.setMouseTransparent(true);
 
-        LauncherRectangle avatarCard = new LauncherRectangle(root, connX + 28, connY + 148, 82, 82);
-        avatarCard.setArcWidth(24);
-        avatarCard.setArcHeight(24);
-        avatarCard.setFill(Color.rgb(255, 255, 255, 0.06));
-        avatarCard.setStroke(Color.rgb(255, 255, 255, 0.08));
-        avatarCard.setStrokeWidth(1);
-        avatarCard.setMouseTransparent(true);
+        this.avatarCard = new LauncherRectangle(root, connX + 28, connY + 148, 82, 82);
+        this.avatarCard.setArcWidth(24);
+        this.avatarCard.setArcHeight(24);
+        this.avatarCard.setFill(Color.rgb(255, 255, 255, 0.06));
+        this.avatarCard.setStroke(Color.rgb(255, 255, 255, 0.08));
+        this.avatarCard.setStrokeWidth(1);
+        this.avatarCard.setMouseTransparent(true);
 
         this.connectionEyebrowLabel = new LauncherLabel(root);
         this.connectionEyebrowLabel.setText("ESPACE COMPTE");
@@ -1157,6 +1161,7 @@ public class LauncherPanel extends IScreen {
         if (shadersButton != null) new ZoomOutDown(shadersButton).setResetOnFinished(false).play();
         
         if (microsoftHintLabel != null) new ZoomOutDown(microsoftHintLabel).setResetOnFinished(false).play();
+        if (connectionGlow != null) new ZoomOutDown(connectionGlow).setResetOnFinished(false).play();
         if (connectionEyebrowLabel != null) new ZoomOutDown(connectionEyebrowLabel).setResetOnFinished(false).play();
         if (connectionSubtitleLabel != null) new ZoomOutDown(connectionSubtitleLabel).setResetOnFinished(false).play();
 
@@ -1172,6 +1177,7 @@ public class LauncherPanel extends IScreen {
         if (loginButton != null) new ZoomOutDown(loginButton).setResetOnFinished(false).play();
         if (microsoftInlineButton != null) new ZoomOutDown(microsoftInlineButton).setResetOnFinished(false).play();
         if (connexionRectangle != null) new ZoomOutDown(connexionRectangle).setResetOnFinished(false).play();
+        if (avatarCard != null) new ZoomOutDown(avatarCard).setResetOnFinished(false).play();
 
         if (voteButton != null) new ZoomOutDown(voteButton).setResetOnFinished(false).play();
         if (boutiqueButton != null) new ZoomOutDown(boutiqueButton).setResetOnFinished(false).play();
@@ -1184,7 +1190,9 @@ public class LauncherPanel extends IScreen {
         if (avatar != null) new ZoomOutDown(avatar).setResetOnFinished(false).play();
 
         if (usernameField != null) usernameField.setDisable(true);
+        if (connectionGlow != null) connectionGlow.setDisable(true);
         if (connexionRectangle != null) connexionRectangle.setDisable(true);
+        if (avatarCard != null) avatarCard.setDisable(true);
         if (rememberMe != null) rememberMe.setDisable(true);
         if (loginButton != null) loginButton.setDisable(true);
         if (microsoftInlineButton != null) microsoftInlineButton.setDisable(true);
