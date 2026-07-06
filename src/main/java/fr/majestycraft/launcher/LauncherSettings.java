@@ -886,9 +886,9 @@ public class LauncherSettings extends IScreen {
         serverBase = serverBase;
         return new GameLinks(
                 fullUrl,
-                serverBase + "ignore.cfg",
-                serverBase + "delete.cfg",
-                serverBase + "status.cfg",
+                serverBase + "ignore.json",
+                serverBase + "delete.json",
+                serverBase + "status.json",
                 serverBase + "files/"
         );
     }

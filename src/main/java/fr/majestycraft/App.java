@@ -257,9 +257,9 @@ public class App extends AlternativeBase {
 
                 GameLinks links = new GameLinks(
                         mojangJsonUrl,
-                        serverBaseForVersion + "ignore.cfg",
-                        serverBaseForVersion + "delete.cfg",
-                        serverBaseForVersion + "status.cfg",
+                        serverBaseForVersion + "ignore.json",
+                        serverBaseForVersion + "delete.json",
+                        serverBaseForVersion + "status.json",
                         serverBaseForVersion + "files/"
                 );
 
