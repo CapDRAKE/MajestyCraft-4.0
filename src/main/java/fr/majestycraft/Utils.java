@@ -19,6 +19,7 @@ public class Utils {
     public static void regGameStyle(GameEngine engine, LauncherConfig config) {
         String version = config == null ? null : stringValue(config.getValue(EnumConfig.VERSION));
         engine.setGameStyle(determineGameStyle(version, resolveSelectedModloader(config)));
+        engine.setRequestedVersionId(version);
     }
 
     public static ModloaderType resolveSelectedModloader(LauncherConfig config) {

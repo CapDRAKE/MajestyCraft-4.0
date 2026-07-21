@@ -366,6 +366,7 @@ public class LauncherSettings extends IScreen {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty ? null : item);
+                setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
                 setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
             }
         });
@@ -375,6 +376,7 @@ public class LauncherSettings extends IScreen {
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty ? null : item);
+                setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
                 setStyle("-fx-text-fill: black;");
             }
         });
@@ -649,14 +651,43 @@ public class LauncherSettings extends IScreen {
         saveButton.setLayoutY(cardY + cardH - 58);
         saveButton.setPrefWidth(210);
         saveButton.setOnAction(event -> {
-            HashMap<String, String> configMap = new HashMap<>();
+            if (versionList.isDisabled() || "Chargement...".equals(versionList.getValue())) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setHeaderText("Liste des versions en cours de chargement");
+                alert.setContentText("Merci de patienter quelques secondes que la liste des versions soit chargée avant d'enregistrer.");
+                alert.showAndWait();
+                return;
+            }
+
             Utils.ModloaderType selectedModloader = getSelectedModloaderFromControls();
+            String selectedVersion = String.valueOf(versionList.getValue());
+
+            // On résout d'abord les GameLinks (réseau, peut échouer) AVANT de persister
+            // quoi que ce soit : si ça échoue, la config et le gameEngine restent sur
+            // l'ancienne version/modloader (cohérents et fonctionnels), au lieu de rester
+            // bloqués sur un état à moitié mis à jour qui obligerait à relancer le launcher.
+            GameLinks links;
+            try {
+                if (selectedModloader == Utils.ModloaderType.OPTIFINE) {
+                    App.ensureOptiFineRuntime(selectedVersion);
+                }
+
+                links = buildGameLinks(selectedVersion, selectedModloader);
+            } catch (Exception e) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setHeaderText("Impossible de préparer la version sélectionnée");
+                alert.setContentText(e.getMessage() != null ? e.getMessage() : "Erreur inconnue lors de la préparation du jeu.");
+                alert.showAndWait();
+                return;
+            }
+
+            HashMap<String, String> configMap = new HashMap<>();
             configMap.put("allocatedram", String.valueOf(memorySlider.getValue()));
             configMap.put("gamesize", "" + GameSize.getWindowSize(windowsSizeList.getValue()));
             configMap.put("autologin", "" + autoLogin.isSelected());
             configMap.put("usevmarguments", "" + useVMArguments.isSelected());
             configMap.put("vmarguments", "" + vmArguments.getText());
-            configMap.put("version", "" + versionList.getValue());
+            configMap.put("version", "" + selectedVersion);
             configMap.put("language", "" + LanguageList.getValue());
             configMap.put(EnumConfig.USE_FORGE.getOption(), "" + (selectedModloader == Utils.ModloaderType.FORGE));
             configMap.put(EnumConfig.USE_FABRIC.getOption(), "" + (selectedModloader == Utils.ModloaderType.FABRIC));
@@ -672,22 +703,7 @@ public class LauncherSettings extends IScreen {
 
             engine.reg(GameMemory.getMemory(Double.parseDouble((String) pane.getConfig().getValue(EnumConfig.RAM))));
             engine.reg(GameSize.getWindowSize(Integer.parseInt((String) pane.getConfig().getValue(EnumConfig.GAME_SIZE))));
-
-            String selectedVersion = String.valueOf(pane.getConfig().getValue(EnumConfig.VERSION));
-            try {
-                if (selectedModloader == Utils.ModloaderType.OPTIFINE) {
-                    App.ensureOptiFineRuntime(selectedVersion);
-                }
-
-                GameLinks links = buildGameLinks(selectedVersion, selectedModloader);
-                engine.reg(links);
-            } catch (Exception e) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setHeaderText("Impossible de préparer la version sélectionnée");
-                alert.setContentText(e.getMessage() != null ? e.getMessage() : "Erreur inconnue lors de la préparation du jeu.");
-                alert.showAndWait();
-                return;
-            }
+            engine.reg(links);
 
             Utils.regGameStyle(engine, pane.getConfig());
 
@@ -814,7 +830,8 @@ public class LauncherSettings extends IScreen {
                 "-fx-border-color: rgba(255,255,255,0.14);" +
                 "-fx-border-radius: 14;" +
                 "-fx-border-width: 1;" +
-                "-fx-text-fill: white;"
+                "-fx-text-fill: white;" +
+                "-fx-font-family: 'Comfortaa';"
         );
     }
 

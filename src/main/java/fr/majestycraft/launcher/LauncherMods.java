@@ -7,7 +7,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXTextField;
+import fr.majestycraft.Utils;
 import fr.trxyy.alternative.alternative_api.GameEngine;
+import fr.trxyy.alternative.alternative_api.GameProfilePaths;
 import fr.trxyy.alternative.alternative_api.utils.FontLoader;
 import fr.trxyy.alternative.alternative_api.utils.config.EnumConfig;
 import fr.trxyy.alternative.alternative_api_ui.base.IScreen;
@@ -71,6 +73,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -91,8 +95,10 @@ public class LauncherMods extends IScreen {
     private static final String LOADER_QUILT = "quilt";
 
     private final LauncherPanel paneRef;
+    private final GameEngine engineRef;
     private final List<LocalModItem> localMods = new ArrayList<>();
     private final Image fallbackIcon = new Image(getClass().getResource("/resources/mods.png").toExternalForm());
+    private final Map<String, Image> remoteImageCache = new ConcurrentHashMap<>();
     private final DecimalFormat decimalFormat = new DecimalFormat("0.0");
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.FRANCE);
 
@@ -132,7 +138,7 @@ public class LauncherMods extends IScreen {
     private LauncherLabel heroLine4;
 
     private File modsDir;
-    private String selectedLoader = LOADER_FORGE;
+    private String selectedLoader;
     private String selectedMinecraftVersion;
 
     private double xOffSet;
@@ -140,6 +146,7 @@ public class LauncherMods extends IScreen {
 
     public LauncherMods(final Pane root, final GameEngine engine, final LauncherPanel pane) {
         this.paneRef = pane;
+        this.engineRef = engine;
 
         Platform.runLater(new Runnable() {
             @Override
@@ -163,6 +170,7 @@ public class LauncherMods extends IScreen {
         });
 
         this.selectedMinecraftVersion = resolveInitialMinecraftVersion();
+        this.selectedLoader = resolveInitialLoader();
 
         installResponsiveBackground(root, engine, "background.png");
 
@@ -661,14 +669,7 @@ public class LauncherMods extends IScreen {
     }
 
     private File resolveModsDir() {
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("win")) {
-            return new File(System.getenv("APPDATA") + "/.majestycraft/bin/game/mods");
-        } else if (os.contains("mac")) {
-            return new File(System.getProperty("user.home") + "/Library/Application Support/.majestycraft/bin/game/mods");
-        } else {
-            return new File(System.getProperty("user.home") + "/.majestycraft/bin/game/mods");
-        }
+        return new File(GameProfilePaths.resolveRuntimeGameDirectory(engineRef), "mods");
     }
 
     private void ensureModsDir() {
@@ -1117,7 +1118,19 @@ public class LauncherMods extends IScreen {
                 }
 
                 if (item.iconUrl != null && !item.iconUrl.isEmpty()) {
-                    iconView.setImage(loadRemoteImageSafe(item.iconUrl, fallbackIcon));
+                    Image cached = remoteImageCache.get(item.iconUrl);
+                    if (cached != null) {
+                        iconView.setImage(cached);
+                    } else {
+                        iconView.setImage(fallbackIcon);
+                        String iconUrl = item.iconUrl;
+                        Thread imageThread = new Thread(() -> {
+                            Image loaded = loadRemoteImageSafe(iconUrl, fallbackIcon);
+                            Platform.runLater(() -> iconView.setImage(loaded));
+                        }, "MajestyLauncher-ModIcon");
+                        imageThread.setDaemon(true);
+                        imageThread.start();
+                    }
                 } else {
                     iconView.setImage(fallbackIcon);
                 }
@@ -1405,6 +1418,21 @@ public class LauncherMods extends IScreen {
         return String.valueOf(value);
     }
 
+    private String resolveInitialLoader() {
+        switch (Utils.resolveSelectedModloader(paneRef.getConfig())) {
+            case FORGE:
+                return LOADER_FORGE;
+            case FABRIC:
+                return LOADER_FABRIC;
+            case QUILT:
+                return LOADER_QUILT;
+            case NEOFORGE:
+                return LOADER_NEOFORGE;
+            default:
+                return LOADER_ANY;
+        }
+    }
+
     private String getSelectedMinecraftVersion() {
         if (selectedMinecraftVersion == null || selectedMinecraftVersion.trim().isEmpty()) {
             selectedMinecraftVersion = resolveInitialMinecraftVersion();
@@ -1633,6 +1661,8 @@ public class LauncherMods extends IScreen {
     }
     private Image loadRemoteImageSafe(String url, Image fallback) {
         if (url == null || url.trim().isEmpty()) return fallback;
+        Image cached = remoteImageCache.get(url);
+        if (cached != null) return cached;
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
             connection.setInstanceFollowRedirects(true);
@@ -1646,14 +1676,15 @@ public class LauncherMods extends IScreen {
                 while ((read = in.read(chunk)) != -1) buffer.write(chunk, 0, read);
                 byte[] bytes = buffer.toByteArray();
                 Image img = new Image(new ByteArrayInputStream(bytes), 52, 52, true, true);
-                if (!img.isError() && img.getWidth() > 1) return img;
+                if (!img.isError() && img.getWidth() > 1) { remoteImageCache.put(url, img); return img; }
                 BufferedImage bi = ImageIO.read(new ByteArrayInputStream(bytes));
                 if (bi != null) {
                     Image fxImg = SwingFXUtils.toFXImage(bi, null);
-                    if (fxImg != null && !fxImg.isError() && fxImg.getWidth() > 1) return fxImg;
+                    if (fxImg != null && !fxImg.isError() && fxImg.getWidth() > 1) { remoteImageCache.put(url, fxImg); return fxImg; }
                 }
             }
         } catch (Exception ignored) {}
+        remoteImageCache.put(url, fallback);
         return fallback;
     }
 

@@ -9,6 +9,7 @@ import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXTextField;
 import fr.majestycraft.Main;
 import fr.trxyy.alternative.alternative_api.GameEngine;
+import fr.trxyy.alternative.alternative_api.GameProfilePaths;
 import fr.trxyy.alternative.alternative_api.utils.FontLoader;
 import fr.trxyy.alternative.alternative_api.utils.config.EnumConfig;
 import fr.trxyy.alternative.alternative_api_ui.base.IScreen;
@@ -68,6 +69,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -91,6 +94,9 @@ public class LauncherPacks extends IScreen {
     private static final String MODRINTH_USER_AGENT = "CapDRAKE/MajestyLauncher/3.7 (majestycraft.com)";
 
     private final LauncherPanel paneRef;
+    private final GameEngine engineRef;
+    private final Image fallbackIcon = new Image(getClass().getResource("/resources/launchergifpng.png").toExternalForm());
+    private final Map<String, Image> remoteImageCache = new ConcurrentHashMap<>();
 
     private ListView<ResourcePackItem> localListView;
     private ListView<OnlinePackItem> onlineListView;
@@ -123,6 +129,7 @@ public class LauncherPacks extends IScreen {
 
     public LauncherPacks(final Pane root, final GameEngine engine, final LauncherPanel pane) {
         this.paneRef = pane;
+        this.engineRef = engine;
 
         Platform.runLater(() -> {
             if (root.getScene() != null && !root.getScene().getStylesheets().contains("css/design.css")) {
@@ -490,14 +497,7 @@ public class LauncherPacks extends IScreen {
     }
 
     private File resolveResourcePacksDir() {
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("win")) {
-            return new File(System.getenv("APPDATA") + "/.majestycraft/bin/game/resourcepacks");
-        } else if (os.contains("mac")) {
-            return new File(System.getProperty("user.home") + "/Library/Application Support/.majestycraft/bin/game/resourcepacks");
-        } else {
-            return new File(System.getProperty("user.home") + "/.majestycraft/bin/game/resourcepacks");
-        }
+        return new File(GameProfilePaths.resolveRuntimeGameDirectory(engineRef), "resourcepacks");
     }
 
     private void ensureResourcePackDir() {
@@ -603,7 +603,7 @@ public class LauncherPacks extends IScreen {
                     return;
                 }
 
-                packImageView.setImage(item.icon != null ? item.icon : new Image(getClass().getResource("/resources/launchergifpng.png").toExternalForm()));
+                packImageView.setImage(item.icon != null ? item.icon : fallbackIcon);
                 nameLabel.setText(item.displayName);
 
                 deleteButton.setOnAction(event -> {
@@ -687,9 +687,21 @@ public class LauncherPacks extends IScreen {
                 }
 
                 if (item.iconUrl != null && !item.iconUrl.isEmpty()) {
-                    iconView.setImage(loadRemoteImageSafe(item.iconUrl, new Image(getClass().getResource("/resources/launchergifpng.png").toExternalForm())));
+                    Image cached = remoteImageCache.get(item.iconUrl);
+                    if (cached != null) {
+                        iconView.setImage(cached);
+                    } else {
+                        iconView.setImage(fallbackIcon);
+                        String iconUrl = item.iconUrl;
+                        Thread imageThread = new Thread(() -> {
+                            Image loaded = loadRemoteImageSafe(iconUrl, fallbackIcon);
+                            Platform.runLater(() -> iconView.setImage(loaded));
+                        }, "MajestyLauncher-PackIcon");
+                        imageThread.setDaemon(true);
+                        imageThread.start();
+                    }
                 } else {
-                    iconView.setImage(new Image(getClass().getResource("/resources/launchergifpng.png").toExternalForm()));
+                    iconView.setImage(fallbackIcon);
                 }
 
                 titleLabel.setText(item.title);
@@ -986,6 +998,8 @@ public class LauncherPacks extends IScreen {
     }
     private Image loadRemoteImageSafe(String url, Image fallback) {
         if (url == null || url.trim().isEmpty()) return fallback;
+        Image cached = remoteImageCache.get(url);
+        if (cached != null) return cached;
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
             connection.setInstanceFollowRedirects(true);
@@ -999,14 +1013,15 @@ public class LauncherPacks extends IScreen {
                 while ((read = in.read(chunk)) != -1) buffer.write(chunk, 0, read);
                 byte[] bytes = buffer.toByteArray();
                 Image img = new Image(new ByteArrayInputStream(bytes), 52, 52, true, true);
-                if (!img.isError() && img.getWidth() > 1) return img;
+                if (!img.isError() && img.getWidth() > 1) { remoteImageCache.put(url, img); return img; }
                 BufferedImage bi = ImageIO.read(new ByteArrayInputStream(bytes));
                 if (bi != null) {
                     Image fxImg = SwingFXUtils.toFXImage(bi, null);
-                    if (fxImg != null && !fxImg.isError() && fxImg.getWidth() > 1) return fxImg;
+                    if (fxImg != null && !fxImg.isError() && fxImg.getWidth() > 1) { remoteImageCache.put(url, fxImg); return fxImg; }
                 }
             }
         } catch (Exception ignored) {}
+        remoteImageCache.put(url, fallback);
         return fallback;
     }
 
