@@ -8,6 +8,7 @@ import com.google.gson.JsonParser;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXTextField;
 import fr.trxyy.alternative.alternative_api.GameEngine;
+import fr.trxyy.alternative.alternative_api.GameProfilePaths;
 import fr.trxyy.alternative.alternative_api.utils.FontLoader;
 import fr.trxyy.alternative.alternative_api.utils.config.EnumConfig;
 import fr.trxyy.alternative.alternative_api_ui.base.IScreen;
@@ -87,6 +88,7 @@ public class LauncherShaders extends IScreen {
     private static final String MODRINTH_USER_AGENT = "CapDRAKE/MajestyLauncher/4.0 (majestycraft.com)";
 
     private final LauncherPanel paneRef;
+    private final GameEngine engineRef;
     private final DecimalFormat decimalFormat = new DecimalFormat("0.0");
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.FRANCE);
     private final List<LocalShaderItem> shaderItems = new ArrayList<LocalShaderItem>();
@@ -128,6 +130,7 @@ public class LauncherShaders extends IScreen {
 
     public LauncherShaders(final Pane root, final GameEngine engine, final LauncherPanel pane) {
         this.paneRef = pane;
+        this.engineRef = engine;
 
         Platform.runLater(new Runnable() {
             @Override
@@ -1072,13 +1075,7 @@ public class LauncherShaders extends IScreen {
     }
 
     private File resolveShaderpacksDir() {
-        String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-        if (os.contains("win")) {
-            return new File(System.getenv("APPDATA") + "/.majestycraft/bin/game/shaderpacks");
-        } else if (os.contains("mac")) {
-            return new File(System.getProperty("user.home") + "/Library/Application Support/.majestycraft/bin/game/shaderpacks");
-        }
-        return new File(System.getProperty("user.home") + "/.majestycraft/bin/game/shaderpacks");
+        return new File(GameProfilePaths.resolveRuntimeGameDirectory(engineRef), "shaderpacks");
     }
 
     private void ensureShaderpacksDir() {

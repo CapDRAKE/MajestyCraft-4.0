@@ -39,6 +39,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.effect.DropShadow;
@@ -123,6 +124,7 @@ public class LauncherPanel extends IScreen {
     private JFXToggleButton rememberMe;
     private JFXButton loginButton;
     private JFXButton microsoftInlineButton;
+    private Timeline updateTimeline;
 
     private LauncherRectangle autoLoginRectangle;
     private LauncherLabel autoLoginLabel;
@@ -604,6 +606,7 @@ public class LauncherPanel extends IScreen {
         closeButton.setPosition(engine.getWidth() - 32, 10);
         closeButton.setSize(16, 16);
         closeButton.setOnAction(event -> System.exit(0));
+        closeButton.setTooltip(new Tooltip("Fermer"));
 
         LauncherButton reduceButton = new LauncherButton(root);
         LauncherImage reduceImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "reduce.png"));
@@ -616,6 +619,7 @@ public class LauncherPanel extends IScreen {
             Stage stage = (Stage) ((LauncherButton) event.getSource()).getScene().getWindow();
             stage.setIconified(true);
         });
+        reduceButton.setTooltip(new Tooltip("Réduire"));
     }
 
     private void initMusic() {
@@ -670,6 +674,7 @@ public class LauncherPanel extends IScreen {
         this.microsoftButton.setPosition(sbX, sbY);
         this.microsoftButton.setSize(size, size);
         this.microsoftButton.setOnAction(event -> launchMicrosoftFlow(root));
+        this.microsoftButton.setTooltip(new Tooltip("Connexion Microsoft"));
         installHoverScale(this.microsoftButton);
 
         this.infoButton = new LauncherButton(root);
@@ -691,6 +696,7 @@ public class LauncherPanel extends IScreen {
             stage.setScene(scene);
             stage.show();
         });
+        this.infoButton.setTooltip(new Tooltip("Informations"));
         installHoverScale(this.infoButton);
 
         this.settingsButton = new LauncherButton(root);
@@ -716,14 +722,22 @@ public class LauncherPanel extends IScreen {
             stage.setScene(scene);
             stage.showAndWait();
         });
+        this.settingsButton.setTooltip(new Tooltip("Paramètres"));
         installHoverScale(this.settingsButton);
+
+        // Les 3 dernières icônes (packs/mods/shaders) ont un texte sous l'icône :
+        // on leur laisse plus d'espace vertical (labeledStep) que le pas standard (step).
+        int labeledStep = 90;
+        int packsY = sbY + step * 3;
+        int modsY = packsY + labeledStep;
+        int shadersY = modsY + labeledStep;
 
         this.packsButton = new LauncherButton(root);
         styleSidebarButton(this.packsButton);
         LauncherImage packImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "pack.png"));
         packImg.setSize(22, 22);
         this.packsButton.setGraphic(packImg);
-        this.packsButton.setPosition(sbX, sbY + step * 3);
+        this.packsButton.setPosition(sbX, packsY);
         this.packsButton.setSize(size, size);
         this.packsButton.setOnAction(event -> {
             Scene scene = new Scene(createPacksPanel(root));
@@ -737,14 +751,16 @@ public class LauncherPanel extends IScreen {
             stage.setScene(scene);
             stage.showAndWait();
         });
+        this.packsButton.setTooltip(new Tooltip("Packs de textures"));
         installHoverScale(this.packsButton);
+        addSidebarCaption(root, "Packs", sbX, packsY, size);
 
         this.modsButton = new LauncherButton(root);
         styleSidebarButton(this.modsButton);
         LauncherImage modsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "mods.png"));
         modsImg.setSize(22, 22);
         this.modsButton.setGraphic(modsImg);
-        this.modsButton.setPosition(sbX, sbY + step * 4);
+        this.modsButton.setPosition(sbX, modsY);
         this.modsButton.setSize(size, size);
         this.modsButton.setOnAction(event -> {
             Scene scene = new Scene(createModsPanel(root));
@@ -758,14 +774,16 @@ public class LauncherPanel extends IScreen {
             stage.setScene(scene);
             stage.showAndWait();
         });
+        this.modsButton.setTooltip(new Tooltip("Mods"));
         installHoverScale(this.modsButton);
+        addSidebarCaption(root, "Mods", sbX, modsY, size);
 
         this.shadersButton = new LauncherButton(root);
         styleSidebarButton(this.shadersButton);
         LauncherImage shadersImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "shaderpacks.png"));
         shadersImg.setSize(22, 22);
         this.shadersButton.setGraphic(shadersImg);
-        this.shadersButton.setPosition(sbX, sbY + step * 5);
+        this.shadersButton.setPosition(sbX, shadersY);
         this.shadersButton.setSize(size, size);
         this.shadersButton.setOnAction(event -> {
             Scene scene = new Scene(createShadersPanel(root));
@@ -779,7 +797,9 @@ public class LauncherPanel extends IScreen {
             stage.setScene(scene);
             stage.showAndWait();
         });
+        this.shadersButton.setTooltip(new Tooltip("Shaders"));
         installHoverScale(this.shadersButton);
+        addSidebarCaption(root, "Shaders", sbX, shadersY, size);
 
         int quickW = 155;
         int quickH = 40;
@@ -851,6 +871,20 @@ public class LauncherPanel extends IScreen {
         this.youtubeButton.setBackground(null);
         this.youtubeButton.setOnAction(event -> openLink(YOUTUBE_URL));
         installHoverScale(this.youtubeButton);
+    }
+
+    /**
+     * Petit texte centré sous une icône de la barre latérale (ex: "Mods", "Shaders").
+     */
+    private void addSidebarCaption(Pane root, String text, int iconX, int iconY, int iconSize) {
+        int labelWidth = 80;
+        LauncherLabel caption = new LauncherLabel(root);
+        caption.setText(text);
+        caption.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
+        caption.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.55);");
+        caption.setAlignment(Pos.CENTER);
+        caption.setPosition(iconX - (labelWidth - iconSize) / 2, iconY + iconSize + 2);
+        caption.setSize(labelWidth, 14);
     }
 
     private void setupConnectionsGUI(Pane root) {
@@ -1249,12 +1283,15 @@ public class LauncherPanel extends IScreen {
 
         this.gameUpdater.start();
 
-        Timeline timeline = new Timeline(
+        if (this.updateTimeline != null) {
+            this.updateTimeline.stop();
+        }
+        this.updateTimeline = new Timeline(
                 new KeyFrame(javafx.util.Duration.seconds(0.0D), event -> timelineUpdate(engine)),
                 new KeyFrame(javafx.util.Duration.seconds(0.1D))
         );
-        timeline.setCycleCount(Animation.INDEFINITE);
-        timeline.play();
+        this.updateTimeline.setCycleCount(Animation.INDEFINITE);
+        this.updateTimeline.play();
     }
 
     private double percent;
