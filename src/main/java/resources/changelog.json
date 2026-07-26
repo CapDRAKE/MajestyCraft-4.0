@@ -1,0 +1,43 @@
+{
+  "versions": [
+    {
+      "version": "5.0",
+      "date": "23/07/2026",
+      "entries": [
+        { "type": "new", "text": "Profils de jeu : crée plusieurs configurations (version, modloader, mods, RAM) et bascule de l'une à l'autre en un clic. Chaque profil a son propre dossier de jeu, donc plus aucun mélange de mods entre versions." },
+        { "type": "new", "text": "Gestionnaire de profils complet : créer, activer, dupliquer (avec copie des mods et configs), renommer et supprimer, avec le choix de conserver ou non les fichiers du profil." },
+        { "type": "new", "text": "Import / export de profil : partage ta configuration moddée sous forme d'un simple fichier .zip que les autres joueurs peuvent importer en un clic." },
+        { "type": "new", "text": "Couleur d'identité par profil, affichée dans le sélecteur et sur les cartes pour repérer tes configurations d'un coup d'œil." },
+        { "type": "new", "text": "Temps de jeu et dernière utilisation affichés sur chaque profil, avec tri automatique du plus récemment joué au plus ancien." },
+        { "type": "improve", "text": "Connexion Microsoft séparée du lancement du jeu : le bouton Microsoft ne fait plus que connecter le compte. Un bouton JOUER dédié lance la partie." },
+        { "type": "improve", "text": "État de connexion visible : pastille verte « Connecté » sous l'icône Microsoft, pseudo et skin affichés. La session est conservée d'un lancement à l'autre." },
+        { "type": "improve", "text": "Le bouton JOUER reste bloqué tant que le compte Microsoft n'est pas reconnecté, pour éviter de lancer le jeu avec une session invalide." },
+        { "type": "improve", "text": "RAM détectée automatiquement : le curseur est plafonné à la mémoire réellement disponible et avertit si l'allocation ne laisse pas assez de place au système." },
+        { "type": "improve", "text": "Catalogue de mods et shaders consultable hors-ligne : les recherches sont mises en cache et réaffichées si l'API Modrinth est indisponible." },
+        { "type": "improve", "text": "Statut Discord détaillé selon le profil en cours (« Joue en Fabric 1.21 ») au lieu d'un statut générique." },
+        { "type": "new", "text": "Journal de jeu enregistré à chaque partie, avec un bouton « Voir les logs » et une proposition d'ouverture automatique si le jeu se ferme anormalement." },
+        { "type": "fix", "text": "Correction de l'espacement et de la police des boutons qui changeaient au survol dans le gestionnaire de profils." },
+        { "type": "fix", "text": "Les libellés de la barre latérale disparaissent désormais avec les icônes pendant le chargement du jeu." }
+      ]
+    },
+    {
+      "version": "4.2.1",
+      "date": "21/07/2026",
+      "entries": [
+        { "type": "fix", "text": "Les mods téléchargés depuis le launcher n'apparaissaient pas en jeu : ils étaient installés dans un dossier différent de celui réellement utilisé au lancement." },
+        { "type": "fix", "text": "Les paramètres Minecraft (options, touches, vidéo) ne sont plus réinitialisés lors d'un changement de version ou de modloader." },
+        { "type": "improve", "text": "Optimisation des performances générales du launcher et du chargement des icônes de mods." },
+        { "type": "fix", "text": "Corrections diverses : icônes des panneaux, traductions et stabilité générale." }
+      ]
+    },
+    {
+      "version": "4.2",
+      "date": "18/07/2026",
+      "entries": [
+        { "type": "improve", "text": "Passage des fichiers de configuration distants au format JSON, suite au blocage des fichiers .cfg par l'hébergeur." },
+        { "type": "improve", "text": "Interface modernisée : nouvelle mise en page de l'accueil, des paramètres et des panneaux mods et shaders." },
+        { "type": "new", "text": "Support de Quilt et NeoForge en plus de Forge, Fabric et OptiFine." }
+      ]
+    }
+  ]
+}

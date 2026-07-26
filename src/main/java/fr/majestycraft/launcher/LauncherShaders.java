@@ -89,6 +89,7 @@ public class LauncherShaders extends IScreen {
 
     private final LauncherPanel paneRef;
     private final GameEngine engineRef;
+    private final fr.majestycraft.util.ModrinthCache modrinthCache;
     private final DecimalFormat decimalFormat = new DecimalFormat("0.0");
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.FRANCE);
     private final List<LocalShaderItem> shaderItems = new ArrayList<LocalShaderItem>();
@@ -131,6 +132,7 @@ public class LauncherShaders extends IScreen {
     public LauncherShaders(final Pane root, final GameEngine engine, final LauncherPanel pane) {
         this.paneRef = pane;
         this.engineRef = engine;
+        this.modrinthCache = new fr.majestycraft.util.ModrinthCache(engine.getGameFolder().getCacheDir());
 
         Platform.runLater(new Runnable() {
             @Override
@@ -681,7 +683,19 @@ public class LauncherShaders extends IScreen {
                             + "&facets=" + URLEncoder.encode(facets, "UTF-8")
                             + "&query=" + URLEncoder.encode(query == null ? "" : query.trim(), "UTF-8");
 
-                    String json = downloadText(url);
+                    // Cache : succès -> mémorisé ; échec -> repli sur la dernière
+                    // réponse connue pour cette requête (catalogue consultable hors-ligne).
+                    String json;
+                    boolean fromCache = false;
+                    try {
+                        json = downloadText(url);
+                        modrinthCache.put(url, json);
+                    } catch (Exception netEx) {
+                        json = modrinthCache.get(url);
+                        if (json == null) throw netEx;
+                        fromCache = true;
+                    }
+                    final boolean servedFromCache = fromCache;
                     JsonObject root = JsonParser.parseString(json).getAsJsonObject();
                     JsonArray hits = root.getAsJsonArray("hits");
 
@@ -710,10 +724,11 @@ public class LauncherShaders extends IScreen {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
+                            String suffix = servedFromCache ? " (hors-ligne — cache)" : "";
                             if (onlineListView.getItems().isEmpty()) {
-                                onlineStatusLabel.setText("Aucun shader trouvé pour " + mcVersion + ".");
+                                onlineStatusLabel.setText("Aucun shader trouvé pour " + mcVersion + "." + suffix);
                             } else {
-                                onlineStatusLabel.setText(onlineListView.getItems().size() + " shader(s) trouvés pour " + mcVersion + ".");
+                                onlineStatusLabel.setText(onlineListView.getItems().size() + " shader(s) trouvés pour " + mcVersion + "." + suffix);
                             }
                         }
                     });
@@ -721,7 +736,7 @@ public class LauncherShaders extends IScreen {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            onlineStatusLabel.setText("Impossible de charger les shaders en ligne.");
+                            onlineStatusLabel.setText("Impossible de charger les shaders en ligne (API Modrinth indisponible).");
                         }
                     });
                 }

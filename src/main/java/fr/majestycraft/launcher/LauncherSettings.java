@@ -121,7 +121,7 @@ public class LauncherSettings extends IScreen {
     private volatile boolean neoForgeVersionsLoaded = false;
     private volatile boolean optifineVersionsLoaded = false;
 
-    private static final List<String> VANILLA_SUPPORTED_RELEASES = Arrays.asList(
+    public static final List<String> VANILLA_SUPPORTED_RELEASES = Arrays.asList(
             "1.8", "1.9", "1.10.2", "1.11.2", "1.12.2", "1.13.2", "1.14.4", "1.15.2",
             "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17", "1.17.1", "1.18", "1.18.1",
             "1.18.2", "1.19", "1.19.1", "1.19.2", "1.19.3", "1.19.4", "1.20", "1.20.1", "1.20.2",
@@ -246,7 +246,12 @@ public class LauncherSettings extends IScreen {
         titleLabel.setAlignment(Pos.CENTER);
 
         LauncherLabel subTitleLabel = new LauncherLabel(root);
-        subTitleLabel.setText("Configuration du jeu et du launcher");
+        fr.majestycraft.profiles.ProfileManager pmForTitle = fr.majestycraft.profiles.ProfileManager.get();
+        String activeProfileName = (pmForTitle != null && pmForTitle.getActive() != null)
+                ? pmForTitle.getActive().getName() : null;
+        subTitleLabel.setText(activeProfileName != null
+                ? "Profil actif : " + activeProfileName + "  •  version, modloader et RAM s'appliquent à ce profil"
+                : "Configuration du jeu et du launcher");
         subTitleLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.45);");
         subTitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         subTitleLabel.setSize(cardW, 20);
@@ -498,31 +503,47 @@ public class LauncherSettings extends IScreen {
         this.versionList.setOnAction(event -> applyModRestrictionsForVersion(versionList.getValue(), pane));
 
         /* ===== RAM ===== */
+        final int systemRamGb = detectSystemRamGb();
+        // Plafond du slider : on ne laisse pas allouer plus que la RAM physique
+        // (cause classique de crash), tout en gardant une marge basse raisonnable.
+        final int sliderMax = Math.max(2, Math.min(systemRamGb, 24));
+        // Seuil au-delà duquel on avertit (il faut laisser de la RAM à l'OS).
+        final int safeMax = Math.max(2, systemRamGb - 2);
+
         LauncherLabel ramLabel = new LauncherLabel(root);
         ramLabel.setText(LABEL_RAM_ALLOC);
         ramLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
         ramLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-        ramLabel.setSize(180, 22);
-        ramLabel.setPosition(leftX, cardY + 296);
+        ramLabel.setSize(260, 22);
+        ramLabel.setPosition(leftX, cardY + 292);
+
+        LauncherLabel ramSystemHint = new LauncherLabel(root);
+        ramSystemHint.setText("RAM système détectée : " + systemRamGb + " Go");
+        ramSystemHint.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
+        ramSystemHint.setStyle("-fx-text-fill: rgba(255,255,255,0.45);");
+        ramSystemHint.setSize(260, 16);
+        ramSystemHint.setPosition(leftX, cardY + 312);
 
         this.memorySliderLabel = new LauncherLabel(root);
         this.memorySliderLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
         this.memorySliderLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-        this.memorySliderLabel.setSize(80, 22);
-        this.memorySliderLabel.setPosition(cardX + cardW - 100, cardY + 296);
+        this.memorySliderLabel.setSize(90, 22);
+        this.memorySliderLabel.setPosition(cardX + cardW - 110, cardY + 292);
         this.memorySliderLabel.setAlignment(Pos.CENTER_RIGHT);
 
         this.memorySlider = new JFXSlider();
         this.memorySlider.setMin(1);
-        this.memorySlider.setMax(10);
+        this.memorySlider.setMax(sliderMax);
 
+        double initialRam = 2.0D;
         if (pane.getConfig().getValue(EnumConfig.RAM) != null) {
-            double d = Double.parseDouble((String) pane.getConfig().getValue(EnumConfig.RAM));
-            this.memorySlider.setValue(d);
+            try { initialRam = Double.parseDouble((String) pane.getConfig().getValue(EnumConfig.RAM)); } catch (Exception ignored) {}
         }
+        // Borne la valeur enregistrée au nouveau plafond (config héritée d'une autre machine).
+        this.memorySlider.setValue(Math.max(1, Math.min(initialRam, sliderMax)));
 
         this.memorySlider.setLayoutX(leftX);
-        this.memorySlider.setLayoutY(cardY + 330);
+        this.memorySlider.setLayoutY(cardY + 336);
         this.memorySlider.setPrefWidth(cardW - 80);
         this.memorySlider.setBlockIncrement(1);
         this.memorySlider.setStyle(
@@ -534,11 +555,20 @@ public class LauncherSettings extends IScreen {
         this.memorySlider.valueProperty().addListener((ov, oldVal, newVal) ->
                 memorySlider.setValue(Math.round(newVal.doubleValue()))
         );
-        this.memorySlider.valueProperty().addListener((obs, o, n) ->
-                memorySliderLabel.setText(n.intValue() + " GB")
-        );
+        this.memorySlider.valueProperty().addListener((obs, o, n) -> {
+            int gb = n.intValue();
+            memorySliderLabel.setText(gb + " GB");
+            // Rouge orangé quand on dépasse le seuil sûr (trop peu de RAM pour l'OS).
+            memorySliderLabel.setStyle(gb > safeMax
+                    ? "-fx-text-fill: rgba(255,140,90,0.98); -fx-font-weight: bold;"
+                    : "-fx-text-fill: rgba(255,255,255,0.92);");
+        });
         root.getChildren().add(this.memorySlider);
-        this.memorySliderLabel.setText((int) this.memorySlider.getValue() + " GB");
+        int gb0 = (int) this.memorySlider.getValue();
+        this.memorySliderLabel.setText(gb0 + " GB");
+        this.memorySliderLabel.setStyle(gb0 > safeMax
+                ? "-fx-text-fill: rgba(255,140,90,0.98); -fx-font-weight: bold;"
+                : "-fx-text-fill: rgba(255,255,255,0.92);");
 
         /* ===== Toggles ===== */
         this.modloaderLabel = new LauncherLabel(root);
@@ -701,6 +731,20 @@ public class LauncherSettings extends IScreen {
 
             pane.getConfig().updateValues(configMap);
 
+            // Le profil actif EST la sélection version/modloader/RAM : on le tient à jour
+            fr.majestycraft.profiles.ProfileManager pm = fr.majestycraft.profiles.ProfileManager.get();
+            if (pm != null && pm.getActive() != null) {
+                fr.majestycraft.profiles.LauncherProfile active = pm.getActive();
+                active.setVersion(selectedVersion);
+                active.setModloaderType(selectedModloader);
+                active.setRam(memorySlider.getValue());
+                active.setGameSize("" + GameSize.getWindowSize(windowsSizeList.getValue()));
+                active.setUseVmArguments(useVMArguments.isSelected());
+                active.setVmArguments(vmArguments.getText() == null ? "" : vmArguments.getText());
+                pm.update(active);
+                if (pane != null) pane.refreshProfilesUI();
+            }
+
             engine.reg(GameMemory.getMemory(Double.parseDouble((String) pane.getConfig().getValue(EnumConfig.RAM))));
             engine.reg(GameSize.getWindowSize(Integer.parseInt((String) pane.getConfig().getValue(EnumConfig.GAME_SIZE))));
             engine.reg(links);
@@ -756,6 +800,23 @@ public class LauncherSettings extends IScreen {
             refreshAfterEntrance.setOnFinished(event -> applyModRestrictionsForVersion(this.versionList.getValue(), pane));
             refreshAfterEntrance.play();
         });
+    }
+
+    /**
+     * RAM physique totale de la machine, en Go (arrondi). Repli sur 8 Go si l'info
+     * n'est pas disponible (JVM non-HotSpot).
+     */
+    private int detectSystemRamGb() {
+        try {
+            java.lang.management.OperatingSystemMXBean bean = java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+            if (bean instanceof com.sun.management.OperatingSystemMXBean) {
+                long bytes = ((com.sun.management.OperatingSystemMXBean) bean).getTotalPhysicalMemorySize();
+                if (bytes > 0) {
+                    return (int) Math.max(1, Math.round(bytes / (1024.0 * 1024.0 * 1024.0)));
+                }
+            }
+        } catch (Throwable ignored) {}
+        return 8;
     }
 
     private void animateIn(Node node, double fromX, double fromY, int delayMs) {

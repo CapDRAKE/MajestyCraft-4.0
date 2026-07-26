@@ -197,8 +197,9 @@ public class App extends AlternativeBase {
 
     /**
      * Applique les GameLinks selon la config sauvegardée.
+     * Public : rappelé par le système de profils à chaque changement de profil actif.
      */
-    private void applyGameLinksFromConfigAsync() {
+    public void applyGameLinksFromConfigAsync() {
         if (this.panel == null || this.panel.getConfig() == null) {
             return;
         }

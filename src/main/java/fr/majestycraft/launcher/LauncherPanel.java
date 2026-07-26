@@ -6,6 +6,7 @@ import animatefx.animation.ZoomInLeft;
 import animatefx.animation.ZoomOutDown;
 
 import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXComboBox;
 import com.jfoenix.controls.JFXProgressBar;
 import com.jfoenix.controls.JFXTextField;
 import com.jfoenix.controls.JFXToggleButton;
@@ -14,6 +15,8 @@ import fr.majestycraft.App;
 import fr.majestycraft.Discord;
 import fr.majestycraft.Main;
 import fr.majestycraft.Utils;
+import fr.majestycraft.profiles.LauncherProfile;
+import fr.majestycraft.profiles.ProfileManager;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.updater.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
@@ -99,14 +102,18 @@ public class LauncherPanel extends IScreen {
     private LauncherLabel heroTextLine2;
     private LauncherLabel connectionEyebrowLabel;
     private LauncherLabel connectionSubtitleLabel;
-    private LauncherLabel microsoftHintLabel;
 
     private LauncherButton infoButton;
     private LauncherButton microsoftButton;
     private LauncherButton settingsButton;
+    private LauncherButton profilesButton;
     private LauncherButton packsButton;
     private LauncherButton modsButton;
     private LauncherButton shadersButton;
+    /** Petit texte d'état sous l'icône Microsoft ("Hors ligne" / "Connecté"). */
+    private LauncherLabel microsoftStateCaption;
+    /** Toutes les légendes sous les icônes de la sidebar (masquées au lancement du jeu). */
+    private final java.util.List<LauncherLabel> sidebarCaptions = new java.util.ArrayList<>();
 
     private LauncherButton minestratorButton;
     private LauncherButton twitterButton;
@@ -122,9 +129,20 @@ public class LauncherPanel extends IScreen {
     private LauncherLabel titleCrack;
     private JFXTextField usernameField;
     private JFXToggleButton rememberMe;
-    private JFXButton loginButton;
+    private JFXButton playButton;
     private JFXButton microsoftInlineButton;
+    private JFXComboBox<String> profileCombo;
+    private JFXButton manageProfilesButton;
+    private LauncherLabel profileCaptionLabel;
     private Timeline updateTimeline;
+    /** true quand une session Microsoft valide est active (JOUER lance avec ce compte). */
+    private boolean microsoftSessionActive = false;
+    /** évite deux connexions Microsoft simultanées (double clic, silent + manuel). */
+    private boolean microsoftFlowRunning = false;
+    /** l'auto-login a demandé un lancement pendant qu'une connexion était déjà en cours. */
+    private boolean launchWhenConnected = false;
+    /** évite de re-déclencher un lancement si un update est déjà en cours. */
+    private boolean launchInProgress = false;
 
     private LauncherRectangle autoLoginRectangle;
     private LauncherLabel autoLoginLabel;
@@ -181,6 +199,21 @@ public class LauncherPanel extends IScreen {
         this.config = new LauncherConfig(engine);
         this.config.loadConfiguration();
 
+        // Système de profils : init (migration incluse) AVANT toute résolution de
+        // GameLinks pour que le pont config + dossier de profil soient en place.
+        ProfileManager.init(
+                engine.getGameFolder().getGameDir(),
+                engine.getGameFolder().getPlayDir(),
+                this.config
+        );
+        ProfileManager.get().activateInitial(engine);
+
+        // Fin de session de jeu : crédite le temps de jeu au profil de la session.
+        fr.trxyy.alternative.alternative_api.build.GameRunner.gameSessionCallback = playedMs -> {
+            ProfileManager pm = ProfileManager.get();
+            if (pm != null) pm.addSessionPlaytime(playedMs);
+        };
+
         computeLayout();
 
         setupBackGround(root);
@@ -207,7 +240,7 @@ public class LauncherPanel extends IScreen {
         setCenterX(engine.getWidth() / 2);
 
         connW = 430;
-        connH = 398;
+        connH = 430;
         connX = engine.getWidth() - connW - 85;
         connY = 168;
 
@@ -380,9 +413,10 @@ public class LauncherPanel extends IScreen {
         animateFromLeft(microsoftButton, 60);
         animateFromLeft(infoButton, 120);
         animateFromLeft(settingsButton, 180);
-        animateFromLeft(packsButton, 240);
-        animateFromLeft(modsButton, 300);
-        animateFromLeft(shadersButton, 360);
+        animateFromLeft(profilesButton, 240);
+        animateFromLeft(packsButton, 300);
+        animateFromLeft(modsButton, 360);
+        animateFromLeft(shadersButton, 420);
 
         animateFromBottom(heroLogo, 90);
         animateFromBottom(heroTitleLabel, 160);
@@ -400,10 +434,12 @@ public class LauncherPanel extends IScreen {
         animateFromRight(avatarCard, 200);
         animateFromRight(avatar, 230);
         animateFromRight(usernameField, 300);
-        animateFromRight(rememberMe, 350);
-        animateFromRight(loginButton, 400);
-        animateFromRight(microsoftInlineButton, 450);
-        animateFromRight(microsoftHintLabel, 500);
+        animateFromRight(rememberMe, 340);
+        animateFromRight(profileCaptionLabel, 370);
+        animateFromRight(profileCombo, 390);
+        animateFromRight(manageProfilesButton, 410);
+        animateFromRight(playButton, 440);
+        animateFromRight(microsoftInlineButton, 480);
 
         animateFromBottom(tiktokButton, 470);
         animateFromBottom(minestratorButton, 520);
@@ -458,28 +494,25 @@ public class LauncherPanel extends IScreen {
 
         if (!isAutoLoginEnabled()) return;
 
-        String username = usernameField.getText();
-        boolean isPasswordEmpty = true;
-
-        if (isOfflineAccount(username, isPasswordEmpty)) {
-            authenticateOffline(username);
-            update();
+        // Auto-login = seul chemin de lancement automatique (compte à rebours annulable)
+        if (isMicrosoftAccount()) {
+            if (isOnlineAccount()) {
+                connectMicrosoftAsync(root, true, true);
+            } else {
+                showOfflineError();
+            }
             return;
         }
 
-        if (isOnlineAccount()) {
-            if (isMicrosoftAccount()) authenticateMicrosoft(root);
-        } else {
-            showOfflineError();
+        String username = usernameField.getText();
+        if (username != null && username.trim().length() >= 2) {
+            authenticateOffline(username.trim());
+            startGame();
         }
     }
 
     private boolean isAutoLoginEnabled() {
         return this.config.getValue(EnumConfig.AUTOLOGIN).equals(true);
-    }
-
-    private boolean isOfflineAccount(String username, boolean isPasswordEmpty) {
-        return username.length() >= 2 && isPasswordEmpty;
     }
 
     private boolean isOnlineAccount() {
@@ -494,27 +527,354 @@ public class LauncherPanel extends IScreen {
         auth = new GameAuth(username, "", AccountType.OFFLINE);
     }
 
-    private void authenticateMicrosoft(Pane root) {
-        auth = new GameAuth(AccountType.MICROSOFT);
-
-        if (auth.trySilentRefresh(engine)) {
-            Session s = auth.getSession();
-            connectAccountPremiumCO(s.getUsername(), root);
-            config.updateValue("username", s.getUsername());
-            config.updateValue("useMicrosoft", true);
-            update();
+    /**
+     * Bouton Microsoft : connecte (ou déconnecte) le compte, sans JAMAIS lancer le
+     * jeu. Le lancement passe uniquement par le bouton JOUER (ou l'auto-login).
+     */
+    private void launchMicrosoftFlow(Pane root) {
+        if (microsoftSessionActive) {
+            disconnectMicrosoft(root);
             return;
         }
-
-        showMicrosoftAuth(root);
-    }
-
-    private void launchMicrosoftFlow(Pane root) {
         if (!App.netIsAvailable()) {
             showConnectionErrorAlert();
             return;
         }
-        authenticateMicrosoft(root);
+        connectMicrosoftAsync(root, false, true);
+    }
+
+    /**
+     * Connexion Microsoft : d'abord un refresh silencieux (en arrière-plan, sans
+     * bloquer l'UI), sinon le device flow avec la fenêtre de code.
+     * @param launchAfter true = lance le jeu une fois connecté (auto-login)
+     * @param interactive true = ouvre le device flow si le refresh silencieux échoue ;
+     *                    false (reconnexion au démarrage) = échec discret, l'utilisateur
+     *                    pourra cliquer sur le bouton Microsoft.
+     */
+    private void connectMicrosoftAsync(Pane root, boolean launchAfter, boolean interactive) {
+        if (microsoftFlowRunning) {
+            if (launchAfter) launchWhenConnected = true;
+            return;
+        }
+        if (microsoftSessionActive && auth != null && auth.isLogged()) {
+            if (launchAfter) startGame();
+            return;
+        }
+        microsoftFlowRunning = true;
+        setAccountStatus("Connexion Microsoft en cours...");
+
+        auth = new GameAuth(AccountType.MICROSOFT);
+        new Thread(() -> {
+            boolean refreshed = auth.trySilentRefresh(engine);
+            Platform.runLater(() -> {
+                if (refreshed) {
+                    microsoftFlowRunning = false;
+                    onMicrosoftConnected(auth.getSession(), root, launchAfter);
+                } else if (interactive) {
+                    startMicrosoftLogin(root, launchAfter);
+                } else {
+                    microsoftFlowRunning = false;
+                    setAccountStatus("Session Microsoft expirée : clique sur « Se connecter avec Microsoft ».");
+                    // Le refresh a échoué : on rend la case au cas où l'utilisateur
+                    // préfère finalement jouer avec un pseudo hors-ligne.
+                    setRememberMeVisible(true);
+                    setMicrosoftButtonConnected(false);
+                    // JOUER reste bloqué (compte Microsoft non connecté), grisé mais
+                    // sans le libellé « CONNEXION… » puisque plus aucune tentative en cours.
+                    if (playButton != null) {
+                        playButton.setDisable(true);
+                        playButton.setText("JOUER");
+                        playButton.setOpacity(0.55);
+                    }
+                }
+            });
+        }, "MajestyLauncher-MsSilentRefresh").start();
+    }
+
+    /**
+     * Etat "connecté Microsoft" : avatar + pseudo affichés, JOUER prêt.
+     * Ne lance le jeu que si launchAfter (auto-login).
+     */
+    private void onMicrosoftConnected(Session session, Pane root, boolean launchAfter) {
+        microsoftSessionActive = true;
+        config.updateValue("username", session.getUsername());
+        config.updateValue("useMicrosoft", true);
+
+        usernameField.setText(session.getUsername());
+        usernameField.setDisable(true);
+        microsoftInlineButton.setText("Se déconnecter (" + session.getUsername() + ")");
+        setAccountStatus("● Connecté via Microsoft : " + session.getUsername(), true);
+        // "Se souvenir de moi" ne concerne que le pseudo hors-ligne : la session
+        // Microsoft est persistée par son refresh token, la case n'a aucun sens ici.
+        setRememberMeVisible(false);
+        setMicrosoftButtonConnected(true);
+        setPlayReady(true);
+
+        if (avatar != null) avatar.setVisible(false);
+        connectAccountPremium(session.getUsername(), root);
+        connectAccountPremiumCO(session.getUsername(), root);
+
+        if (launchAfter || launchWhenConnected) {
+            launchWhenConnected = false;
+            startGame();
+        }
+    }
+
+    private void disconnectMicrosoft(Pane root) {
+        microsoftSessionActive = false;
+        auth = null;
+        config.updateValue("useMicrosoft", false);
+
+        usernameField.setDisable(false);
+        usernameField.setText("");
+        microsoftInlineButton.setText("Se connecter avec Microsoft");
+        setAccountStatus("Pseudo ou compte Microsoft, choisis ton profil et joue.");
+        setRememberMeVisible(true);
+        setMicrosoftButtonConnected(false);
+        // Retour en mode hors-ligne : JOUER redevient utilisable (pseudo).
+        setPlayReady(true);
+
+        if (avatar != null) avatar.setVisible(false);
+        connectAccountCrack(root);
+    }
+
+    /** Masque/affiche la case "Se souvenir de moi" (inutile en mode Microsoft). */
+    private void setRememberMeVisible(boolean visible) {
+        if (rememberMe != null) {
+            rememberMe.setVisible(visible);
+            rememberMe.setManaged(visible);
+        }
+    }
+
+    /** Reflète l'état de connexion sur l'icône Microsoft de la sidebar. */
+    private void setMicrosoftButtonConnected(boolean connected) {
+        if (microsoftButton != null) {
+            microsoftButton.setStyle(connected
+                    ? "-fx-background-color: rgba(80,200,120,0.16);" +
+                      "-fx-background-radius: 18;" +
+                      "-fx-border-color: rgba(95,220,135,0.70);" +
+                      "-fx-border-radius: 18;" +
+                      "-fx-border-width: 1.4;"
+                    : "-fx-background-color: rgba(255,255,255,0.06);" +
+                      "-fx-background-radius: 18;" +
+                      "-fx-border-color: rgba(255,255,255,0.10);" +
+                      "-fx-border-radius: 18;" +
+                      "-fx-border-width: 1;");
+            microsoftButton.setTooltip(new Tooltip(connected ? "Compte Microsoft connecté" : "Connexion Microsoft"));
+        }
+        if (microsoftStateCaption != null) {
+            microsoftStateCaption.setText(connected ? "● Connecté" : "Hors ligne");
+            microsoftStateCaption.setStyle(connected
+                    ? "-fx-background-color: transparent; -fx-text-fill: rgba(110,225,140,0.95);"
+                    : "-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.45);");
+        }
+    }
+
+    /**
+     * Active/désactive le bouton JOUER. Utilisé pour empêcher un lancement tant que
+     * la connexion Microsoft n'est pas établie (compte Microsoft uniquement).
+     */
+    private void setPlayReady(boolean ready) {
+        if (playButton != null) {
+            playButton.setDisable(!ready);
+            playButton.setText(ready ? "JOUER" : "CONNEXION…");
+            playButton.setOpacity(ready ? 1.0 : 0.55);
+        }
+    }
+
+    private void setAccountStatus(String text) {
+        setAccountStatus(text, false);
+    }
+
+    /** @param connected true = statut affiché en vert (compte Microsoft actif) */
+    private void setAccountStatus(String text, boolean connected) {
+        if (connectionSubtitleLabel != null) {
+            connectionSubtitleLabel.setText(text);
+            connectionSubtitleLabel.setStyle(connected
+                    ? "-fx-background-color: transparent; -fx-text-fill: rgba(120,230,140,0.95); -fx-font-weight: bold;"
+                    : "-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.62);");
+        }
+    }
+
+    /**
+     * Bouton JOUER : le seul déclencheur manuel du lancement.
+     * Microsoft connecté → lance avec la session. Sinon pseudo hors-ligne.
+     */
+    private void onPlayClicked(Pane root) {
+        if (launchInProgress) return;
+
+        if (engine.getGameMaintenance() != null && engine.getGameMaintenance().isAccessBlocked()) {
+            new LauncherAlert("Maintenance", "Le jeu est actuellement en maintenance, réessaie plus tard.");
+            return;
+        }
+
+        if (microsoftSessionActive && auth != null && auth.isLogged()) {
+            startGame();
+            return;
+        }
+
+        if (!App.netIsAvailable()) {
+            Platform.runLater(() -> new LauncherAlert(AUTH_FAILED, OFFLINE_MODE_ALERT));
+            return;
+        }
+
+        String username = usernameField.getText();
+        if (username == null || username.trim().length() <= 3) {
+            new LauncherAlert(AUTH_FAILED, USERNAME_ALERT);
+            return;
+        }
+
+        config.updateValue("useMicrosoft", false);
+        config.updateValue("username", username.trim());
+        authenticateOffline(username.trim());
+        connectAccountCrackCO(root);
+
+        if (auth.isLogged()) {
+            startGame();
+        } else {
+            new LauncherAlert(AUTH_FAILED, ONLINE_MODE_ALERT);
+        }
+    }
+
+    /** Point d'entrée unique du lancement (protégé contre les doubles clics). */
+    private void startGame() {
+        if (launchInProgress) return;
+        launchInProgress = true;
+        ProfileManager pm = ProfileManager.get();
+        if (pm != null) pm.beginSession();
+        updateDiscordForActiveProfile(true);
+        update();
+    }
+
+    /**
+     * Met à jour la présence Discord selon le profil actif.
+     * @param playing true = en jeu ("Joue en Fabric 1.21"), false = dans le launcher
+     */
+    private void updateDiscordForActiveProfile(boolean playing) {
+        if (rpc == null) return;
+        ProfileManager pm = ProfileManager.get();
+        LauncherProfile active = pm == null ? null : pm.getActive();
+        if (active == null) return;
+        if (playing) {
+            rpc.updatePresence("En jeu sur MajestyCraft", "Joue en " + active.describeTarget());
+        } else {
+            rpc.updatePresence("Dans le launcher", "Profil : " + active.describeTarget());
+        }
+    }
+
+    /* ─────────────────── Profils ─────────────────── */
+
+    /** Liste des profils correspondant à l'ordre actuel du combo (pour les pastilles de couleur). */
+    private java.util.List<LauncherProfile> comboProfiles = new java.util.ArrayList<>();
+
+    /** Recharge le contenu du sélecteur de profils depuis le ProfileManager. */
+    public void refreshProfilesUI() {
+        ProfileManager pm = ProfileManager.get();
+        if (pm == null || profileCombo == null) return;
+
+        java.util.List<LauncherProfile> profiles = pm.getProfiles();
+        this.comboProfiles = profiles;
+        LauncherProfile active = pm.getActive();
+
+        profileCombo.setOnAction(null);
+        profileCombo.getItems().setAll(
+                profiles.stream()
+                        .map(p -> p.getName().equalsIgnoreCase(p.describeTarget())
+                                ? p.getName()
+                                : p.getName() + "  —  " + p.describeTarget())
+                        .toArray(String[]::new)
+        );
+
+        // Cellules avec pastille de couleur du profil.
+        profileCombo.setButtonCell(profileColorCell(false));
+        profileCombo.setCellFactory(cb -> profileColorCell(true));
+
+        if (active != null) {
+            int idx = -1;
+            for (int i = 0; i < profiles.size(); i++) {
+                if (profiles.get(i).getId().equals(active.getId())) { idx = i; break; }
+            }
+            if (idx >= 0) profileCombo.getSelectionModel().select(idx);
+        }
+        profileCombo.setOnAction(event -> onProfileComboChanged());
+    }
+
+    /**
+     * Cellule de combo affichant une pastille de couleur du profil devant son nom.
+     * @param dropdown true = cellule de la liste déroulante (texte noir), false = bouton (texte clair)
+     */
+    private javafx.scene.control.ListCell<String> profileColorCell(boolean dropdown) {
+        return new javafx.scene.control.ListCell<String>() {
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+                setText(item);
+                setStyle(dropdown
+                        ? "-fx-text-fill: black;"
+                        : "-fx-text-fill: rgba(255,255,255,0.94);");
+                String hex = null;
+                int i = getIndex();
+                if (comboProfiles != null && i >= 0 && i < comboProfiles.size()) {
+                    hex = ProfileManager.get().colorOf(comboProfiles.get(i));
+                }
+                if (hex != null) {
+                    javafx.scene.shape.Circle dot = new javafx.scene.shape.Circle(6, Color.web(hex));
+                    setGraphic(dot);
+                    setGraphicTextGap(9);
+                } else {
+                    setGraphic(null);
+                }
+            }
+        };
+    }
+
+    private void onProfileComboChanged() {
+        ProfileManager pm = ProfileManager.get();
+        if (pm == null) return;
+
+        int idx = profileCombo.getSelectionModel().getSelectedIndex();
+        java.util.List<LauncherProfile> profiles = pm.getProfiles();
+        if (idx < 0 || idx >= profiles.size()) return;
+
+        LauncherProfile selected = profiles.get(idx);
+        LauncherProfile active = pm.getActive();
+        if (active != null && active.getId().equals(selected.getId())) return;
+
+        pm.activate(selected, engine);
+        App.getInstance().applyGameLinksFromConfigAsync();
+        updateDiscordForActiveProfile(false);
+    }
+
+    private void openProfilesPanel() {
+        Pane profilesRoot = new LauncherPane(engine);
+        Rectangle rect = new Rectangle(1000, 760);
+        rect.setArcHeight(15.0);
+        rect.setArcWidth(15.0);
+        profilesRoot.setClip(rect);
+        profilesRoot.setStyle("-fx-background-color: transparent;");
+        new LauncherProfiles(profilesRoot, engine, this);
+
+        Scene scene = new Scene(profilesRoot);
+        scene.setFill(Color.TRANSPARENT);
+        if (!scene.getStylesheets().contains("css/design.css")) {
+            scene.getStylesheets().add("css/design.css");
+        }
+
+        Stage stage = new Stage();
+        stage.setResizable(false);
+        stage.initStyle(StageStyle.TRANSPARENT);
+        stage.setTitle("Profils de jeu");
+        stage.setWidth(1000);
+        stage.setHeight(760);
+        stage.setScene(scene);
+        stage.showAndWait();
+
+        refreshProfilesUI();
+        updateDiscordForActiveProfile(false);
     }
 
     private void showOfflineError() {
@@ -638,8 +998,12 @@ public class LauncherPanel extends IScreen {
         boolean usePremium = cfgBool(EnumConfig.USE_PREMIUM);
         String username = (String) config.getValue(EnumConfig.USERNAME);
 
-        if (useDiscord) rpc.start();
-        else rpc.stop();
+        if (useDiscord) {
+            rpc.start();
+            updateDiscordForActiveProfile(false);
+        } else {
+            rpc.stop();
+        }
 
         mediaPlayer.setMute(!useMusic);
 
@@ -648,6 +1012,17 @@ public class LauncherPanel extends IScreen {
         if (useMicrosoft) {
             connectAccountPremium(username, root);
             connectAccountPremiumCO(username, root);
+            // Mode Microsoft : la case "Se souvenir de moi" (pseudo hors-ligne) n'a
+            // pas lieu d'être. On la masque tout de suite, avant même le refresh.
+            setRememberMeVisible(false);
+            // Reconnexion silencieuse au démarrage : le compte est prêt AVANT de
+            // jouer. En cas d'échec, message discret (pas de popup intrusive).
+            if (App.netIsAvailable()) {
+                // JOUER bloqué tant que le compte Microsoft n'est pas reconnecté.
+                // (l'auto-login lance le jeu par programme, indépendamment du bouton)
+                setPlayReady(false);
+                connectMicrosoftAsync(root, false, false);
+            }
         } else if (usePremium) {
             connectAccountPremiumOFF(root);
             connectAccountCrackCO(root);
@@ -676,6 +1051,15 @@ public class LauncherPanel extends IScreen {
         this.microsoftButton.setOnAction(event -> launchMicrosoftFlow(root));
         this.microsoftButton.setTooltip(new Tooltip("Connexion Microsoft"));
         installHoverScale(this.microsoftButton);
+
+        // Petit état sous l'icône Microsoft : gris "Hors ligne" / vert "Connecté".
+        this.microsoftStateCaption = new LauncherLabel(root);
+        this.microsoftStateCaption.setText("Hors ligne");
+        this.microsoftStateCaption.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 9F));
+        this.microsoftStateCaption.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.45);");
+        this.microsoftStateCaption.setAlignment(Pos.CENTER);
+        this.microsoftStateCaption.setPosition(sbX - 15, sbY + size + 1);
+        this.microsoftStateCaption.setSize(80, 12);
 
         this.infoButton = new LauncherButton(root);
         styleSidebarButton(this.infoButton);
@@ -725,12 +1109,25 @@ public class LauncherPanel extends IScreen {
         this.settingsButton.setTooltip(new Tooltip("Paramètres"));
         installHoverScale(this.settingsButton);
 
-        // Les 3 dernières icônes (packs/mods/shaders) ont un texte sous l'icône :
-        // on leur laisse plus d'espace vertical (labeledStep) que le pas standard (step).
+        // Les icônes avec un texte sous l'icône (profils/packs/mods/shaders) ont
+        // plus d'espace vertical (labeledStep) que le pas standard (step).
         int labeledStep = 90;
-        int packsY = sbY + step * 3;
+        int profilesY = sbY + step * 3;
+        int packsY = profilesY + labeledStep;
         int modsY = packsY + labeledStep;
         int shadersY = modsY + labeledStep;
+
+        this.profilesButton = new LauncherButton(root);
+        styleSidebarButton(this.profilesButton);
+        LauncherImage profilesImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "profiles.png"));
+        profilesImg.setSize(22, 22);
+        this.profilesButton.setGraphic(profilesImg);
+        this.profilesButton.setPosition(sbX, profilesY);
+        this.profilesButton.setSize(size, size);
+        this.profilesButton.setOnAction(event -> openProfilesPanel());
+        this.profilesButton.setTooltip(new Tooltip("Profils de jeu"));
+        installHoverScale(this.profilesButton);
+        addSidebarCaption(root, "Profils", sbX, profilesY, size);
 
         this.packsButton = new LauncherButton(root);
         styleSidebarButton(this.packsButton);
@@ -876,7 +1273,7 @@ public class LauncherPanel extends IScreen {
     /**
      * Petit texte centré sous une icône de la barre latérale (ex: "Mods", "Shaders").
      */
-    private void addSidebarCaption(Pane root, String text, int iconX, int iconY, int iconSize) {
+    private LauncherLabel addSidebarCaption(Pane root, String text, int iconX, int iconY, int iconSize) {
         int labelWidth = 80;
         LauncherLabel caption = new LauncherLabel(root);
         caption.setText(text);
@@ -885,6 +1282,8 @@ public class LauncherPanel extends IScreen {
         caption.setAlignment(Pos.CENTER);
         caption.setPosition(iconX - (labelWidth - iconSize) / 2, iconY + iconSize + 2);
         caption.setSize(labelWidth, 14);
+        sidebarCaptions.add(caption);
+        return caption;
     }
 
     private void setupConnectionsGUI(Pane root) {
@@ -905,7 +1304,7 @@ public class LauncherPanel extends IScreen {
         applyModernCardStyle(this.connexionRectangle, 0.80);
         this.connexionRectangle.setMouseTransparent(true);
 
-        this.avatarCard = new LauncherRectangle(root, connX + 28, connY + 148, 82, 82);
+        this.avatarCard = new LauncherRectangle(root, connX + 28, connY + 134, 72, 72);
         this.avatarCard.setArcWidth(24);
         this.avatarCard.setArcHeight(24);
         this.avatarCard.setFill(Color.rgb(255, 255, 255, 0.06));
@@ -934,18 +1333,19 @@ public class LauncherPanel extends IScreen {
         this.titleCrack.setSize(connW - 56, 40);
 
         this.connectionSubtitleLabel = new LauncherLabel(root);
-        this.connectionSubtitleLabel.setText("Connecte-toi avec ton pseudo hors-ligne ou passe par Microsoft pour retrouver ton profil.");
+        this.connectionSubtitleLabel.setText("Pseudo ou compte Microsoft, choisis ton profil et joue.");
         this.connectionSubtitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
         this.connectionSubtitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.62);");
         this.connectionSubtitleLabel.setAlignment(Pos.CENTER_LEFT);
+        this.connectionSubtitleLabel.setWrapText(true);
         this.connectionSubtitleLabel.setPosition(connX + 28, connY + 98);
         this.connectionSubtitleLabel.setSize(connW - 56, 38);
 
         this.usernameField = new JFXTextField();
-        this.usernameField.setLayoutX(connX + 126);
-        this.usernameField.setLayoutY(connY + 162);
-        this.usernameField.setPrefWidth(connW - 156);
-        this.usernameField.setPrefHeight(54);
+        this.usernameField.setLayoutX(connX + 118);
+        this.usernameField.setLayoutY(connY + 146);
+        this.usernameField.setPrefWidth(connW - 146);
+        this.usernameField.setPrefHeight(48);
         this.usernameField.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
         this.usernameField.setPromptText(INPUT_PSEUDO_OR_EMAIL);
         styleUsernameField(this.usernameField);
@@ -959,72 +1359,92 @@ public class LauncherPanel extends IScreen {
         this.rememberMe.setText(LABEL_REMEMBER_ME);
         this.rememberMe.setSelected(cfgBool(EnumConfig.REMEMBER_ME));
         this.rememberMe.getStyleClass().add("jfx-toggle-button");
-        this.rememberMe.setLayoutX(connX + 112);
-        this.rememberMe.setLayoutY(connY + 246);
+        this.rememberMe.setLayoutX(connX + 104);
+        this.rememberMe.setLayoutY(connY + 196);
         this.rememberMe.setOnAction(event -> config.updateValue("rememberme", rememberMe.isSelected()));
         root.getChildren().add(this.rememberMe);
 
-        this.loginButton = new JFXButton(BUTTON_LOGIN);
-        this.loginButton.setLayoutX(connX + 28);
-        this.loginButton.setLayoutY(connY + 288);
-        this.loginButton.setPrefWidth(176);
-        this.loginButton.setPrefHeight(50);
-        this.loginButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
-        stylePrimaryButton(this.loginButton);
-        installHoverScale(this.loginButton);
+        /* ===== Sélecteur de profil ===== */
+        this.profileCaptionLabel = new LauncherLabel(root);
+        this.profileCaptionLabel.setText("PROFIL DE JEU");
+        this.profileCaptionLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
+        this.profileCaptionLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,207,138,0.85);");
+        this.profileCaptionLabel.setPosition(connX + 30, connY + 244);
+        this.profileCaptionLabel.setSize(200, 16);
 
-        this.loginButton.setOnAction(event -> {
-            if (!App.netIsAvailable()) {
-                Platform.runLater(() -> new LauncherAlert(AUTH_FAILED, OFFLINE_MODE_ALERT));
-                return;
-            }
-
-            config.updateValue("useMicrosoft", false);
-
-            String username = usernameField.getText();
-
-            if (username.length() <= 3) {
-                new LauncherAlert(AUTH_FAILED, USERNAME_ALERT);
-                return;
-            }
-
-            auth = new GameAuth(username, "", AccountType.OFFLINE);
-            connectAccountCrackCO(root);
-
-            if (auth.isLogged()) {
-                config.updateValue("username", username);
-                update();
-            } else {
-                new LauncherAlert(AUTH_FAILED, ONLINE_MODE_ALERT);
+        this.profileCombo = new JFXComboBox<>();
+        this.profileCombo.getStyleClass().add("combo-modern");
+        this.profileCombo.setLayoutX(connX + 28);
+        this.profileCombo.setLayoutY(connY + 262);
+        this.profileCombo.setPrefSize(connW - 106, 38);
+        this.profileCombo.setVisibleRowCount(8);
+        this.profileCombo.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.08);" +
+                "-fx-background-radius: 14;" +
+                "-fx-border-color: rgba(255,255,255,0.14);" +
+                "-fx-border-radius: 14;" +
+                "-fx-border-width: 1;" +
+                "-fx-font-family: 'Comfortaa';"
+        );
+        this.profileCombo.setButtonCell(new javafx.scene.control.ListCell<String>() {
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : item);
+                setStyle("-fx-text-fill: rgba(255,255,255,0.94);");
             }
         });
-        root.getChildren().add(this.loginButton);
+        this.profileCombo.setCellFactory(cb -> new javafx.scene.control.ListCell<String>() {
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : item);
+                setStyle("-fx-text-fill: black;");
+            }
+        });
+        this.profileCombo.setOnAction(event -> onProfileComboChanged());
+        root.getChildren().add(this.profileCombo);
 
-        this.microsoftInlineButton = new JFXButton("Connexion Microsoft");
-        this.microsoftInlineButton.setLayoutX(connX + 224);
-        this.microsoftInlineButton.setLayoutY(connY + 288);
-        this.microsoftInlineButton.setPrefWidth(connW - 252);
-        this.microsoftInlineButton.setPrefHeight(50);
-        this.microsoftInlineButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        this.manageProfilesButton = new JFXButton("⚙");
+        this.manageProfilesButton.setLayoutX(connX + connW - 68);
+        this.manageProfilesButton.setLayoutY(connY + 262);
+        this.manageProfilesButton.setPrefSize(40, 38);
+        this.manageProfilesButton.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        styleSecondaryButton(this.manageProfilesButton);
+        this.manageProfilesButton.setTooltip(new Tooltip("Gérer les profils"));
+        this.manageProfilesButton.setOnAction(event -> openProfilesPanel());
+        installHoverScale(this.manageProfilesButton);
+        root.getChildren().add(this.manageProfilesButton);
+
+        refreshProfilesUI();
+
+        /* ===== JOUER ===== */
+        this.playButton = new JFXButton("JOUER");
+        this.playButton.setLayoutX(connX + 28);
+        this.playButton.setLayoutY(connY + 314);
+        this.playButton.setPrefWidth(connW - 56);
+        this.playButton.setPrefHeight(52);
+        this.playButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 18F));
+        stylePrimaryButton(this.playButton);
+        installHoverScale(this.playButton);
+        this.playButton.setOnAction(event -> onPlayClicked(root));
+        root.getChildren().add(this.playButton);
+
+        /* ===== Microsoft (connexion uniquement, ne lance PAS le jeu) ===== */
+        this.microsoftInlineButton = new JFXButton("Se connecter avec Microsoft");
+        this.microsoftInlineButton.setLayoutX(connX + 28);
+        this.microsoftInlineButton.setLayoutY(connY + 376);
+        this.microsoftInlineButton.setPrefWidth(connW - 56);
+        this.microsoftInlineButton.setPrefHeight(38);
+        this.microsoftInlineButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
         styleSecondaryButton(this.microsoftInlineButton);
         ImageView microsoftInlineIcon = new ImageView(getResourceLocation().loadImage(engine, "microsoft.png"));
-        microsoftInlineIcon.setFitWidth(18);
-        microsoftInlineIcon.setFitHeight(18);
+        microsoftInlineIcon.setFitWidth(16);
+        microsoftInlineIcon.setFitHeight(16);
         this.microsoftInlineButton.setGraphic(microsoftInlineIcon);
         this.microsoftInlineButton.setGraphicTextGap(10);
         this.microsoftInlineButton.setContentDisplay(ContentDisplay.LEFT);
         this.microsoftInlineButton.setOnAction(event -> launchMicrosoftFlow(root));
         installHoverScale(this.microsoftInlineButton);
         root.getChildren().add(this.microsoftInlineButton);
-
-        this.microsoftHintLabel = new LauncherLabel(root);
-        this.microsoftHintLabel.setText("Connexion Microsoft via l’icône à gauche");
-        this.microsoftHintLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-        this.microsoftHintLabel.setText("Tu peux aussi utiliser l'icone Microsoft dans la barre laterale.");
-        this.microsoftHintLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.48);");
-        this.microsoftHintLabel.setPosition(connX + 28, connY + 352);
-        this.microsoftHintLabel.setSize(connW - 56, 18);
-        this.microsoftHintLabel.setAlignment(Pos.CENTER);
 
         int autoCardWidth = 620;
         int autoCardX = engine.getWidth() / 2 - autoCardWidth / 2;
@@ -1190,11 +1610,18 @@ public class LauncherPanel extends IScreen {
         if (microsoftButton != null) new ZoomOutDown(microsoftButton).setResetOnFinished(false).play();
         if (infoButton != null) new ZoomOutDown(infoButton).setResetOnFinished(false).play();
         if (settingsButton != null) new ZoomOutDown(settingsButton).setResetOnFinished(false).play();
+        if (profilesButton != null) new ZoomOutDown(profilesButton).setResetOnFinished(false).play();
         if (packsButton != null) new ZoomOutDown(packsButton).setResetOnFinished(false).play();
         if (modsButton != null) new ZoomOutDown(modsButton).setResetOnFinished(false).play();
         if (shadersButton != null) new ZoomOutDown(shadersButton).setResetOnFinished(false).play();
-        
-        if (microsoftHintLabel != null) new ZoomOutDown(microsoftHintLabel).setResetOnFinished(false).play();
+
+        // Légendes sous les icônes (Profils/Packs/Mods/Shaders) + état Microsoft :
+        // elles doivent disparaître avec leurs icônes quand le jeu se lance.
+        for (LauncherLabel caption : sidebarCaptions) {
+            if (caption != null) new ZoomOutDown(caption).setResetOnFinished(false).play();
+        }
+        if (microsoftStateCaption != null) new ZoomOutDown(microsoftStateCaption).setResetOnFinished(false).play();
+
         if (connectionGlow != null) new ZoomOutDown(connectionGlow).setResetOnFinished(false).play();
         if (connectionEyebrowLabel != null) new ZoomOutDown(connectionEyebrowLabel).setResetOnFinished(false).play();
         if (connectionSubtitleLabel != null) new ZoomOutDown(connectionSubtitleLabel).setResetOnFinished(false).play();
@@ -1208,8 +1635,11 @@ public class LauncherPanel extends IScreen {
         if (titleCrack != null) new ZoomOutDown(titleCrack).setResetOnFinished(false).play();
         if (usernameField != null) new ZoomOutDown(usernameField).setResetOnFinished(false).play();
         if (rememberMe != null) new ZoomOutDown(rememberMe).setResetOnFinished(false).play();
-        if (loginButton != null) new ZoomOutDown(loginButton).setResetOnFinished(false).play();
+        if (playButton != null) new ZoomOutDown(playButton).setResetOnFinished(false).play();
         if (microsoftInlineButton != null) new ZoomOutDown(microsoftInlineButton).setResetOnFinished(false).play();
+        if (profileCombo != null) new ZoomOutDown(profileCombo).setResetOnFinished(false).play();
+        if (manageProfilesButton != null) new ZoomOutDown(manageProfilesButton).setResetOnFinished(false).play();
+        if (profileCaptionLabel != null) new ZoomOutDown(profileCaptionLabel).setResetOnFinished(false).play();
         if (connexionRectangle != null) new ZoomOutDown(connexionRectangle).setResetOnFinished(false).play();
         if (avatarCard != null) new ZoomOutDown(avatarCard).setResetOnFinished(false).play();
 
@@ -1228,10 +1658,12 @@ public class LauncherPanel extends IScreen {
         if (connexionRectangle != null) connexionRectangle.setDisable(true);
         if (avatarCard != null) avatarCard.setDisable(true);
         if (rememberMe != null) rememberMe.setDisable(true);
-        if (loginButton != null) loginButton.setDisable(true);
+        if (playButton != null) playButton.setDisable(true);
         if (microsoftInlineButton != null) microsoftInlineButton.setDisable(true);
+        if (profileCombo != null) profileCombo.setDisable(true);
+        if (manageProfilesButton != null) manageProfilesButton.setDisable(true);
         if (settingsButton != null) settingsButton.setDisable(true);
-        if (microsoftHintLabel != null) microsoftHintLabel.setVisible(false);
+        if (profilesButton != null) profilesButton.setDisable(true);
         if (connectionSubtitleLabel != null) connectionSubtitleLabel.setVisible(false);
 
         updateRectangle.setVisible(true);
@@ -1373,18 +1805,18 @@ public class LauncherPanel extends IScreen {
 
 
     public void connectAccountCrack(Pane root) {
-        avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png"));
-        avatar.setBounds(connX + 35, connY + 156, 68, 68);
+        avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png", true));
+        avatar.setBounds(connX + 34, connY + 140, 60, 60);
     }
 
     public void connectAccountPremium(String username, Pane root) {
-        avatar = new LauncherImage(root, new Image("https://minotar.net/cube/" + username + ".png"));
-        avatar.setBounds(connX + 35, connY + 156, 68, 68);
+        avatar = new LauncherImage(root, new Image("https://minotar.net/cube/" + username + ".png", true));
+        avatar.setBounds(connX + 34, connY + 140, 60, 60);
     }
 
     public void connectAccountPremiumOFF(Pane root) {
-        avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png"));
-        avatar.setBounds(connX + 35, connY + 156, 68, 68);
+        avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png", true));
+        avatar.setBounds(connX + 34, connY + 140, 60, 60);
     }
 
     public void connectAccountCrackCO(Pane root) {
@@ -1398,10 +1830,6 @@ public class LauncherPanel extends IScreen {
         updateAvatar = new LauncherImage(root, new Image("https://minotar.net/body/" + username + ".png"));
         updateAvatar.setBounds(engine.getWidth() / 2 - 280, engine.getHeight() / 2 - 90, 100, 200);
         updateAvatar.setVisible(false);
-    }
-
-    private void showMicrosoftAuth(Pane root) {
-        startMicrosoftLogin(root);
     }
 
     private String urlModifier(String version) {
@@ -1428,7 +1856,7 @@ public class LauncherPanel extends IScreen {
         Platform.runLater(() -> new LauncherAlert(AUTH_ERROR_TITLE, AUTH_ERROR_MSG));
     }
 
-    private void startMicrosoftLogin(Pane root) {
+    private void startMicrosoftLogin(Pane root, boolean launchAfter) {
         Stage authStage = new Stage();
         authStage.initModality(Modality.APPLICATION_MODAL);
         authStage.initStyle(StageStyle.TRANSPARENT);
@@ -1550,16 +1978,17 @@ public class LauncherPanel extends IScreen {
 
                 Platform.runLater(() -> {
                     authStage.close();
-                    connectAccountPremiumCO(session.getUsername(), root);
-                    config.updateValue("username", session.getUsername());
-                    config.updateValue("useMicrosoft", true);
-                    update();
+                    microsoftFlowRunning = false;
+                    auth.setSession(session);
+                    onMicrosoftConnected(session, root, launchAfter);
                 });
 
             } catch (Exception ex) {
                 ex.printStackTrace();
                 Platform.runLater(() -> {
                     authStage.close();
+                    microsoftFlowRunning = false;
+                    setAccountStatus("Connexion Microsoft impossible, réessaie.");
                     showAuthErrorAlert();
                 });
             }
@@ -1577,9 +2006,10 @@ public class LauncherPanel extends IScreen {
         addSidebarHint(root, microsoftButton, "Compte", "Connecte ton compte Microsoft pour récupérer ton pseudo et ton skin.", "microsoft", 0);
         addSidebarHint(root, infoButton, "Infos", "Retrouve les nouveautés du launcher et les informations utiles du serveur.", "info", 1);
         addSidebarHint(root, settingsButton, "Paramètres", "Ajuste la RAM, la taille de fenêtre et les options du launcher.", "settings", 2);
-        addSidebarHint(root, packsButton, "Ressources", "Ajoute et gère tes resource packs directement depuis le launcher.", "packs", 3);
-        addSidebarHint(root, modsButton, "Mods", "Parcours un catalogue de mods, ajoute des .jar ou des .zip et gère-les facilement.", "mods", 4);
-        addSidebarHint(root, shadersButton, "Shaders", "Installe tes shaderpacks, explore le catalogue et améliore le rendu du jeu.", "shaders", 5);
+        addSidebarHint(root, profilesButton, "Profils", "Crée plusieurs profils de jeu : chacun sa version, son modloader et ses mods.", "profiles", 3);
+        addSidebarHint(root, packsButton, "Ressources", "Ajoute et gère tes resource packs directement depuis le launcher.", "packs", 4);
+        addSidebarHint(root, modsButton, "Mods", "Parcours un catalogue de mods, ajoute des .jar ou des .zip et gère-les facilement.", "mods", 5);
+        addSidebarHint(root, shadersButton, "Shaders", "Installe tes shaderpacks, explore le catalogue et améliore le rendu du jeu.", "shaders", 6);
     }
 
     private void addSidebarHint(Pane root, Node anchor, String title, String description, String keySuffix, int order) {

@@ -78,10 +78,50 @@ public class Main {
         }
     }
 
+    /** Version courante du launcher (pour le popup "Quoi de neuf"). */
+    private static final String CURRENT_VERSION = "5.0";
+
+    /**
+     * Affiche une pop-up "Quoi de neuf" une seule fois par version. Montr�e tant
+     * que la version vue diff�re de la version courante — y compris quand aucune
+     * n'est enregistr�e (joueurs mis � jour depuis une version ant�rieure � ce
+     * m�canisme, qui sont justement ceux � qui pr�senter les profils).
+     */
+    static void showWhatsNewIfUpdated() {
+        Preferences prefs = Preferences.userNodeForPackage(App.class);
+        String lastSeen = prefs.get("lastSeenVersion", null);
+
+        if (CURRENT_VERSION.equals(lastSeen)) {
+            return;
+        }
+
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle("Quoi de neuf");
+        alert.setHeaderText("MajestyLauncher " + CURRENT_VERSION + " — nouveautés");
+
+        VBox content = new VBox(8);
+        content.getChildren().addAll(
+                new javafx.scene.control.Label("• Profils de jeu : plusieurs configs (version, modloader, mods) et bascule en un clic."),
+                new javafx.scene.control.Label("• Import / export de profil : partage ton setup moddé en un fichier."),
+                new javafx.scene.control.Label("• Connexion Microsoft séparée du lancement, avec état connecté visible."),
+                new javafx.scene.control.Label("• RAM auto-détectée, cache hors-ligne du catalogue, logs de jeu accessibles."),
+                new javafx.scene.control.Label("\nOuvre l'onglet « Profils » dans la barre latérale pour commencer.")
+        );
+        content.getChildren().forEach(n -> ((javafx.scene.control.Label) n).setWrapText(true));
+        alert.getDialogPane().setContent(content);
+        alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+        alert.getDialogPane().setPrefWidth(520);
+        alert.showAndWait();
+
+        prefs.put("lastSeenVersion", CURRENT_VERSION);
+    }
+
     /**
      * Affiche la pop-up au d�marrage de l'application
      */
     static void showStartupPopup() {
+        showWhatsNewIfUpdated();
+
         Preferences prefs = Preferences.userNodeForPackage(App.class);
         boolean showDialog = prefs.getBoolean("showStartupPopup", true);
 

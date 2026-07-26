@@ -20,6 +20,15 @@ public class Utils {
         String version = config == null ? null : stringValue(config.getValue(EnumConfig.VERSION));
         engine.setGameStyle(determineGameStyle(version, resolveSelectedModloader(config)));
         engine.setRequestedVersionId(version);
+
+        // Système de profils nommés : le dossier de jeu suit le profil actif
+        fr.majestycraft.profiles.ProfileManager profiles = fr.majestycraft.profiles.ProfileManager.get();
+        engine.setProfileDirectoryName(profiles == null ? null : profiles.getActiveDirNameOrNull());
+    }
+
+    /** Expose la résolution de GameStyle pour le système de profils. */
+    public static GameStyle determineGameStyleFor(String version, ModloaderType modloaderType) {
+        return determineGameStyle(version, modloaderType);
     }
 
     public static ModloaderType resolveSelectedModloader(LauncherConfig config) {

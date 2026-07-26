@@ -1,6 +1,9 @@
 package fr.majestycraft.launcher;
 
+import com.jfoenix.controls.JFXButton;
+
 import fr.majestycraft.Main;
+import fr.majestycraft.news.InfoFeed;
 import fr.trxyy.alternative.alternative_api.utils.*;
 import animatefx.animation.ZoomOutDown;
 import fr.trxyy.alternative.alternative_api.GameEngine;
@@ -9,16 +12,24 @@ import fr.trxyy.alternative.alternative_api_ui.components.LauncherButton;
 import fr.trxyy.alternative.alternative_api_ui.components.LauncherImage;
 import fr.trxyy.alternative.alternative_api_ui.components.LauncherLabel;
 import fr.trxyy.alternative.alternative_api_ui.components.LauncherRectangle;
+
 import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
@@ -27,53 +38,43 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.util.List;
+
+/**
+ * Panel Infos : changelog détaillé (multi-versions) et news du serveur, présentés
+ * en deux onglets. Les contenus sont chargés en arrière-plan (distant avec repli
+ * local pour le changelog) pour ne jamais bloquer l'ouverture du panel.
+ */
 public class LauncherInfo extends IScreen {
 
-    private static final String DEVELOPPEUR_TITLE = Main.bundle.getString("DEVELOPPEUR_TITLE");
     private static final String DEVELOPPEUR_INFO = Main.bundle.getString("DEVELOPPEUR_INFO");
     private static final String HELPER_INFO = Main.bundle.getString("HELPER_INFO");
-    private static final String REMARQUE_TITLE = Main.bundle.getString("REMARQUE_TITLE");
     private static final String REMARQUE_INFO_1 = Main.bundle.getString("REMARQUE_INFO_1");
-    private static final String REMARQUE_INFO_2 = Main.bundle.getString("REMARQUE_INFO_2");
-    private static final String CHANGELOGS_TITLE = Main.bundle.getString("CHANGELOGS_TITLE");
-    private static final String CHANGELOG_1 = Main.bundle.getString("CHANGELOG_1");
-    private static final String CHANGELOG_2 = Main.bundle.getString("CHANGELOG_2");
-    private static final String CHANGELOG_3 = Main.bundle.getString("CHANGELOG_3");
-    private static final String CHANGELOG_4 = Main.bundle.getString("CHANGELOG_4");
     private static final String VERSION_INFO = Main.bundle.getString("VERSION_INFO");
     private static final String QUITTER_BUTTON_TEXT = Main.bundle.getString("QUITTER_BUTTON_TEXT");
 
-    private static final boolean CHANGE_1 = true;
-    private static final boolean CHANGE_2 = true;
-    private static final boolean CHANGE_3 = true;
-    private static final boolean CHANGE_4 = true;
+    private static final String SITE_URL = "https://majestycraft.com";
+    private static final String DISCORD_URL = "https://discord.gg/qyuuHk4udD";
 
     private LauncherImage heroLogo;
     private LauncherLabel heroTitle;
     private LauncherLabel heroSubtitle;
     private LauncherLabel heroVersion;
-    private LauncherLabel heroTag1;
-    private LauncherLabel heroTag2;
 
     private LauncherLabel pageTitle;
     private LauncherLabel pageSubtitle;
 
-    private LauncherLabel devTitle;
-    private LauncherLabel devInfo;
-    private LauncherLabel helperInfo;
-
-    private LauncherLabel remarkTitle;
-    private LauncherLabel remarkInfo1;
-    private LauncherLabel remarkInfo2;
-
-    private LauncherLabel changelogTitle;
-
-    private LauncherLabel change1;
-    private LauncherLabel change2;
-    private LauncherLabel change3;
-    private LauncherLabel change4;
+    private JFXButton tabChangelog;
+    private JFXButton tabNews;
+    private VBox contentBox;
+    private ScrollPane scroll;
 
     private LauncherButton quitButton;
+
+    /** Contenus chargés (null tant que le chargement asynchrone n'a pas abouti). */
+    private InfoFeed.Changelog changelog;
+    private InfoFeed.News news;
+    private boolean showingNews = false;
 
     public LauncherInfo(final Pane root, final GameEngine engine, final LauncherPanel pane) {
         this.drawBackgroundImage(engine, root, "background.png");
@@ -99,6 +100,7 @@ public class LauncherInfo extends IScreen {
         LauncherRectangle separator = new LauncherRectangle(root, 83, 0, 1, H);
         separator.setFill(Color.rgb(255, 255, 255, 0.08));
 
+        /* ===================== Colonne gauche (identité) ===================== */
         final int heroX = 120;
         final int heroY = 72;
         final int heroW = 250;
@@ -109,53 +111,58 @@ public class LauncherInfo extends IScreen {
 
         this.heroLogo = new LauncherImage(root);
         this.heroLogo.setImage(getResourceLocation().loadImage(engine, "launchergifpng.png"));
-        this.heroLogo.setSize(120, 120);
-        this.heroLogo.setBounds(heroX + 65, heroY + 34, 120, 120);
+        this.heroLogo.setSize(110, 110);
+        this.heroLogo.setBounds(heroX + 70, heroY + 30, 110, 110);
 
         this.heroTitle = new LauncherLabel(root);
         this.heroTitle.setText("Informations");
-        this.heroTitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 26F));
+        this.heroTitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 24F));
         this.heroTitle.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.96)");
-        this.heroTitle.setPosition(heroX, heroY + 175);
-        this.heroTitle.setSize(heroW, 34);
+        this.heroTitle.setPosition(heroX, heroY + 152);
+        this.heroTitle.setSize(heroW, 32);
         this.heroTitle.setAlignment(Pos.CENTER);
 
         this.heroSubtitle = new LauncherLabel(root);
         this.heroSubtitle.setText("MajestyLauncher");
         this.heroSubtitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
         this.heroSubtitle.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,176,0,0.95)");
-        this.heroSubtitle.setPosition(heroX, heroY + 210);
+        this.heroSubtitle.setPosition(heroX, heroY + 184);
         this.heroSubtitle.setSize(heroW, 20);
         this.heroSubtitle.setAlignment(Pos.CENTER);
 
+        LauncherRectangle versionBg = new LauncherRectangle(root, heroX + 26, heroY + 216, heroW - 52, 34);
+        styleMiniCard(versionBg);
         this.heroVersion = new LauncherLabel(root);
         this.heroVersion.setText(VERSION_INFO);
-        this.heroVersion.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-        this.heroVersion.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.68)");
-        this.heroVersion.setPosition(heroX + 18, heroY + 272);
-        this.heroVersion.setSize(heroW - 36, 42);
+        this.heroVersion.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        this.heroVersion.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.88)");
+        this.heroVersion.setPosition(heroX + 26, heroY + 223);
+        this.heroVersion.setSize(heroW - 52, 20);
         this.heroVersion.setAlignment(Pos.CENTER);
 
-        LauncherRectangle tag1Bg = new LauncherRectangle(root, heroX + 30, heroY + 350, 190, 34);
-        styleMiniCard(tag1Bg);
-        this.heroTag1 = new LauncherLabel(root);
-        this.heroTag1.setText("Interface modernisée");
-        this.heroTag1.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
-        this.heroTag1.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.90)");
-        this.heroTag1.setPosition(heroX + 30, heroY + 357);
-        this.heroTag1.setSize(190, 20);
-        this.heroTag1.setAlignment(Pos.CENTER);
+        // Bloc équipe / remarque, compact
+        LauncherLabel devTitle = createSectionTitle(root, "ÉQUIPE", heroX + 26, heroY + 272, heroW - 52, 12);
+        LauncherLabel devInfo = createBodyLabel(root, DEVELOPPEUR_INFO, heroX + 26, heroY + 294, heroW - 52, 20, 12);
+        LauncherLabel helperInfo = createBodyLabel(root, HELPER_INFO, heroX + 26, heroY + 316, heroW - 52, 20, 12);
 
-        LauncherRectangle tag2Bg = new LauncherRectangle(root, heroX + 30, heroY + 394, 190, 34);
-        styleMiniCard(tag2Bg);
-        this.heroTag2 = new LauncherLabel(root);
-        this.heroTag2.setText("Suivi des nouveautés");
-        this.heroTag2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
-        this.heroTag2.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.90)");
-        this.heroTag2.setPosition(heroX + 30, heroY + 401);
-        this.heroTag2.setSize(190, 20);
-        this.heroTag2.setAlignment(Pos.CENTER);
+        LauncherLabel remarkTitle = createSectionTitle(root, "REMARQUE", heroX + 26, heroY + 352, heroW - 52, 12);
+        LauncherLabel remarkInfo = createBodyLabel(root, REMARQUE_INFO_1, heroX + 26, heroY + 374, heroW - 52, 64, 11);
+        remarkInfo.setWrapText(true);
 
+        // Liens rapides
+        JFXButton siteBtn = ghostButton("Site web", 110);
+        siteBtn.setLayoutX(heroX + 26);
+        siteBtn.setLayoutY(heroY + 452);
+        siteBtn.setOnAction(e -> openLink(SITE_URL));
+        root.getChildren().add(siteBtn);
+
+        JFXButton discordBtn = ghostButton("Discord", 110);
+        discordBtn.setLayoutX(heroX + 26 + 88);
+        discordBtn.setLayoutY(heroY + 452);
+        discordBtn.setOnAction(e -> openLink(DISCORD_URL));
+        root.getChildren().add(discordBtn);
+
+        /* ===================== Carte principale (onglets) ===================== */
         final int mainX = 400;
         final int mainY = 72;
         final int mainW = W - 460;
@@ -166,53 +173,75 @@ public class LauncherInfo extends IScreen {
 
         this.pageTitle = new LauncherLabel(root);
         this.pageTitle.setText("INFORMATIONS");
-        this.pageTitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 28F));
+        this.pageTitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 26F));
         this.pageTitle.setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
-        this.pageTitle.setPosition(mainX, mainY + 22);
-        this.pageTitle.setSize(mainW, 34);
+        this.pageTitle.setPosition(mainX, mainY + 20);
+        this.pageTitle.setSize(mainW, 32);
         this.pageTitle.setAlignment(Pos.CENTER);
 
         this.pageSubtitle = new LauncherLabel(root);
-        this.pageSubtitle.setText("Equipe, remarques et changelogs");
+        this.pageSubtitle.setText("Nouveautés du launcher et actualités du serveur");
         this.pageSubtitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         this.pageSubtitle.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.45);");
-        this.pageSubtitle.setPosition(mainX, mainY + 54);
+        this.pageSubtitle.setPosition(mainX, mainY + 50);
         this.pageSubtitle.setSize(mainW, 18);
         this.pageSubtitle.setAlignment(Pos.CENTER);
 
-        int contentX = mainX + 34;
-        int contentW = mainW - 68;
+        // Onglets
+        this.tabChangelog = tabButton("Nouveautés");
+        this.tabChangelog.setLayoutX(mainX + 30);
+        this.tabChangelog.setLayoutY(mainY + 80);
+        this.tabChangelog.setOnAction(e -> { showingNews = false; refreshTabs(); renderContent(); });
+        root.getChildren().add(this.tabChangelog);
 
-        this.devTitle = createSectionTitle(root, DEVELOPPEUR_TITLE, contentX, mainY + 98, 220);
-        this.devInfo = createBodyLabel(root, DEVELOPPEUR_INFO, contentX, mainY + 130, contentW, 24, 18);
-        this.helperInfo = createBodyLabel(root, HELPER_INFO, contentX, mainY + 160, contentW, 24, 18);
+        this.tabNews = tabButton("News du serveur");
+        this.tabNews.setLayoutX(mainX + 30 + 158);
+        this.tabNews.setLayoutY(mainY + 80);
+        this.tabNews.setOnAction(e -> { showingNews = true; refreshTabs(); renderContent(); });
+        root.getChildren().add(this.tabNews);
 
-        this.remarkTitle = createSectionTitle(root, REMARQUE_TITLE, contentX, mainY + 208, 220);
-        this.remarkInfo1 = createBodyLabel(root, REMARQUE_INFO_1, contentX, mainY + 240, contentW, 24, 14);
-        this.remarkInfo2 = createBodyLabel(root, REMARQUE_INFO_2, contentX + 34, mainY + 262, contentW - 34, 24, 14);
+        // Zone de contenu défilante
+        this.contentBox = new VBox(12);
+        this.contentBox.setPadding(new Insets(4, 10, 12, 2));
+        this.contentBox.setStyle("-fx-background-color: transparent;");
 
-        this.changelogTitle = createSectionTitle(root, CHANGELOGS_TITLE, contentX, mainY + 308, 220);
+        this.scroll = new ScrollPane(this.contentBox);
+        this.scroll.setLayoutX(mainX + 28);
+        this.scroll.setLayoutY(mainY + 126);
+        this.scroll.setPrefSize(mainW - 56, mainH - 126 - 26);
+        this.scroll.setFitToWidth(true);
+        this.scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        this.scroll.setStyle(
+                "-fx-background: transparent;" +
+                "-fx-background-color: transparent;" +
+                "-fx-control-inner-background: transparent;"
+        );
+        root.getChildren().add(this.scroll);
 
-        LauncherRectangle c1 = new LauncherRectangle(root, contentX, mainY + 344, contentW, 36);
-        LauncherRectangle c2 = new LauncherRectangle(root, contentX, mainY + 388, contentW, 36);
-        LauncherRectangle c3 = new LauncherRectangle(root, contentX, mainY + 432, contentW, 36);
-        LauncherRectangle c4 = new LauncherRectangle(root, contentX, mainY + 476, contentW, 36);
-        styleMiniCard(c1);
-        styleMiniCard(c2);
-        styleMiniCard(c3);
-        styleMiniCard(c4);
+        refreshTabs();
+        showLoading();
+        loadFeedsAsync();
 
-        this.change1 = createBodyLabel(root, CHANGELOG_1, contentX + 14, mainY + 352, contentW - 28, 20, 15);
-        this.change1.setVisible(CHANGE_1);
-
-        this.change2 = createBodyLabel(root, CHANGELOG_2, contentX + 14, mainY + 396, contentW - 28, 20, 15);
-        this.change2.setVisible(CHANGE_2);
-
-        this.change3 = createBodyLabel(root, CHANGELOG_3, contentX + 14, mainY + 440, contentW - 28, 20, 15);
-        this.change3.setVisible(CHANGE_3);
-
-        this.change4 = createBodyLabel(root, CHANGELOG_4, contentX + 14, mainY + 484, contentW - 28, 20, 15);
-        this.change4.setVisible(CHANGE_4);
+        /* ===================== Boutons bas ===================== */
+        LauncherButton logsButton = new LauncherButton(root);
+        logsButton.setText("Voir les logs");
+        logsButton.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.08);" +
+                "-fx-background-radius: 18;" +
+                "-fx-text-fill: rgba(255,255,255,0.9);" +
+                "-fx-border-color: rgba(255,255,255,0.16);" +
+                "-fx-border-radius: 18;" +
+                "-fx-border-width: 1;"
+        );
+        logsButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        logsButton.setPosition(mainX + mainW - 150 - 150, mainY + mainH + 30);
+        logsButton.setSize(140, 36);
+        logsButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                openGameLogs(engine);
+            }
+        });
 
         this.quitButton = new LauncherButton(root);
         this.quitButton.setText(QUITTER_BUTTON_TEXT);
@@ -222,7 +251,7 @@ public class LauncherInfo extends IScreen {
                 "-fx-text-fill: white;"
         );
         this.quitButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
-        this.quitButton.setPosition(mainX + mainW - 150, mainY + mainH +30);
+        this.quitButton.setPosition(mainX + mainW - 150, mainY + mainH + 30);
         this.quitButton.setSize(110, 36);
         this.quitButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -243,31 +272,259 @@ public class LauncherInfo extends IScreen {
         Platform.runLater(() -> {
             animateIn(heroLogo, -14, 10, 60);
             animateIn(heroTitle, -14, 10, 110);
-            animateIn(heroSubtitle, -14, 10, 160);
-            animateIn(heroVersion, -14, 10, 210);
-            animateIn(heroTag1, -14, 10, 260);
-            animateIn(heroTag2, -14, 10, 310);
+            animateIn(heroSubtitle, -14, 10, 150);
+            animateIn(heroVersion, -14, 10, 190);
+            animateIn(devTitle, -14, 10, 230);
+            animateIn(devInfo, -14, 10, 260);
+            animateIn(helperInfo, -14, 10, 285);
+            animateIn(remarkTitle, -14, 10, 315);
+            animateIn(remarkInfo, -14, 10, 340);
+            animateIn(siteBtn, -14, 10, 370);
+            animateIn(discordBtn, -14, 10, 395);
 
             animateIn(mainCard, 22, 0, 100);
             animateIn(pageTitle, 18, 0, 150);
             animateIn(pageSubtitle, 18, 0, 190);
+            animateIn(tabChangelog, 18, 0, 230);
+            animateIn(tabNews, 18, 0, 260);
+            animateIn(scroll, 18, 0, 300);
 
-            animateIn(devTitle, 18, 0, 240);
-            animateIn(devInfo, 18, 0, 280);
-            animateIn(helperInfo, 18, 0, 320);
-
-            animateIn(remarkTitle, 18, 0, 360);
-            animateIn(remarkInfo1, 18, 0, 400);
-            animateIn(remarkInfo2, 18, 0, 440);
-
-            animateIn(changelogTitle, 18, 0, 480);
-            animateIn(change1, 18, 0, 520);
-            animateIn(change2, 18, 0, 550);
-            animateIn(change3, 18, 0, 580);
-            animateIn(change4, 18, 0, 610);
-
+            animateIn(logsButton, 0, 12, 620);
             animateIn(quitButton, 0, 12, 650);
         });
+    }
+
+    /* ─────────────────────────── Chargement ─────────────────────────── */
+
+    private void loadFeedsAsync() {
+        Thread t = new Thread(() -> {
+            final InfoFeed.Changelog cl = InfoFeed.loadChangelog();
+            final InfoFeed.News nw = InfoFeed.loadNews();
+            Platform.runLater(() -> {
+                this.changelog = cl;
+                this.news = nw;
+                renderContent();
+            });
+        }, "MajestyLauncher-InfoFeed");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void showLoading() {
+        contentBox.getChildren().clear();
+        Label loading = new Label("Chargement...");
+        loading.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        loading.setStyle("-fx-text-fill: rgba(255,255,255,0.55);");
+        contentBox.getChildren().add(loading);
+    }
+
+    /* ─────────────────────────── Rendu ─────────────────────────── */
+
+    private void renderContent() {
+        contentBox.getChildren().clear();
+        if (showingNews) {
+            renderNews();
+        } else {
+            renderChangelog();
+        }
+        scroll.setVvalue(0);
+    }
+
+    private void renderChangelog() {
+        if (changelog == null) {
+            showLoading();
+            return;
+        }
+        List<InfoFeed.Release> versions = changelog.versions;
+        if (versions == null || versions.isEmpty()) {
+            contentBox.getChildren().add(emptyState("Aucun changelog disponible pour le moment."));
+            return;
+        }
+
+        boolean first = true;
+        for (InfoFeed.Release release : versions) {
+            contentBox.getChildren().add(buildReleaseBlock(release, first));
+            first = false;
+        }
+    }
+
+    private Pane buildReleaseBlock(InfoFeed.Release release, boolean isCurrent) {
+        VBox block = new VBox(8);
+        block.setPadding(new Insets(14, 16, 16, 16));
+        block.setStyle(
+                "-fx-background-color: " + (isCurrent ? "rgba(255,150,0,0.10)" : "rgba(255,255,255,0.045)") + ";" +
+                "-fx-background-radius: 16;" +
+                "-fx-border-color: " + (isCurrent ? "rgba(255,170,0,0.45)" : "rgba(255,255,255,0.09)") + ";" +
+                "-fx-border-radius: 16;" +
+                "-fx-border-width: 1;"
+        );
+
+        HBox header = new HBox(10);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        Label version = new Label("Version " + safe(release.version));
+        version.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
+        version.setStyle("-fx-text-fill: " + (isCurrent ? "rgba(255,205,130,0.98)" : "rgba(255,255,255,0.92)") + "; -fx-font-weight: bold;");
+
+        Label date = new Label(safe(release.date));
+        date.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        date.setStyle("-fx-text-fill: rgba(255,255,255,0.45);");
+
+        header.getChildren().addAll(version, date);
+
+        if (isCurrent) {
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            Label current = new Label("ACTUELLE");
+            current.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 9F));
+            current.setStyle(
+                    "-fx-background-color: rgba(255,159,26,0.20);" +
+                    "-fx-background-radius: 999;" +
+                    "-fx-text-fill: rgba(255,207,138,0.95);" +
+                    "-fx-padding: 3 10 3 10;"
+            );
+            header.getChildren().addAll(spacer, current);
+        }
+
+        block.getChildren().add(header);
+
+        if (release.entries != null) {
+            for (InfoFeed.Entry entry : release.entries) {
+                block.getChildren().add(buildEntryRow(entry));
+            }
+        }
+        return block;
+    }
+
+    private Pane buildEntryRow(InfoFeed.Entry entry) {
+        HBox row = new HBox(10);
+        row.setAlignment(Pos.TOP_LEFT);
+        VBox.setMargin(row, new Insets(2, 0, 0, 0));
+
+        Label badge = new Label(entry.badge());
+        badge.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 9F));
+        badge.setMinWidth(76);
+        badge.setAlignment(Pos.CENTER);
+        badge.setStyle(
+                "-fx-background-color: " + entry.badgeColor() + "22;" +
+                "-fx-background-radius: 999;" +
+                "-fx-text-fill: " + entry.badgeColor() + ";" +
+                "-fx-padding: 3 8 3 8;" +
+                "-fx-font-weight: bold;"
+        );
+
+        Label text = new Label(safe(entry.text));
+        text.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        text.setStyle("-fx-text-fill: rgba(255,255,255,0.84);");
+        text.setWrapText(true);
+        HBox.setHgrow(text, Priority.ALWAYS);
+        text.setMaxWidth(Double.MAX_VALUE);
+
+        row.getChildren().addAll(badge, text);
+        return row;
+    }
+
+    private void renderNews() {
+        if (news == null) {
+            contentBox.getChildren().add(emptyState(
+                    "Actualités indisponibles.\n\nImpossible de joindre le serveur MajestyCraft pour le moment. "
+                    + "Vérifie ta connexion ou consulte le site et le Discord."));
+            return;
+        }
+        if (news.items == null || news.items.isEmpty()) {
+            contentBox.getChildren().add(emptyState("Aucune actualité pour le moment."));
+            return;
+        }
+        for (InfoFeed.NewsItem item : news.items) {
+            contentBox.getChildren().add(buildNewsCard(item));
+        }
+    }
+
+    private Pane buildNewsCard(InfoFeed.NewsItem item) {
+        VBox card = new VBox(6);
+        card.setPadding(new Insets(14, 16, 16, 16));
+        card.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.045);" +
+                "-fx-background-radius: 16;" +
+                "-fx-border-color: rgba(255,255,255,0.09);" +
+                "-fx-border-radius: 16;" +
+                "-fx-border-width: 1;"
+        );
+
+        Label title = new Label(safe(item.title));
+        title.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
+        title.setStyle("-fx-text-fill: rgba(255,255,255,0.94); -fx-font-weight: bold;");
+        title.setWrapText(true);
+
+        Label date = new Label(safe(item.date));
+        date.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
+        date.setStyle("-fx-text-fill: rgba(255,176,0,0.80);");
+
+        Label body = new Label(safe(item.body));
+        body.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        body.setStyle("-fx-text-fill: rgba(255,255,255,0.78);");
+        body.setWrapText(true);
+
+        card.getChildren().addAll(title, date, body);
+
+        if (item.url != null && !item.url.trim().isEmpty()) {
+            JFXButton read = ghostButton("Lire la suite", 130);
+            read.setOnAction(e -> openLink(item.url));
+            HBox actions = new HBox(read);
+            VBox.setMargin(actions, new Insets(6, 0, 0, 0));
+            card.getChildren().add(actions);
+        }
+        return card;
+    }
+
+    private Label emptyState(String message) {
+        Label label = new Label(message);
+        label.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        label.setStyle("-fx-text-fill: rgba(255,255,255,0.50);");
+        label.setWrapText(true);
+        return label;
+    }
+
+    /* ─────────────────────────── Styles / helpers ─────────────────────────── */
+
+    private void refreshTabs() {
+        styleTab(tabChangelog, !showingNews);
+        styleTab(tabNews, showingNews);
+    }
+
+    private JFXButton tabButton(String text) {
+        JFXButton b = new JFXButton(text);
+        b.setPrefSize(150, 34);
+        return b;
+    }
+
+    private void styleTab(JFXButton b, boolean active) {
+        if (b == null) return;
+        // Police figée en inline pour éviter que le survol ne change taille/police.
+        String base = "-fx-font-family: 'Comfortaa';-fx-font-size: 13px;-fx-background-radius: 999;-fx-border-radius: 999;-fx-border-width: 1;";
+        b.setStyle(active
+                ? base + "-fx-background-color: linear-gradient(#ffb347, #ff7a00);-fx-text-fill: white;-fx-font-weight: bold;-fx-border-color: rgba(255,255,255,0.16);"
+                : base + "-fx-background-color: rgba(255,255,255,0.06);-fx-text-fill: rgba(255,255,255,0.75);-fx-border-color: rgba(255,255,255,0.12);");
+    }
+
+    private JFXButton ghostButton(String text, int width) {
+        JFXButton b = new JFXButton(text);
+        b.setPrefSize(width, 32);
+        b.setStyle(
+                "-fx-font-family: 'Comfortaa';" +
+                "-fx-font-size: 12px;" +
+                "-fx-background-color: rgba(255,255,255,0.08);" +
+                "-fx-background-radius: 14;" +
+                "-fx-text-fill: rgba(255,255,255,0.88);" +
+                "-fx-border-color: rgba(255,255,255,0.14);" +
+                "-fx-border-radius: 14;" +
+                "-fx-border-width: 1;"
+        );
+        return b;
+    }
+
+    private static String safe(String s) {
+        return s == null ? "" : s;
     }
 
     private void styleCard(LauncherRectangle r, double opacity) {
@@ -289,13 +546,13 @@ public class LauncherInfo extends IScreen {
         r.setMouseTransparent(true);
     }
 
-    private LauncherLabel createSectionTitle(Pane root, String text, int x, int y, int w) {
+    private LauncherLabel createSectionTitle(Pane root, String text, int x, int y, int w, int size) {
         LauncherLabel label = new LauncherLabel(root);
         label.setText(text);
-        label.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 20F));
+        label.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", (float) size));
         label.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,176,0,0.95);");
         label.setPosition(x, y);
-        label.setSize(w, 26);
+        label.setSize(w, 18);
         return label;
     }
 
@@ -329,5 +586,28 @@ public class LauncherInfo extends IScreen {
         ParallelTransition pt = new ParallelTransition(ft, tt);
         pt.setDelay(Duration.millis(delayMs));
         pt.play();
+    }
+
+    /**
+     * Ouvre le fichier de log de la dernière session de jeu (ou le dossier logs).
+     * Pratique pour diagnostiquer un crash ou transmettre le log au support.
+     */
+    private void openGameLogs(GameEngine engine) {
+        try {
+            java.io.File gameDir = engine.getGameFolder().getGameDir();
+            java.io.File logsDir = new java.io.File(gameDir, "logs");
+            java.io.File latest = new java.io.File(logsDir, "latest-game.log");
+
+            java.io.File target = latest.isFile() ? latest : (logsDir.isDirectory() ? logsDir : gameDir);
+            if (java.awt.Desktop.isDesktopSupported()) {
+                java.awt.Desktop.getDesktop().open(target);
+            }
+        } catch (Exception e) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+            alert.setTitle("Logs");
+            alert.setHeaderText("Impossible d'ouvrir les logs");
+            alert.setContentText("Aucun log de jeu n'est disponible pour le moment (lance le jeu au moins une fois).");
+            alert.showAndWait();
+        }
     }
 }

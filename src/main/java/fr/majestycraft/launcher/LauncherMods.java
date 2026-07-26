@@ -96,6 +96,7 @@ public class LauncherMods extends IScreen {
 
     private final LauncherPanel paneRef;
     private final GameEngine engineRef;
+    private final fr.majestycraft.util.ModrinthCache modrinthCache;
     private final List<LocalModItem> localMods = new ArrayList<>();
     private final Image fallbackIcon = new Image(getClass().getResource("/resources/mods.png").toExternalForm());
     private final Map<String, Image> remoteImageCache = new ConcurrentHashMap<>();
@@ -147,6 +148,7 @@ public class LauncherMods extends IScreen {
     public LauncherMods(final Pane root, final GameEngine engine, final LauncherPanel pane) {
         this.paneRef = pane;
         this.engineRef = engine;
+        this.modrinthCache = new fr.majestycraft.util.ModrinthCache(engine.getGameFolder().getCacheDir());
 
         Platform.runLater(new Runnable() {
             @Override
@@ -1209,7 +1211,19 @@ public class LauncherMods extends IScreen {
                             + "&facets=" + URLEncoder.encode(facets, "UTF-8")
                             + "&query=" + URLEncoder.encode(query == null ? "" : query.trim(), "UTF-8");
 
-                    String json = downloadText(url);
+                    // Cache : succès -> on mémorise ; échec API/réseau -> on rejoue la
+                    // dernière réponse connue pour cette même requête (repli hors-ligne).
+                    String json;
+                    boolean fromCache = false;
+                    try {
+                        json = downloadText(url);
+                        modrinthCache.put(url, json);
+                    } catch (Exception netEx) {
+                        json = modrinthCache.get(url);
+                        if (json == null) throw netEx;
+                        fromCache = true;
+                    }
+                    final boolean servedFromCache = fromCache;
                     JsonObject root = JsonParser.parseString(json).getAsJsonObject();
                     JsonArray hits = root.getAsJsonArray("hits");
 
@@ -1238,10 +1252,11 @@ public class LauncherMods extends IScreen {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
+                            String suffix = servedFromCache ? " (hors-ligne — cache)" : "";
                             if (onlineListView.getItems().isEmpty()) {
-                                onlineStatusLabel.setText("Aucun mod trouvé pour " + mcVersion + " en " + formatLoader(loader) + ".");
+                                onlineStatusLabel.setText("Aucun mod trouvé pour " + mcVersion + " en " + formatLoader(loader) + "." + suffix);
                             } else {
-                                onlineStatusLabel.setText(onlineListView.getItems().size() + " mod(s) trouvés pour " + mcVersion + " en " + formatLoader(loader) + ".");
+                                onlineStatusLabel.setText(onlineListView.getItems().size() + " mod(s) trouvés pour " + mcVersion + " en " + formatLoader(loader) + "." + suffix);
                             }
                         }
                     });
@@ -1249,7 +1264,7 @@ public class LauncherMods extends IScreen {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            onlineStatusLabel.setText("Impossible de charger les mods en ligne.");
+                            onlineStatusLabel.setText("Impossible de charger les mods en ligne (API Modrinth indisponible).");
                         }
                     });
                 }
