@@ -79,7 +79,7 @@ public class Main {
     }
 
     /** Version courante du launcher (pour le popup "Quoi de neuf"). */
-    private static final String CURRENT_VERSION = "5.0";
+    private static final String CURRENT_VERSION = "5.0.1";
 
     /**
      * Affiche une pop-up "Quoi de neuf" une seule fois par version. Montr�e tant
@@ -101,11 +101,9 @@ public class Main {
 
         VBox content = new VBox(8);
         content.getChildren().addAll(
-                new javafx.scene.control.Label("• Profils de jeu : plusieurs configs (version, modloader, mods) et bascule en un clic."),
-                new javafx.scene.control.Label("• Import / export de profil : partage ton setup moddé en un fichier."),
-                new javafx.scene.control.Label("• Connexion Microsoft séparée du lancement, avec état connecté visible."),
-                new javafx.scene.control.Label("• RAM auto-détectée, cache hors-ligne du catalogue, logs de jeu accessibles."),
-                new javafx.scene.control.Label("\nOuvre l'onglet « Profils » dans la barre latérale pour commencer.")
+                new javafx.scene.control.Label("• Changement de compte Microsoft : tu peux désormais passer d'un compte à un autre depuis le launcher."),
+                new javafx.scene.control.Label("• « Se déconnecter » garde ta session : la reconnexion suivante est automatique, sans ressaisie."),
+                new javafx.scene.control.Label("\nClique sur ton compte, en bas de la carte de connexion, pour y accéder.")
         );
         content.getChildren().forEach(n -> ((javafx.scene.control.Label) n).setWrapText(true));
         alert.getDialogPane().setContent(content);

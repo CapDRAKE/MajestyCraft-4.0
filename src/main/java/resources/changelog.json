@@ -1,6 +1,15 @@
 {
   "versions": [
     {
+      "version": "5.0.1",
+      "date": "30/07/2026",
+      "entries": [
+        { "type": "new", "text": "Changement de compte Microsoft : un clic sur ton compte propose désormais « Changer de compte », qui efface la session enregistrée et ouvre la page Microsoft pour te connecter avec un autre compte." },
+        { "type": "improve", "text": "« Se déconnecter » conserve ta session : tu repasses en mode hors-ligne, mais la reconnexion suivante se fait automatiquement, sans avoir à te réidentifier." },
+        { "type": "fix", "text": "La déconnexion ne supprimait pas les identifiants enregistrés : le launcher reconnectait toujours le même compte, rendant impossible l'utilisation d'un autre compte Microsoft." }
+      ]
+    },
+    {
       "version": "5.0",
       "date": "23/07/2026",
       "entries": [

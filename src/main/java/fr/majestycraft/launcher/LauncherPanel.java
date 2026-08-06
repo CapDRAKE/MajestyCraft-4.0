@@ -40,7 +40,9 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.ContentDisplay;
@@ -528,12 +530,13 @@ public class LauncherPanel extends IScreen {
     }
 
     /**
-     * Bouton Microsoft : connecte (ou déconnecte) le compte, sans JAMAIS lancer le
-     * jeu. Le lancement passe uniquement par le bouton JOUER (ou l'auto-login).
+     * Bouton Microsoft : connecte le compte, ou propose de changer de compte /
+     * se déconnecter si un compte est déjà actif. Ne lance JAMAIS le jeu : le
+     * lancement passe uniquement par le bouton JOUER (ou l'auto-login).
      */
     private void launchMicrosoftFlow(Pane root) {
         if (microsoftSessionActive) {
-            disconnectMicrosoft(root);
+            showAccountOptions(root);
             return;
         }
         if (!App.netIsAvailable()) {
@@ -541,6 +544,56 @@ public class LauncherPanel extends IScreen {
             return;
         }
         connectMicrosoftAsync(root, false, true);
+    }
+
+    /**
+     * Compte déjà connecté : propose de changer de compte ou de se déconnecter.
+     * Seul le changement de compte supprime les jetons enregistrés (sinon la
+     * connexion suivante se referait en silence sur le même compte) ; une simple
+     * déconnexion les conserve pour permettre une reconnexion automatique.
+     */
+    private void showAccountOptions(Pane root) {
+        String currentName = usernameField != null ? usernameField.getText() : "";
+
+        ButtonType switchAccount = new ButtonType("Changer de compte");
+        ButtonType signOut = new ButtonType("Se déconnecter");
+        ButtonType cancel = ButtonType.CANCEL;
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                "Compte connecté : " + currentName + "\n\n"
+                + "« Se déconnecter » repasse en mode hors-ligne mais garde ta session : "
+                + "la prochaine connexion se fera automatiquement, sans ressaisie.\n\n"
+                + "« Changer de compte » efface la session enregistrée et ouvre la page "
+                + "Microsoft pour te connecter avec un autre compte.\n\n"
+                + "Astuce : si Microsoft te reconnecte automatiquement au même compte, "
+                + "choisis « Utiliser un autre compte » sur sa page, ou ouvre-la dans "
+                + "une fenêtre de navigation privée.",
+                switchAccount, signOut, cancel);
+        alert.setTitle("Compte Microsoft");
+        alert.setHeaderText(null);
+        alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+        alert.getDialogPane().setPrefWidth(540);
+
+        java.util.Optional<ButtonType> choice = alert.showAndWait();
+        if (!choice.isPresent() || choice.get() == cancel) {
+            return;
+        }
+
+        boolean wantsSwitch = choice.get() == switchAccount;
+        if (wantsSwitch && !App.netIsAvailable()) {
+            showConnectionErrorAlert();
+            return;
+        }
+
+        // Seul le changement de compte purge les jetons : une simple déconnexion
+        // les conserve pour permettre une reconnexion automatique.
+        disconnectMicrosoft(root, wantsSwitch);
+
+        if (wantsSwitch) {
+            // Jetons supprimés : le refresh silencieux échouera forcément et le
+            // device flow s'ouvrira, permettant de choisir un autre compte.
+            connectMicrosoftAsync(root, false, true);
+        }
     }
 
     /**
@@ -602,7 +655,7 @@ public class LauncherPanel extends IScreen {
 
         usernameField.setText(session.getUsername());
         usernameField.setDisable(true);
-        microsoftInlineButton.setText("Se déconnecter (" + session.getUsername() + ")");
+        microsoftInlineButton.setText("Compte : " + session.getUsername() + "  (changer)");
         setAccountStatus("● Connecté via Microsoft : " + session.getUsername(), true);
         // "Se souvenir de moi" ne concerne que le pseudo hors-ligne : la session
         // Microsoft est persistée par son refresh token, la case n'a aucun sens ici.
@@ -620,15 +673,32 @@ public class LauncherPanel extends IScreen {
         }
     }
 
-    private void disconnectMicrosoft(Pane root) {
+    /**
+     * Repasse en mode hors-ligne.
+     *
+     * @param purgeTokens true (changement de compte) : supprime les jetons Microsoft
+     *                    enregistrés, pour que la connexion suivante propose vraiment
+     *                    un autre compte au lieu de reprendre celui-ci en silence.
+     *                    false (simple déconnexion) : les jetons sont conservés, donc
+     *                    une reconnexion se fera automatiquement sans ressaisie.
+     */
+    private void disconnectMicrosoft(Pane root, boolean purgeTokens) {
+        if (purgeTokens) {
+            GameAuth logoutAuth = auth != null ? auth : new GameAuth(AccountType.MICROSOFT);
+            logoutAuth.logout(engine);
+        }
+
         microsoftSessionActive = false;
+        launchWhenConnected = false;
         auth = null;
         config.updateValue("useMicrosoft", false);
 
         usernameField.setDisable(false);
         usernameField.setText("");
         microsoftInlineButton.setText("Se connecter avec Microsoft");
-        setAccountStatus("Pseudo ou compte Microsoft, choisis ton profil et joue.");
+        setAccountStatus(purgeTokens
+                ? "Pseudo ou compte Microsoft, choisis ton profil et joue."
+                : "Déconnecté. La reconnexion Microsoft sera automatique.");
         setRememberMeVisible(true);
         setMicrosoftButtonConnected(false);
         // Retour en mode hors-ligne : JOUER redevient utilisable (pseudo).
