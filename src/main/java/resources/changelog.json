@@ -6,7 +6,12 @@
       "entries": [
         { "type": "new", "text": "Changement de compte Microsoft : un clic sur ton compte propose désormais « Changer de compte », qui efface la session enregistrée et ouvre la page Microsoft pour te connecter avec un autre compte." },
         { "type": "improve", "text": "« Se déconnecter » conserve ta session : tu repasses en mode hors-ligne, mais la reconnexion suivante se fait automatiquement, sans avoir à te réidentifier." },
-        { "type": "fix", "text": "La déconnexion ne supprimait pas les identifiants enregistrés : le launcher reconnectait toujours le même compte, rendant impossible l'utilisation d'un autre compte Microsoft." }
+        { "type": "fix", "text": "La déconnexion ne supprimait pas les identifiants enregistrés : le launcher reconnectait toujours le même compte, rendant impossible l'utilisation d'un autre compte Microsoft." },
+        { "type": "improve", "text": "Fenêtre de gestion du compte redessinée aux couleurs du launcher : avatar, pseudo, état de connexion et options détaillées, à la place de la boîte de dialogue système." },
+        { "type": "fix", "text": "Cadre blanc qui apparaissait autour de la fenêtre de connexion Microsoft." },
+        { "type": "fix", "text": "Sécurité : les jetons de connexion Microsoft s'affichaient en clair dans la console du launcher. Ils sont désormais masqués, pour qu'une capture d'écran ou un journal transmis au support ne divulgue plus l'accès au compte." },
+        { "type": "fix", "text": "Le launcher se fermait sans aucun message si son fichier de configuration était corrompu. Il le répare maintenant automatiquement en conservant tes réglages, ou repart sur une configuration neuve en mettant l'ancienne de côté." },
+        { "type": "fix", "text": "Les boutons « Site web » et « Discord » du panneau Informations se chevauchaient, et le texte de la remarque était coupé en plein milieu." }
       ]
     },
     {

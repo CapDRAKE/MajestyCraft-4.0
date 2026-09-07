@@ -50,6 +50,7 @@ public class LauncherInfo extends IScreen {
     private static final String DEVELOPPEUR_INFO = Main.bundle.getString("DEVELOPPEUR_INFO");
     private static final String HELPER_INFO = Main.bundle.getString("HELPER_INFO");
     private static final String REMARQUE_INFO_1 = Main.bundle.getString("REMARQUE_INFO_1");
+    private static final String REMARQUE_INFO_2 = Main.bundle.getString("REMARQUE_INFO_2");
     private static final String VERSION_INFO = Main.bundle.getString("VERSION_INFO");
     private static final String QUITTER_BUTTON_TEXT = Main.bundle.getString("QUITTER_BUTTON_TEXT");
 
@@ -146,19 +147,28 @@ public class LauncherInfo extends IScreen {
         LauncherLabel helperInfo = createBodyLabel(root, HELPER_INFO, heroX + 26, heroY + 316, heroW - 52, 20, 12);
 
         LauncherLabel remarkTitle = createSectionTitle(root, "REMARQUE", heroX + 26, heroY + 352, heroW - 52, 12);
-        LauncherLabel remarkInfo = createBodyLabel(root, REMARQUE_INFO_1, heroX + 26, heroY + 374, heroW - 52, 64, 11);
+        // La remarque est stockee en deux cles : la premiere se termine par "et" et la
+        // seconde contient la suite. Les afficher ensemble evite une phrase coupee net.
+        LauncherLabel remarkInfo = createBodyLabel(root,
+                REMARQUE_INFO_1 + " " + REMARQUE_INFO_2,
+                heroX + 26, heroY + 374, heroW - 52, 78, 11);
         remarkInfo.setWrapText(true);
 
-        // Liens rapides
-        JFXButton siteBtn = ghostButton("Site web", 110);
+        // Liens rapides : largeur calculee pour tenir cote a cote dans la carte,
+        // au lieu de valeurs en dur qui se chevauchaient (110 de large pour 88 d'ecart).
+        final int linkGap = 10;
+        final int linkW = (heroW - 52 - linkGap) / 2;
+        final int linkY = heroY + 458;
+
+        JFXButton siteBtn = ghostButton("Site web", linkW);
         siteBtn.setLayoutX(heroX + 26);
-        siteBtn.setLayoutY(heroY + 452);
+        siteBtn.setLayoutY(linkY);
         siteBtn.setOnAction(e -> openLink(SITE_URL));
         root.getChildren().add(siteBtn);
 
-        JFXButton discordBtn = ghostButton("Discord", 110);
-        discordBtn.setLayoutX(heroX + 26 + 88);
-        discordBtn.setLayoutY(heroY + 452);
+        JFXButton discordBtn = ghostButton("Discord", linkW);
+        discordBtn.setLayoutX(heroX + 26 + linkW + linkGap);
+        discordBtn.setLayoutY(linkY);
         discordBtn.setOnAction(e -> openLink(DISCORD_URL));
         root.getChildren().add(discordBtn);
 

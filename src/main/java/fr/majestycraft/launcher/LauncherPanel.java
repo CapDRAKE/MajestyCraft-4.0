@@ -40,9 +40,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.ContentDisplay;
@@ -191,6 +189,10 @@ public class LauncherPanel extends IScreen {
 
     private final Preferences uiPreferences = Preferences.userNodeForPackage(LauncherPanel.class);
     private static final String SIDEBAR_HINT_PREFIX = "sidebar_hint_closed.";
+    /** Largeur de la fenetre "Compte Microsoft" ; borne aussi le retour a la ligne des textes. */
+    private static final double MODAL_WIDTH = 500;
+    /** Largeur utile du texte dans les cartes : largeur modale - marges modale - marges carte. */
+    private static final double CARD_TEXT_WIDTH = MODAL_WIDTH - (28 * 2) - (18 * 2);
 
     public LauncherPanel(Pane root, GameEngine engine) {
         this.engine = engine;
@@ -555,31 +557,127 @@ public class LauncherPanel extends IScreen {
     private void showAccountOptions(Pane root) {
         String currentName = usernameField != null ? usernameField.getText() : "";
 
-        ButtonType switchAccount = new ButtonType("Changer de compte");
-        ButtonType signOut = new ButtonType("Se déconnecter");
-        ButtonType cancel = ButtonType.CANCEL;
+        // 0 = annulé, 1 = changer de compte, 2 = se déconnecter
+        final int[] choice = { 0 };
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                "Compte connecté : " + currentName + "\n\n"
-                + "« Se déconnecter » repasse en mode hors-ligne mais garde ta session : "
-                + "la prochaine connexion se fera automatiquement, sans ressaisie.\n\n"
-                + "« Changer de compte » efface la session enregistrée et ouvre la page "
-                + "Microsoft pour te connecter avec un autre compte.\n\n"
-                + "Astuce : si Microsoft te reconnecte automatiquement au même compte, "
-                + "choisis « Utiliser un autre compte » sur sa page, ou ouvre-la dans "
-                + "une fenêtre de navigation privée.",
-                switchAccount, signOut, cancel);
-        alert.setTitle("Compte Microsoft");
-        alert.setHeaderText(null);
-        alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-        alert.getDialogPane().setPrefWidth(540);
+        Stage dialog = new Stage();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.initStyle(StageStyle.TRANSPARENT);
+        dialog.setResizable(false);
 
-        java.util.Optional<ButtonType> choice = alert.showAndWait();
-        if (!choice.isPresent() || choice.get() == cancel) {
+        Label badge = new Label("COMPTE MICROSOFT");
+        badge.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
+        badge.setStyle(
+                "-fx-background-color: rgba(255,159,26,0.14);" +
+                "-fx-background-radius: 999;" +
+                "-fx-text-fill: rgba(255,207,138,0.95);" +
+                "-fx-padding: 6 14 6 14;"
+        );
+
+        // Bandeau du compte connecté : avatar + pseudo + état
+        ImageView head = new ImageView(new Image("https://minotar.net/helm/" + currentName + "/64.png", true));
+        head.setFitWidth(46);
+        head.setFitHeight(46);
+
+        Label nameLabel = new Label(currentName);
+        nameLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 18F));
+        nameLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+
+        Label stateLabel = new Label("● Connecté");
+        stateLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        stateLabel.setStyle("-fx-text-fill: rgba(110,225,140,0.95);");
+
+        VBox identity = new VBox(2, nameLabel, stateLabel);
+        identity.setAlignment(Pos.CENTER_LEFT);
+
+        HBox accountRow = new HBox(14, head, identity);
+        accountRow.setAlignment(Pos.CENTER_LEFT);
+        accountRow.setPadding(new Insets(12, 16, 12, 12));
+        accountRow.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.05);" +
+                "-fx-background-radius: 16;" +
+                "-fx-border-color: rgba(255,255,255,0.10);" +
+                "-fx-border-radius: 16;" +
+                "-fx-border-width: 1;"
+        );
+
+        // Les deux actions, en cartes cliquables plutôt qu'en boutons plats
+        Pane switchCard = buildAccountOptionCard(
+                "Changer de compte",
+                "Efface la session enregistrée et ouvre la page Microsoft pour te connecter avec un autre compte.",
+                true,
+                () -> { choice[0] = 1; dialog.close(); });
+
+        Pane signOutCard = buildAccountOptionCard(
+                "Se déconnecter",
+                "Repasse en mode hors-ligne mais garde ta session : la prochaine connexion sera automatique.",
+                false,
+                () -> { choice[0] = 2; dialog.close(); });
+
+        Label tip = new Label(
+                "Si Microsoft te reconnecte automatiquement au même compte, choisis "
+                + "« Utiliser un autre compte » sur sa page, ou ouvre-la en navigation privée.");
+        tip.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
+        tip.setStyle(
+                "-fx-text-fill: rgba(255,255,255,0.52);" +
+                "-fx-background-color: rgba(255,159,26,0.06);" +
+                "-fx-background-radius: 12;" +
+                "-fx-border-color: rgba(255,159,26,0.16);" +
+                "-fx-border-radius: 12;" +
+                "-fx-border-width: 1;" +
+                "-fx-padding: 10 14 10 14;"
+        );
+        tip.setWrapText(true);
+        tip.setMaxWidth(MODAL_WIDTH - (28 * 2));
+        tip.setPrefWidth(MODAL_WIDTH - (28 * 2));
+
+        Button cancelBtn = new Button("Annuler");
+        cancelBtn.setStyle(
+                "-fx-background-color: transparent;" +
+                "-fx-text-fill: rgba(255,255,255,0.55);" +
+                "-fx-font-family: 'Comfortaa';" +
+                "-fx-font-size: 12px;" +
+                "-fx-cursor: hand;" +
+                "-fx-padding: 6 18 6 18;"
+        );
+        cancelBtn.setOnAction(e -> dialog.close());
+        HBox cancelRow = new HBox(cancelBtn);
+        cancelRow.setAlignment(Pos.CENTER);
+
+        // La carte porte elle-meme son fond : elle s'adapte ainsi a la hauteur reelle
+        // du texte (un Rectangle de taille fixe tronquait les descriptions).
+        VBox box = new VBox(14, badge, accountRow, switchCard, signOutCard, tip, cancelRow);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(26, 28, 20, 28));
+        box.setPrefWidth(MODAL_WIDTH);
+        box.setMaxWidth(MODAL_WIDTH);
+        box.setStyle(
+                "-fx-background-color: rgba(8,12,18,0.97);" +
+                "-fx-background-radius: 28;" +
+                "-fx-border-color: rgba(255,255,255,0.12);" +
+                "-fx-border-radius: 28;" +
+                "-fx-border-width: 1;"
+        );
+        box.setEffect(new DropShadow(45, Color.rgb(0, 0, 0, 0.48)));
+
+        StackPane modalRoot = new StackPane(box);
+        modalRoot.setPadding(new Insets(18));
+        modalRoot.setStyle("-fx-background-color: transparent;");
+
+        // Pas de dimensions imposees : la scene se dimensionne sur le contenu.
+        Scene scene = new Scene(modalRoot);
+        scene.setFill(Color.TRANSPARENT);
+        dialog.setScene(scene);
+        // Centrage une fois la fenetre affichee : avant, la scene etant auto-dimensionnee,
+        // ses dimensions ne sont pas encore connues et le centrage serait fausse.
+        dialog.setOnShown(e -> dialog.centerOnScreen());
+        dialog.showAndWait();
+
+        if (choice[0] == 0) {
             return;
         }
 
-        boolean wantsSwitch = choice.get() == switchAccount;
+        boolean wantsSwitch = choice[0] == 1;
         if (wantsSwitch && !App.netIsAvailable()) {
             showConnectionErrorAlert();
             return;
@@ -594,6 +692,46 @@ public class LauncherPanel extends IScreen {
             // device flow s'ouvrira, permettant de choisir un autre compte.
             connectMicrosoftAsync(root, false, true);
         }
+    }
+
+    /**
+     * Carte d'action cliquable de la fenêtre "Compte Microsoft" : un titre, une
+     * description, et un effet au survol. Plus lisible qu'un bouton seul, dont le
+     * libellé ne suffit pas à expliquer ce qui va se passer.
+     *
+     * @param accent true pour l'action principale (bordure orangée)
+     */
+    private Pane buildAccountOptionCard(String title, String description, boolean accent, Runnable onClick) {
+        Label titleLabel = new Label(title);
+        titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        titleLabel.setStyle("-fx-text-fill: " + (accent ? "rgba(255,205,130,0.98)" : "rgba(255,255,255,0.92)") + "; -fx-font-weight: bold;");
+
+        Label descLabel = new Label(description);
+        descLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        descLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.58);");
+        descLabel.setWrapText(true);
+        // Largeur explicite : sans elle le Label garde sa largeur "une seule ligne"
+        // et le texte est tronque au lieu de passer a la ligne.
+        descLabel.setMaxWidth(CARD_TEXT_WIDTH);
+        descLabel.setPrefWidth(CARD_TEXT_WIDTH);
+
+        VBox cardBox = new VBox(4, titleLabel, descLabel);
+        cardBox.setPadding(new Insets(14, 18, 16, 18));
+        cardBox.setMaxWidth(Double.MAX_VALUE);
+        cardBox.setCursor(javafx.scene.Cursor.HAND);
+
+        final String idle = accent
+                ? "-fx-background-color: rgba(255,150,0,0.10);-fx-background-radius: 16;-fx-border-color: rgba(255,170,0,0.45);-fx-border-radius: 16;-fx-border-width: 1;"
+                : "-fx-background-color: rgba(255,255,255,0.05);-fx-background-radius: 16;-fx-border-color: rgba(255,255,255,0.10);-fx-border-radius: 16;-fx-border-width: 1;";
+        final String hover = accent
+                ? "-fx-background-color: rgba(255,150,0,0.20);-fx-background-radius: 16;-fx-border-color: rgba(255,180,40,0.75);-fx-border-radius: 16;-fx-border-width: 1;"
+                : "-fx-background-color: rgba(255,255,255,0.10);-fx-background-radius: 16;-fx-border-color: rgba(255,255,255,0.22);-fx-border-radius: 16;-fx-border-width: 1;";
+
+        cardBox.setStyle(idle);
+        cardBox.setOnMouseEntered(e -> cardBox.setStyle(hover));
+        cardBox.setOnMouseExited(e -> cardBox.setStyle(idle));
+        cardBox.setOnMouseClicked(e -> onClick.run());
+        return cardBox;
     }
 
     /**
@@ -2009,6 +2147,10 @@ public class LauncherPanel extends IScreen {
 
         StackPane modalRoot = new StackPane(modalCard, box);
         modalRoot.setPadding(new Insets(18));
+        // Le noeud racine d'une Scene recoit la classe CSS ".root", que la feuille
+        // par defaut de JavaFX (modena) peint en gris clair : sans cette ligne, un
+        // cadre blanc apparait autour de la carte arrondie malgre la scene transparente.
+        modalRoot.setStyle("-fx-background-color: transparent;");
 
         Scene authScene = new Scene(modalRoot, 540, 380);
         authScene.setFill(Color.TRANSPARENT);
