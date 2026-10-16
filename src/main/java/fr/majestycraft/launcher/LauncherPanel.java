@@ -27,6 +27,7 @@ import fr.trxyy.alternative.alternative_api_ui.base.*;
 import fr.trxyy.alternative.alternative_api_ui.components.*;
 import fr.trxyy.alternative.alternative_auth.account.*;
 import fr.trxyy.alternative.alternative_auth.base.*;
+import fr.trxyy.alternative.alternative_auth.microsoft.MicrosoftBrowserAuth;
 import fr.trxyy.alternative.alternative_auth.microsoft.MicrosoftXboxAuth;
 import fr.trxyy.alternative.alternative_auth.microsoft.MicrosoftOAuthClient;
 import fr.trxyy.alternative.alternative_auth.microsoft.model.MicrosoftModel;
@@ -64,6 +65,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -2064,7 +2066,188 @@ public class LauncherPanel extends IScreen {
         Platform.runLater(() -> new LauncherAlert(AUTH_ERROR_TITLE, AUTH_ERROR_MSG));
     }
 
+    /**
+     * Connexion Microsoft par défaut : la page de connexion Microsoft s'ouvre dans le
+     * navigateur du joueur, qui revient ensuite tout seul vers le launcher (aucun code
+     * à recopier). Le code d'appareil reste disponible en secours.
+     */
     private void startMicrosoftLogin(Pane root, boolean launchAfter) {
+        final MicrosoftBrowserAuth browserAuth = new MicrosoftBrowserAuth().setLauncherName("MajestyLauncher");
+        // true quand le joueur (ou un échec d'ouverture du navigateur) bascule sur le
+        // code d'appareil : le flux navigateur s'arrête alors sans toucher à l'interface.
+        final boolean[] switchedToCode = {false};
+        final boolean[] cancelled = {false};
+        final String[] authorizeUrl = {null};
+
+        Stage authStage = new Stage();
+        authStage.initModality(Modality.APPLICATION_MODAL);
+        authStage.initStyle(StageStyle.TRANSPARENT);
+        authStage.setResizable(false);
+
+        ProgressIndicator spinner = new ProgressIndicator();
+        spinner.setPrefSize(44, 44);
+        spinner.setStyle("-fx-progress-color: #ff8a00;");
+
+        Label badge = new Label("MICROSOFT");
+        badge.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        badge.setStyle(
+                "-fx-background-color: rgba(255,159,26,0.14);" +
+                "-fx-background-radius: 999;" +
+                "-fx-text-fill: rgba(255,207,138,0.95);" +
+                "-fx-padding: 6 12 6 12;"
+        );
+
+        Label title = new Label("Connexion Microsoft");
+        title.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
+        title.setStyle("-fx-text-fill: white;");
+
+        Label info = new Label(
+                "Ton navigateur s'ouvre sur la page de connexion Microsoft.\n" +
+                "Connecte-toi puis reviens ici : la suite est automatique."
+        );
+        info.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        info.setStyle("-fx-text-fill: rgba(255,255,255,0.68);");
+        info.setWrapText(true);
+        info.setAlignment(Pos.CENTER);
+        info.setTextAlignment(TextAlignment.CENTER);
+
+        Label waitLabel = new Label("En attente de ta connexion dans le navigateur...");
+        waitLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        waitLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.60);");
+
+        Button reopenBtn = new Button("Rouvrir la page");
+        reopenBtn.setDisable(true);
+        styleModalActionButton(reopenBtn, false);
+        reopenBtn.setOnAction(e -> {
+            if (authorizeUrl[0] != null) openLink(authorizeUrl[0]);
+        });
+
+        Button codeBtn = new Button("Utiliser un code");
+        styleModalActionButton(codeBtn, false);
+
+        HBox actions = new HBox(12, reopenBtn, codeBtn);
+        actions.setAlignment(Pos.CENTER);
+
+        Button cancelBtn = new Button("Annuler");
+        cancelBtn.setStyle(
+                "-fx-background-color: transparent;" +
+                "-fx-text-fill: rgba(255,255,255,0.55);" +
+                "-fx-font-family: 'Comfortaa';" +
+                "-fx-font-size: 12px;" +
+                "-fx-cursor: hand;" +
+                "-fx-padding: 6 18 6 18;"
+        );
+
+        VBox box = new VBox(16, badge, title, info, spinner, waitLabel, actions, cancelBtn);
+        box.setPadding(new Insets(28));
+        box.setAlignment(Pos.CENTER);
+
+        Rectangle modalCard = new Rectangle(500, 390);
+        modalCard.setArcWidth(36);
+        modalCard.setArcHeight(36);
+        modalCard.setFill(Color.rgb(8, 12, 18, 0.96));
+        modalCard.setStroke(Color.rgb(255, 255, 255, 0.12));
+        modalCard.setStrokeWidth(1.0);
+        modalCard.setEffect(new DropShadow(45, Color.rgb(0, 0, 0, 0.48)));
+
+        StackPane modalRoot = new StackPane(modalCard, box);
+        modalRoot.setPadding(new Insets(18));
+        // Voir startMicrosoftDeviceCodeLogin : evite le cadre blanc de la classe ".root".
+        modalRoot.setStyle("-fx-background-color: transparent;");
+
+        Scene authScene = new Scene(modalRoot, 540, 430);
+        authScene.setFill(Color.TRANSPARENT);
+        authStage.setScene(authScene);
+
+        codeBtn.setOnAction(e -> {
+            switchedToCode[0] = true;
+            browserAuth.cancel();
+            authStage.close();
+            startMicrosoftDeviceCodeLogin(root, launchAfter);
+        });
+        cancelBtn.setOnAction(e -> {
+            cancelled[0] = true;
+            browserAuth.cancel();
+        });
+
+        authStage.show();
+
+        new Thread(() -> {
+            try {
+                String url = browserAuth.start();
+                authorizeUrl[0] = url;
+                Platform.runLater(() -> reopenBtn.setDisable(false));
+                try {
+                    Desktop.getDesktop().browse(URI.create(url));
+                } catch (Exception browserError) {
+                    // Navigateur impossible à ouvrir : on bascule sur le code d'appareil,
+                    // qui se termine depuis n'importe quel appareil.
+                    System.err.println("Navigateur indisponible, bascule sur le code : " + browserError.getMessage());
+                    switchedToCode[0] = true;
+                    browserAuth.cancel();
+                    Platform.runLater(() -> {
+                        authStage.close();
+                        startMicrosoftDeviceCodeLogin(root, launchAfter);
+                    });
+                    return;
+                }
+
+                MicrosoftModel model = browserAuth.awaitTokens(10, java.util.concurrent.TimeUnit.MINUTES);
+
+                AuthConfig authConfig = new AuthConfig(engine);
+                authConfig.createConfigFile(model);
+
+                MicrosoftXboxAuth msAuth = new MicrosoftXboxAuth();
+                Session session = msAuth.getLiveToken(model.getAccess_token());
+
+                Platform.runLater(() -> {
+                    authStage.close();
+                    microsoftFlowRunning = false;
+                    auth.setSession(session);
+                    onMicrosoftConnected(session, root, launchAfter);
+                });
+
+            } catch (MicrosoftBrowserAuth.LoginCancelledException ex) {
+                if (switchedToCode[0]) {
+                    return; // le code d'appareil a pris le relais
+                }
+                Platform.runLater(() -> {
+                    authStage.close();
+                    microsoftFlowRunning = false;
+                    launchWhenConnected = false;
+                    setAccountStatus(cancelled[0]
+                            ? "Connexion Microsoft annulée."
+                            : "Connexion refusée sur la page Microsoft.");
+                });
+            } catch (java.util.concurrent.TimeoutException ex) {
+                Platform.runLater(() -> {
+                    authStage.close();
+                    microsoftFlowRunning = false;
+                    setAccountStatus("Connexion Microsoft expirée, réessaie.");
+                });
+            } catch (Exception ex) {
+                if (switchedToCode[0]) {
+                    return;
+                }
+                ex.printStackTrace();
+                Platform.runLater(() -> {
+                    authStage.close();
+                    microsoftFlowRunning = false;
+                    setAccountStatus("Connexion Microsoft impossible, réessaie.");
+                    showAuthErrorAlert();
+                });
+            }
+        }, "MajestyLauncher-MsBrowserLogin").start();
+    }
+
+    /**
+     * Connexion de secours par code d'appareil : le joueur saisit un code sur
+     * microsoft.com/link (utile si le navigateur ne peut pas revenir vers le launcher).
+     */
+    private void startMicrosoftDeviceCodeLogin(Pane root, boolean launchAfter) {
+        final boolean[] cancelled = {false};
+        final Thread[] worker = {null};
+
         Stage authStage = new Stage();
         authStage.initModality(Modality.APPLICATION_MODAL);
         authStage.initStyle(StageStyle.TRANSPARENT);
@@ -2129,15 +2312,34 @@ public class LauncherPanel extends IScreen {
         HBox actions = new HBox(12, copyBtn, openBtn);
         actions.setAlignment(Pos.CENTER);
 
+        // Sans ce bouton, le joueur restait bloqué jusqu'à l'expiration du code (15 min).
+        Button cancelBtn = new Button("Annuler");
+        cancelBtn.setStyle(
+                "-fx-background-color: transparent;" +
+                "-fx-text-fill: rgba(255,255,255,0.55);" +
+                "-fx-font-family: 'Comfortaa';" +
+                "-fx-font-size: 12px;" +
+                "-fx-cursor: hand;" +
+                "-fx-padding: 6 18 6 18;"
+        );
+        cancelBtn.setOnAction(e -> {
+            cancelled[0] = true;
+            if (worker[0] != null) worker[0].interrupt(); // interrompt l'attente de pollForToken
+            authStage.close();
+            microsoftFlowRunning = false;
+            launchWhenConnected = false;
+            setAccountStatus("Connexion Microsoft annulée.");
+        });
+
         VBox box = new VBox(15, title, info, codeLabel, copyBtn, spinner, waitLabel);
         box.setPadding(new Insets(20));
         box.setAlignment(Pos.CENTER);
 
-        box.getChildren().setAll(badge, title, info, codeLabel, actions, spinner, waitLabel);
+        box.getChildren().setAll(badge, title, info, codeLabel, actions, spinner, waitLabel, cancelBtn);
         box.setSpacing(16);
         box.setPadding(new Insets(28));
 
-        Rectangle modalCard = new Rectangle(500, 340);
+        Rectangle modalCard = new Rectangle(500, 470);
         modalCard.setArcWidth(36);
         modalCard.setArcHeight(36);
         modalCard.setFill(Color.rgb(8, 12, 18, 0.96));
@@ -2152,13 +2354,13 @@ public class LauncherPanel extends IScreen {
         // cadre blanc apparait autour de la carte arrondie malgre la scene transparente.
         modalRoot.setStyle("-fx-background-color: transparent;");
 
-        Scene authScene = new Scene(modalRoot, 540, 380);
+        Scene authScene = new Scene(modalRoot, 540, 510);
         authScene.setFill(Color.TRANSPARENT);
 
         authStage.setScene(authScene);
         authStage.show();
 
-        new Thread(() -> {
+        worker[0] = new Thread(() -> {
             try {
                 MicrosoftOAuthClient deviceAuth = new MicrosoftOAuthClient();
                 MicrosoftOAuthClient.DeviceCode deviceCode = deviceAuth.requestDeviceCode();
@@ -2172,7 +2374,7 @@ public class LauncherPanel extends IScreen {
                         ClipboardContent content = new ClipboardContent();
                         content.putString(deviceCode.getUserCode());
                         Clipboard.getSystemClipboard().setContent(content);
-                        copyBtn.setText("Code copie");
+                        copyBtn.setText("Code copié");
                     });
 
                     openBtn.setOnAction(e -> openLink(deviceCode.getVerificationUri()));
@@ -2181,6 +2383,7 @@ public class LauncherPanel extends IScreen {
                 Desktop.getDesktop().browse(URI.create(deviceCode.getVerificationUri()));
 
                 MicrosoftModel model = deviceAuth.pollForToken(deviceCode);
+                if (cancelled[0]) return;
 
                 AuthConfig authConfig = new AuthConfig(engine);
                 authConfig.createConfigFile(model);
@@ -2196,6 +2399,9 @@ public class LauncherPanel extends IScreen {
                 });
 
             } catch (Exception ex) {
+                if (cancelled[0]) {
+                    return; // annulé par le joueur : l'interface est déjà à jour
+                }
                 ex.printStackTrace();
                 Platform.runLater(() -> {
                     authStage.close();
@@ -2204,7 +2410,8 @@ public class LauncherPanel extends IScreen {
                     showAuthErrorAlert();
                 });
             }
-        }).start();
+        }, "MajestyLauncher-MsDeviceCode");
+        worker[0].start();
     }
 
 	public int getCenterX() {
