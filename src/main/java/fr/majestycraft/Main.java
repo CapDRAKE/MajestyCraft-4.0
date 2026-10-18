@@ -132,7 +132,7 @@ public class Main {
             Hyperlink link = new Hyperlink(bundle.getString("clickHereLink"));
             link.setOnAction(event -> {
                 try {
-                    java.awt.Desktop.getDesktop().browse(new java.net.URI("https://minestrator.com/partenaire/eus561rkso"));
+                    fr.majestycraft.util.SystemOpen.browseAsync("https://minestrator.com/partenaire/eus561rkso", null);
                 } catch (Exception e) {
                     System.err.println(bundle.getString("errorOpeningLink") + e.getMessage());
                 }

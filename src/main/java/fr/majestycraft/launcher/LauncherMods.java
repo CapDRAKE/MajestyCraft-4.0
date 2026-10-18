@@ -4,6 +4,7 @@ import fr.majestycraft.util.UiStyle;
 import fr.majestycraft.util.Icons;
 import fr.majestycraft.util.ListRow;
 import fr.majestycraft.util.ToggleSwitch;
+import fr.majestycraft.util.SystemOpen;
 import fr.majestycraft.util.AmbientBackground;
 import animatefx.animation.ZoomOutDown;
 import com.google.gson.JsonArray;
@@ -896,12 +897,9 @@ public class LauncherMods extends IScreen {
     }
 
     private void openModsFolder() {
-        try {
-            if (!modsDir.exists()) modsDir.mkdirs();
-            Desktop.getDesktop().open(modsDir);
-        } catch (IOException e) {
-            showErrorDialog("Erreur", "Impossible d'ouvrir le dossier des mods.");
-        }
+        if (!modsDir.exists()) modsDir.mkdirs();
+        SystemOpen.openAsync(modsDir, () -> showErrorDialog("Erreur",
+                "Impossible d'ouvrir le dossier des mods.\n" + modsDir.getAbsolutePath()));
     }
 
     private void toggleLocalMod(LocalModItem item) {
@@ -1442,12 +1440,7 @@ public class LauncherMods extends IScreen {
     }
 
     private void openExternalLink(String url) {
-        try {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(URI.create(url));
-            }
-        } catch (Exception ignored) {
-        }
+        SystemOpen.browseAsync(url, null);
     }
 
     private String getAsString(JsonObject o, String key) {

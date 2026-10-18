@@ -576,21 +576,27 @@ public class LauncherInfo extends IScreen {
      * Pratique pour diagnostiquer un crash ou transmettre le log au support.
      */
     private void openGameLogs(GameEngine engine) {
+        java.io.File target = null;
         try {
             java.io.File gameDir = engine.getGameFolder().getGameDir();
             java.io.File logsDir = new java.io.File(gameDir, "logs");
             java.io.File latest = new java.io.File(logsDir, "latest-game.log");
-
-            java.io.File target = latest.isFile() ? latest : (logsDir.isDirectory() ? logsDir : gameDir);
-            if (java.awt.Desktop.isDesktopSupported()) {
-                java.awt.Desktop.getDesktop().open(target);
-            }
-        } catch (Exception e) {
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-            alert.setTitle("Logs");
-            alert.setHeaderText("Impossible d'ouvrir les logs");
-            alert.setContentText("Aucun log de jeu n'est disponible pour le moment (lance le jeu au moins une fois).");
-            alert.showAndWait();
+            target = latest.isFile() ? latest : (logsDir.isDirectory() ? logsDir : gameDir);
+        } catch (Exception ignored) {
+            // dossier de jeu indisponible : message ci-dessous
         }
+        if (target == null || !target.exists()) {
+            showLogsUnavailable();
+            return;
+        }
+        fr.majestycraft.util.SystemOpen.openAsync(target, this::showLogsUnavailable);
+    }
+
+    private void showLogsUnavailable() {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+        alert.setTitle("Logs");
+        alert.setHeaderText("Impossible d'ouvrir les logs");
+        alert.setContentText("Aucun log de jeu n'est disponible pour le moment (lance le jeu au moins une fois).");
+        alert.showAndWait();
     }
 }

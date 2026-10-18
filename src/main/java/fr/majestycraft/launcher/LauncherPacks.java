@@ -3,6 +3,7 @@ package fr.majestycraft.launcher;
 import fr.majestycraft.util.UiStyle;
 import fr.majestycraft.util.Icons;
 import fr.majestycraft.util.ListRow;
+import fr.majestycraft.util.SystemOpen;
 import fr.majestycraft.util.AmbientBackground;
 import animatefx.animation.ZoomOutDown;
 import com.google.gson.JsonArray;
@@ -514,11 +515,9 @@ public class LauncherPacks extends IScreen {
     }
 
     private void openResourcePackFolder() {
-        try {
-            Desktop.getDesktop().open(resourcePacksDir);
-        } catch (IOException e) {
-            showErrorDialog("Erreur", "Impossible d'ouvrir le dossier des packs.");
-        }
+        if (!resourcePacksDir.exists()) resourcePacksDir.mkdirs();
+        SystemOpen.openAsync(resourcePacksDir, () -> showErrorDialog("Erreur",
+                "Impossible d'ouvrir le dossier des packs.\n" + resourcePacksDir.getAbsolutePath()));
     }
 
     private void configureLocalList() {
@@ -819,12 +818,7 @@ public class LauncherPacks extends IScreen {
     }
 
     private void openExternalLink(String url) {
-        try {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(URI.create(url));
-            }
-        } catch (Exception ignored) {
-        }
+        SystemOpen.browseAsync(url, null);
     }
 
     private String getAsString(JsonObject o, String key) {

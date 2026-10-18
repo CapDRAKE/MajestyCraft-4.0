@@ -20,6 +20,7 @@ import fr.majestycraft.profiles.ProfileManager;
 import fr.majestycraft.util.AmbientBackground;
 import fr.majestycraft.util.Icons;
 import fr.majestycraft.util.UiStyle;
+import fr.majestycraft.util.SystemOpen;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.updater.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
@@ -426,11 +427,7 @@ public class LauncherPanel extends IScreen {
     }
 
     public void openLink(String url) {
-        try {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(URI.create(url));
-            }
-        } catch (Exception ignored) {}
+        SystemOpen.browseAsync(url, null);
     }
 
     private void checkAutoLogin(Pane root) {
@@ -1117,11 +1114,20 @@ public class LauncherPanel extends IScreen {
     }
 
     private void initMusic() {
-        Media media = getResourceLocation().getMedia(this.engine, "Minecraft.mp3");
-        mediaPlayer = new MediaPlayer(media);
-        mediaPlayer.setVolume(0.05);
-        mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
-        mediaPlayer.play();
+        // Sous Linux, JavaFX lit le MP3 avec le FFmpeg du système : s'il est absent ou
+        // d'une version non prise en charge, le lecteur ne peut pas être créé. Le
+        // launcher démarre alors sans musique au lieu de ne jamais s'afficher.
+        try {
+            Media media = getResourceLocation().getMedia(this.engine, "Minecraft.mp3");
+            if (media == null) return;
+            mediaPlayer = new MediaPlayer(media);
+            mediaPlayer.setVolume(0.05);
+            mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+            mediaPlayer.play();
+        } catch (RuntimeException | LinkageError e) {
+            System.err.println("Musique indisponible sur ce système : " + e);
+            mediaPlayer = null;
+        }
     }
 
     private void initConfig(Pane root) {
@@ -1139,7 +1145,7 @@ public class LauncherPanel extends IScreen {
             rpc.stop();
         }
 
-        mediaPlayer.setMute(!useMusic);
+        if (mediaPlayer != null) mediaPlayer.setMute(!useMusic);
 
         if (useConnect) engine.reg(App.getGameConnect());
 
@@ -2123,7 +2129,9 @@ public class LauncherPanel extends IScreen {
                 authorizeUrl[0] = url;
                 Platform.runLater(() -> reopenBtn.setDisable(false));
                 try {
-                    Desktop.getDesktop().browse(URI.create(url));
+                    if (!SystemOpen.browse(url)) {
+                        throw new IllegalStateException("aucun navigateur n'a pu être ouvert");
+                    }
                 } catch (Exception browserError) {
                     // Navigateur impossible à ouvrir : on bascule sur le code d'appareil,
                     // qui se termine depuis n'importe quel appareil.
@@ -2325,7 +2333,8 @@ public class LauncherPanel extends IScreen {
                     openBtn.setOnAction(e -> openLink(deviceCode.getVerificationUri()));
                 });
 
-                Desktop.getDesktop().browse(URI.create(deviceCode.getVerificationUri()));
+                // Si rien ne s'ouvre, l'adresse et le code restent affichés dans la fenêtre.
+                SystemOpen.browse(deviceCode.getVerificationUri());
 
                 MicrosoftModel model = deviceAuth.pollForToken(deviceCode);
                 if (cancelled[0]) return;

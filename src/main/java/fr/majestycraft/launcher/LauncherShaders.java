@@ -4,6 +4,7 @@ import fr.majestycraft.util.UiStyle;
 import fr.majestycraft.util.Icons;
 import fr.majestycraft.util.ListRow;
 import fr.majestycraft.util.ToggleSwitch;
+import fr.majestycraft.util.SystemOpen;
 import fr.majestycraft.util.AmbientBackground;
 import animatefx.animation.ZoomOutDown;
 import com.google.gson.JsonArray;
@@ -1053,20 +1054,14 @@ public class LauncherShaders extends IScreen {
     }
 
     private void openShaderpacksFolder() {
-        try {
-            ensureShaderpacksDir();
-            Desktop.getDesktop().open(shaderpacksDir);
-        } catch (Exception e) {
-            showError("Ouverture impossible", "Impossible d'ouvrir le dossier shaderpacks.");
-        }
+        ensureShaderpacksDir();
+        SystemOpen.openAsync(shaderpacksDir, () -> showError("Ouverture impossible",
+                "Impossible d'ouvrir le dossier shaderpacks.\n" + shaderpacksDir.getAbsolutePath()));
     }
 
     private void openProjectPage(OnlineShaderItem item) {
-        try {
-            Desktop.getDesktop().browse(new URI(MODRINTH_WEB_SHADER + item.slug));
-        } catch (Exception e) {
-            showError("Ouverture impossible", "Impossible d'ouvrir la page du shader.");
-        }
+        SystemOpen.browseAsync(MODRINTH_WEB_SHADER + item.slug,
+                () -> showError("Ouverture impossible", "Impossible d'ouvrir la page du shader."));
     }
 
     private boolean isVisibleShaderpack(File file) {

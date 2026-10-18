@@ -4,6 +4,7 @@ import fr.majestycraft.util.Icons;
 import fr.majestycraft.util.UiStyle;
 import fr.majestycraft.util.AmbientBackground;
 import fr.majestycraft.util.ToggleSwitch;
+import fr.majestycraft.util.SystemOpen;
 import com.jfoenix.controls.*;
 
 import fr.majestycraft.*;
@@ -571,7 +572,7 @@ public class LauncherSettings extends IScreen {
                 pane.getConfig().getValue(EnumConfig.USE_MUSIC), rightX, sectionY + 198, fieldW);
         this.useMusic.setOnAction(e -> {
             pane.getConfig().updateValue("usemusic", useMusic.isSelected());
-            pane.getMediaPlayer().setMute(!useMusic.isSelected());
+            if (pane.getMediaPlayer() != null) pane.getMediaPlayer().setMute(!useMusic.isSelected());
         });
 
         this.connect = createSwitch(root, LABEL_CONNECT_SERVER,
@@ -1431,21 +1432,16 @@ public class LauncherSettings extends IScreen {
     }
 
     private void openGameDirectory() {
-        String os = System.getProperty("os.name").toLowerCase();
-        Path gameDirectory;
-
-        if (os.contains("win")) {
-            gameDirectory = Paths.get(System.getenv("APPDATA"), ".majestycraft", "bin", "game");
-        } else if (os.contains("mac")) {
-            gameDirectory = Paths.get(System.getProperty("user.home"), "Library", "Application Support", ".majestycraft", "bin", "game");
-        } else {
-            gameDirectory = Paths.get(System.getProperty("user.home"), ".majestycraft", "bin", "game");
-        }
-
-        try {
-            Desktop.getDesktop().open(gameDirectory.toFile());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        // Même dossier que celui du jeu (lib), sur tous les systèmes : le chemin macOS
+        // codé ici ("~/Library/Application Support/.majestycraft") n'était pas le bon.
+        final File dir = new File(fr.trxyy.alternative.alternative_api.utils.file.GameUtils.getWorkingDirectory("majestycraft"),
+                "bin" + File.separator + "game");
+        if (!dir.exists()) dir.mkdirs();
+        SystemOpen.openAsync(dir, () -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setHeaderText("Impossible d'ouvrir le dossier du jeu");
+            alert.setContentText("Il se trouve ici :\n" + dir.getAbsolutePath());
+            alert.showAndWait();
+        });
     }
 }
