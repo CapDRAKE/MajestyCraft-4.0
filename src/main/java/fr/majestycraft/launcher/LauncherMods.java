@@ -1,6 +1,9 @@
 package fr.majestycraft.launcher;
 
 import fr.majestycraft.util.UiStyle;
+import fr.majestycraft.util.Icons;
+import fr.majestycraft.util.ListRow;
+import fr.majestycraft.util.ToggleSwitch;
 import fr.majestycraft.util.AmbientBackground;
 import animatefx.animation.ZoomOutDown;
 import com.google.gson.JsonArray;
@@ -30,6 +33,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -273,9 +277,9 @@ public class LauncherMods extends IScreen {
         this.heroSubtitle.setAlignment(Pos.CENTER);
 
         this.heroLine1 = createHeroLine(root, heroX, heroY + 300, heroW, "• Liste les mods installés");
-        this.heroLine2 = createHeroLine(root, heroX, heroY + 330, heroW, "• Ajoute des .jar ou .zip depuis ton PC");
-        this.heroLine3 = createHeroLine(root, heroX, heroY + 360, heroW, "• Recherche et télécharge via Modrinth");
-        this.heroLine4 = createHeroLine(root, heroX, heroY + 390, heroW, "• Active, désactive ou supprime un mod");
+        this.heroLine2 = createHeroLine(root, heroX, heroY + 330, heroW, "• Ajoute tes .jar ou .zip");
+        this.heroLine3 = createHeroLine(root, heroX, heroY + 360, heroW, "• Catalogue Modrinth intégré");
+        this.heroLine4 = createHeroLine(root, heroX, heroY + 390, heroW, "• Active, désactive, supprime");
     }
 
     private LauncherLabel createHeroLine(Pane root, int heroX, int y, int heroW, String text) {
@@ -331,95 +335,86 @@ public class LauncherMods extends IScreen {
 
         this.searchField = new JFXTextField();
         this.searchField.setPromptText("Rechercher un mod...");
-        this.searchField.setPrefWidth(204);
-        this.searchField.setLayoutX(mainX + mainW - 360);
-        this.searchField.setLayoutY(mainY + 100);
+        this.searchField.setPrefSize(230, 34);
+        this.searchField.setLayoutX(mainX + mainW - 34 - 128 - 10 - 230);
+        this.searchField.setLayoutY(mainY + 94);
         this.searchField.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-        this.searchField.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-background-radius: 14;" +
-                "-fx-border-color: rgba(255,255,255,0.12);" +
-                "-fx-border-radius: 14;" +
-                "-fx-border-width: 1;" +
-                "-fx-text-fill: rgba(255,255,255,0.92);" +
-                "-fx-prompt-text-fill: rgba(255,255,255,0.42);" +
-                "-fx-padding: 0 12 0 12;" +
-                "-jfx-focus-color: #ff9800;" +
-                "-jfx-unfocus-color: rgba(255,255,255,0.18);"
-        );
+        UiStyle.input(this.searchField);
         this.searchField.setOnAction(event -> performSearch());
         root.getChildren().add(this.searchField);
 
         this.refreshButton = new JFXButton("Rechercher");
         styleSecondaryButton(this.refreshButton);
-        this.refreshButton.setLayoutX(mainX + mainW - 144);
-        this.refreshButton.setLayoutY(mainY + 98);
-        this.refreshButton.setPrefWidth(110);
+        this.refreshButton.setGraphic(Icons.stroke(Icons.SEARCH, 14));
+        this.refreshButton.setGraphicTextGap(8);
+        this.refreshButton.setLayoutX(mainX + mainW - 34 - 128);
+        this.refreshButton.setLayoutY(mainY + 94);
+        this.refreshButton.setPrefSize(128, 34);
         this.refreshButton.setOnAction(event -> performSearch());
         root.getChildren().add(this.refreshButton);
 
         int loaderY = mainY + 148;
-        this.loaderAnyButton = createLoaderButton(root, mainX + 34, loaderY, 68, "Tous", LOADER_ANY);
-        this.loaderForgeButton = createLoaderButton(root, mainX + 112, loaderY, 78, "Forge", LOADER_FORGE);
-        this.loaderNeoForgeButton = createLoaderButton(root, mainX + 200, loaderY, 104, "NeoForge", LOADER_NEOFORGE);
-        this.loaderFabricButton = createLoaderButton(root, mainX + 314, loaderY, 82, "Fabric", LOADER_FABRIC);
-        this.loaderQuiltButton = createLoaderButton(root, mainX + 406, loaderY, 74, "Quilt", LOADER_QUILT);
+        this.loaderAnyButton = createLoaderButton(root, mainX + 34, loaderY, 62, "Tous", LOADER_ANY);
+        this.loaderForgeButton = createLoaderButton(root, mainX + 104, loaderY, 70, "Forge", LOADER_FORGE);
+        this.loaderNeoForgeButton = createLoaderButton(root, mainX + 182, loaderY, 92, "NeoForge", LOADER_NEOFORGE);
+        this.loaderFabricButton = createLoaderButton(root, mainX + 282, loaderY, 72, "Fabric", LOADER_FABRIC);
+        this.loaderQuiltButton = createLoaderButton(root, mainX + 362, loaderY, 66, "Quilt", LOADER_QUILT);
         applyLoaderState();
 
-        this.versionPanelBackground = new Rectangle();
-        this.versionPanelBackground.setX(mainX + mainW - 258);
-        this.versionPanelBackground.setY(mainY + 134);
-        this.versionPanelBackground.setWidth(224);
-        this.versionPanelBackground.setHeight(54);
-        this.versionPanelBackground.setArcWidth(22);
-        this.versionPanelBackground.setArcHeight(22);
-        this.versionPanelBackground.setFill(Color.rgb(255, 255, 255, 0.05));
-        this.versionPanelBackground.setStroke(Color.rgb(255, 255, 255, 0.10));
+        final int versionButtonX = mainX + mainW - 34 - 40;
+        final int versionPillX = versionButtonX - 8 - 196;
+        final int versionY = mainY + 145;
+
+        this.versionPanelBackground = new Rectangle(versionPillX, versionY, 196, 34);
+        this.versionPanelBackground.setArcWidth(28);
+        this.versionPanelBackground.setArcHeight(28);
+        this.versionPanelBackground.setFill(Color.rgb(255, 255, 255, 0.06));
+        this.versionPanelBackground.setStroke(Color.rgb(255, 255, 255, 0.12));
         this.versionPanelBackground.setStrokeWidth(1);
+        this.versionPanelBackground.setMouseTransparent(true);
         root.getChildren().add(this.versionPanelBackground);
 
         this.versionHintLabel = new LauncherLabel(root);
-        this.versionHintLabel.setText("Version Minecraft");
-        this.versionHintLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10.5F));
+        this.versionHintLabel.setText("Version");
+        this.versionHintLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         this.versionHintLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,176,0,0.92);");
-        this.versionHintLabel.setPosition(mainX + mainW - 244, mainY + 141);
-        this.versionHintLabel.setSize(188, 14);
+        this.versionHintLabel.setPosition(versionPillX + 14, versionY);
+        this.versionHintLabel.setSize(58, 34);
         this.versionHintLabel.setAlignment(Pos.CENTER_LEFT);
+        this.versionHintLabel.setMouseTransparent(true);
 
         this.versionField = new JFXTextField();
         this.versionField.setText(getSelectedMinecraftVersion());
         this.versionField.setPromptText("1.21.1");
-        this.versionField.setPrefWidth(118);
-        this.versionField.setLayoutX(mainX + mainW - 244);
-        this.versionField.setLayoutY(mainY + 156);
-        this.versionField.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        this.versionField.setPrefSize(116, 32);
+        this.versionField.setLayoutX(versionPillX + 72);
+        this.versionField.setLayoutY(versionY + 1);
+        this.versionField.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        this.versionField.setFocusColor(Color.TRANSPARENT);
+        this.versionField.setUnFocusColor(Color.TRANSPARENT);
         this.versionField.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-background-radius: 14;" +
-                "-fx-border-color: rgba(255,255,255,0.12);" +
-                "-fx-border-radius: 14;" +
-                "-fx-border-width: 1;" +
-                "-fx-text-fill: rgba(255,255,255,0.92);" +
-                "-fx-prompt-text-fill: rgba(255,255,255,0.42);" +
-                "-fx-padding: 0 12 0 12;" +
-                "-jfx-focus-color: #ff9800;" +
-                "-jfx-unfocus-color: rgba(255,255,255,0.18);"
+                "-fx-background-color: transparent;" +
+                "-fx-text-fill: rgba(255,255,255,0.95);" +
+                "-fx-prompt-text-fill: rgba(255,255,255,0.40);" +
+                "-fx-padding: 0 6 0 6;"
         );
+        // La pilule entière s'éclaire quand on édite la version.
+        this.versionField.focusedProperty().addListener((obs, was, focused) ->
+                versionPanelBackground.setStroke(focused ? Color.rgb(255, 154, 40, 0.85) : Color.rgb(255, 255, 255, 0.12)));
         this.versionField.setOnAction(event -> applyTargetVersion());
         root.getChildren().add(this.versionField);
 
-        this.versionApplyButton = new JFXButton("Valider");
-        styleSecondaryButton(this.versionApplyButton);
-        this.versionApplyButton.setLayoutX(mainX + mainW - 118);
-        this.versionApplyButton.setLayoutY(mainY + 156);
-        this.versionApplyButton.setPrefWidth(84);
+        this.versionApplyButton = ListRow.iconButton(Icons.CHECK, "Appliquer cette version");
+        this.versionApplyButton.setPrefSize(40, 34);
+        this.versionApplyButton.setLayoutX(versionButtonX);
+        this.versionApplyButton.setLayoutY(versionY);
         this.versionApplyButton.setOnAction(event -> applyTargetVersion());
         root.getChildren().add(this.versionApplyButton);
 
         this.localPane = new Pane();
         this.localPane.setLayoutX(mainX + 28);
-        this.localPane.setLayoutY(mainY + 202);
-        this.localPane.setPrefSize(mainW - 72, 373);
+        this.localPane.setLayoutY(mainY + 148);
+        this.localPane.setPrefSize(mainW - 72, 427);
         root.getChildren().add(this.localPane);
 
         this.onlinePane = new Pane();
@@ -429,23 +424,13 @@ public class LauncherMods extends IScreen {
         root.getChildren().add(this.onlinePane);
 
         this.localListView = new ListView<LocalModItem>();
-        this.localListView.setPrefSize(mainW - 72, 373);
-        this.localListView.setStyle(
-                "-fx-background-color: rgba(0,0,0,0);" +
-                "-fx-control-inner-background: rgba(255,255,255,0.04);" +
-                "-fx-background-insets: 0;" +
-                "-fx-background-radius: 18;"
-        );
+        this.localListView.setPrefSize(mainW - 72, 427);
+        ListRow.styleList(this.localListView, "Aucun mod installé pour ce profil.\nAjoute un fichier .jar ou explore le catalogue.");
         this.localPane.getChildren().add(this.localListView);
 
         this.onlineListView = new ListView<OnlineModItem>();
         this.onlineListView.setPrefSize(mainW - 72, 373);
-        this.onlineListView.setStyle(
-                "-fx-background-color: rgba(0,0,0,0);" +
-                "-fx-control-inner-background: rgba(255,255,255,0.04);" +
-                "-fx-background-insets: 0;" +
-                "-fx-background-radius: 18;"
-        );
+        ListRow.styleList(this.onlineListView, "Aucun résultat pour le moment.");
         this.onlinePane.getChildren().add(this.onlineListView);
 
         this.localStatusLabel = new LauncherLabel(root);
@@ -462,19 +447,23 @@ public class LauncherMods extends IScreen {
         this.onlineStatusLabel.setPosition(mainX + 34, mainY + mainH - 82);
         this.onlineStatusLabel.setSize(mainW - 300, 18);
 
-        this.addButton = new JFXButton("Ajouter mod / zip");
+        this.addButton = new JFXButton("Ajouter un mod");
         styleSecondaryButton(this.addButton);
+        this.addButton.setGraphic(Icons.stroke(Icons.PLUS, 15));
+        this.addButton.setGraphicTextGap(8);
         this.addButton.setLayoutX(mainX + 34);
         this.addButton.setLayoutY(mainY + mainH - 54);
-        this.addButton.setPrefWidth(150);
+        this.addButton.setPrefWidth(170);
         this.addButton.setOnAction(event -> addLocalMod());
         root.getChildren().add(this.addButton);
 
-        this.openFolderButton = new JFXButton("Ouvrir dossier");
+        this.openFolderButton = new JFXButton("Ouvrir le dossier");
         styleSecondaryButton(this.openFolderButton);
-        this.openFolderButton.setLayoutX(mainX + 198);
+        this.openFolderButton.setGraphic(Icons.stroke(Icons.FOLDER, 15));
+        this.openFolderButton.setGraphicTextGap(8);
+        this.openFolderButton.setLayoutX(mainX + 216);
         this.openFolderButton.setLayoutY(mainY + mainH - 54);
-        this.openFolderButton.setPrefWidth(150);
+        this.openFolderButton.setPrefWidth(186);
         this.openFolderButton.setOnAction(event -> openModsFolder());
         root.getChildren().add(this.openFolderButton);
 
@@ -954,59 +943,40 @@ public class LauncherMods extends IScreen {
 
     private void configureLocalList() {
         localListView.setCellFactory(param -> new ListCell<LocalModItem>() {
-            private final ImageView iconView = new ImageView(fallbackIcon);
-            private final Label titleLabel = new Label();
-            private final Label metaLabel = new Label();
-            private final Label fileLabel = new Label();
-            private final VBox textBox = new VBox(titleLabel, metaLabel, fileLabel);
-            private final JFXButton toggleButton = new JFXButton();
-            private final JFXButton deleteButton = new JFXButton("Supprimer");
-            private final HBox actionsBox = new HBox(8, toggleButton, deleteButton);
-            private final HBox row = new HBox(14, iconView, textBox, actionsBox);
+            private final ListRow row = new ListRow(param, 42);
+            private final ToggleSwitch toggle = new ToggleSwitch("");
+            private final JFXButton deleteButton = ListRow.iconButton(Icons.TRASH, "Supprimer ce mod", "ml-danger");
 
             {
-                iconView.setFitWidth(42);
-                iconView.setFitHeight(42);
-
-                titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-                titleLabel.setStyle("-fx-text-fill: white;");
-
-                metaLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-                metaLabel.setStyle("-fx-text-fill: rgba(255,176,0,0.92);");
-
-                fileLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
-                fileLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.56);");
-
-                stylePillButton(toggleButton, false);
-                styleDangerButton(deleteButton);
-
-                HBox.setHgrow(textBox, Priority.ALWAYS);
-                textBox.setPrefWidth(430);
-                textBox.setSpacing(3);
-                actionsBox.setAlignment(Pos.CENTER_RIGHT);
-                row.setAlignment(Pos.CENTER_LEFT);
+                row.setIcon(fallbackIcon);
+                toggle.setContentDisplay(javafx.scene.control.ContentDisplay.GRAPHIC_ONLY);
+                toggle.setTooltip(new Tooltip("Activer / désactiver ce mod"));
+                row.setActions(toggle, deleteButton);
             }
 
             @Override
             protected void updateItem(LocalModItem item, boolean empty) {
                 super.updateItem(item, empty);
+                setText(null);
 
                 if (empty || item == null) {
-                    setText(null);
                     setGraphic(null);
                     return;
                 }
 
-                titleLabel.setText(item.displayName);
-                metaLabel.setText((item.enabled ? "Actif" : "Inactif") + " • " + item.loaderLabel + " • " + readableSize(item.size));
-                fileLabel.setText(item.fileName + " • modifié le " + item.modifiedAt);
+                row.setTitle(item.displayName);
+                row.setSubtitle(null);
+                row.setDescription(item.fileName + "  •  modifié le " + item.modifiedAt);
+                row.clearTags();
+                row.addTag(item.enabled ? "Actif" : "Désactivé", item.enabled ? "ml-tag-on" : "ml-tag-off");
+                row.addTag(item.loaderLabel);
+                row.addTag(readableSize(item.size));
+                row.setOpacity(item.enabled ? 1.0 : 0.72);
 
-                toggleButton.setText(item.enabled ? "Désactiver" : "Activer");
-                stylePillButton(toggleButton, item.enabled);
-                toggleButton.setOnAction(event -> toggleLocalMod(item));
+                toggle.setSelectedInstantly(item.enabled);
+                toggle.setOnAction(event -> toggleLocalMod(item));
                 deleteButton.setOnAction(event -> deleteLocalMod(item));
 
-                setStyle("-fx-background-color: transparent;");
                 setGraphic(row);
             }
         });
@@ -1014,52 +984,20 @@ public class LauncherMods extends IScreen {
 
     private void configureOnlineList() {
         onlineListView.setCellFactory(param -> new ListCell<OnlineModItem>() {
-            private final ImageView iconView = new ImageView();
-            private final Label titleLabel = new Label();
-            private final Label authorLabel = new Label();
-            private final Label descLabel = new Label();
-            private final Label statsLabel = new Label();
-            private final VBox textBox = new VBox(titleLabel, authorLabel, descLabel, statsLabel);
-            private final JFXButton openButton = new JFXButton("Page");
-            private final JFXButton downloadButton = new JFXButton("Télécharger");
-            private final VBox actionsBox = new VBox(openButton, downloadButton);
-            private final HBox row = new HBox(14, iconView, textBox, actionsBox);
+            private final ListRow row = new ListRow(param, 52);
+            private final JFXButton openButton = ListRow.iconButton(Icons.EXTERNAL, "Voir la page Modrinth");
+            private final JFXButton downloadButton = ListRow.actionButton("Installer", Icons.DOWNLOAD, true);
 
             {
-                iconView.setFitWidth(54);
-                iconView.setFitHeight(54);
-
-                titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-                titleLabel.setStyle("-fx-text-fill: white;");
-
-                authorLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-                authorLabel.setStyle("-fx-text-fill: rgba(255,176,0,0.90);");
-
-                descLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-                descLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.66);");
-                descLabel.setWrapText(true);
-
-                statsLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
-                statsLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.46);");
-
-                stylePillButton(openButton, false);
-                downloadButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-                UiStyle.primary(downloadButton);
-
-                textBox.setPrefWidth(430);
-                textBox.setSpacing(3);
-                actionsBox.setSpacing(8);
-                actionsBox.setPrefWidth(110);
-                actionsBox.setAlignment(Pos.CENTER);
-                row.setAlignment(Pos.CENTER_LEFT);
+                row.setActions(openButton, downloadButton);
             }
 
             @Override
             protected void updateItem(OnlineModItem item, boolean empty) {
                 super.updateItem(item, empty);
+                setText(null);
 
                 if (empty || item == null) {
-                    setText(null);
                     setGraphic(null);
                     return;
                 }
@@ -1067,30 +1005,34 @@ public class LauncherMods extends IScreen {
                 if (item.iconUrl != null && !item.iconUrl.isEmpty()) {
                     Image cached = remoteImageCache.get(item.iconUrl);
                     if (cached != null) {
-                        iconView.setImage(cached);
+                        row.setIcon(cached);
                     } else {
-                        iconView.setImage(fallbackIcon);
+                        row.setIcon(fallbackIcon);
                         String iconUrl = item.iconUrl;
                         Thread imageThread = new Thread(() -> {
                             Image loaded = loadRemoteImageSafe(iconUrl, fallbackIcon);
-                            Platform.runLater(() -> iconView.setImage(loaded));
+                            // La cellule a pu être réutilisée pour un autre mod entre-temps.
+                            Platform.runLater(() -> { if (getItem() == item) row.setIcon(loaded); });
                         }, "MajestyLauncher-ModIcon");
                         imageThread.setDaemon(true);
                         imageThread.start();
                     }
                 } else {
-                    iconView.setImage(fallbackIcon);
+                    row.setIcon(fallbackIcon);
                 }
 
-                titleLabel.setText(item.title);
-                authorLabel.setText("par " + item.author);
-                descLabel.setText(item.description == null || item.description.trim().isEmpty() ? "Aucune description." : item.description);
-                statsLabel.setText(item.loaderLabel + " • " + item.downloads + " téléchargements");
+                row.setTitle(item.title);
+                row.setSubtitle("par " + item.author);
+                row.setDescription(item.description == null || item.description.trim().isEmpty() ? "Aucune description." : item.description);
+                row.clearTags();
+                if (item.loaderLabel != null) {
+                    for (String loader : item.loaderLabel.split("\\s*/\\s*")) row.addTag(loader);
+                }
+                row.addTag(ListRow.formatCount(item.downloads) + " téléchargements");
 
                 openButton.setOnAction(event -> openExternalLink(MODRINTH_WEB_MOD + item.slug));
                 downloadButton.setOnAction(event -> downloadOnlineMod(item));
 
-                setStyle("-fx-background-color: transparent;");
                 setGraphic(row);
             }
         });

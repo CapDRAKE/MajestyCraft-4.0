@@ -1,6 +1,26 @@
 {
   "versions": [
     {
+      "version": "5.1",
+      "date": "18/10/2026",
+      "entries": [
+        { "type": "new", "text": "Connexion Microsoft par le navigateur : le bouton Microsoft ouvre la page de connexion officielle dans ton navigateur, et le launcher se connecte tout seul dès que tu as validé. Plus de code à recopier." },
+        { "type": "improve", "text": "Fenêtre d'attente pendant la connexion : rouvrir la page, passer au code d'appareil (utilisé automatiquement si le navigateur ne s'ouvre pas) ou annuler. La fenêtre du code d'appareil a elle aussi un bouton Annuler, au lieu de rester bloquée jusqu'à l'expiration du code." },
+        { "type": "new", "text": "Nouveau design : un fond animé dessiné par le launcher (lueurs aux couleurs du logo, terrain en blocs, braises) remplace les photos, et se met en pause pendant que tu joues." },
+        { "type": "improve", "text": "Boutons modernisés partout, avec de vrais états survol, appui et désactivé ; icônes vectorielles nettes à toutes les tailles ; menus déroulants sombres." },
+        { "type": "improve", "text": "Réglages repensés : deux blocs Jeu et Launcher, interrupteurs à la place des cases à cocher, choix du modloader en pastilles et mémoire allouée affichée en badge (rouge si elle dépasse ce que ta machine peut se permettre)." },
+        { "type": "improve", "text": "Listes de mods, de shaders et de packs de ressources en cartes : icône, auteur, description, étiquettes (loader, taille, état), nombre de téléchargements lisible (« 282 M ») et actions claires : Installer, page Modrinth, interrupteur d'activation, suppression." },
+        { "type": "improve", "text": "Recherche et choix de version harmonisés dans les trois gestionnaires ; filtre des shaders installés au fil de la frappe ; message explicite quand une liste est vide." },
+        { "type": "fix", "text": "Compte hors ligne : ton identifiant de joueur reste le même d'un lancement à l'autre. Il était tiré au hasard à chaque fois, ce qui faisait perdre inventaire, progression et statistiques." },
+        { "type": "fix", "text": "Le launcher ne se ferme plus d'un coup quand un fichier de version ou la liste des fichiers est introuvable sur le serveur : il reste ouvert et affiche l'erreur." },
+        { "type": "fix", "text": "Un fichier mis à jour sur le serveur sous le même nom est de nouveau retéléchargé (il était considéré comme à jour)." },
+        { "type": "fix", "text": "Retrait de mods depuis le serveur : un mod retiré est bien supprimé, sans toucher aux fichiers dont le nom lui ressemble." },
+        { "type": "fix", "text": "Langue : la valeur « Fran?ais » enregistrée par les versions précédentes est corrigée automatiquement." },
+        { "type": "fix", "text": "Textes tronqués ou mal orthographiés corrigés dans les Réglages, les Mods, les Shaders et les Packs de ressources." },
+        { "type": "improve", "text": "Launcher plus léger : 19 images inutilisées retirées (environ 3,2 Mo)." }
+      ]
+    },
+    {
       "version": "5.0.1",
       "date": "30/07/2026",
       "entries": [

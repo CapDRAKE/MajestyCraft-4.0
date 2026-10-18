@@ -79,7 +79,7 @@ public class Main {
     }
 
     /** Version courante du launcher (pour le popup "Quoi de neuf"). */
-    private static final String CURRENT_VERSION = "5.0.1";
+    private static final String CURRENT_VERSION = "5.1";
 
     /**
      * Affiche une pop-up "Quoi de neuf" une seule fois par version. Montr�e tant
@@ -101,9 +101,10 @@ public class Main {
 
         VBox content = new VBox(8);
         content.getChildren().addAll(
-                new javafx.scene.control.Label("• Changement de compte Microsoft : tu peux désormais passer d'un compte à un autre depuis le launcher."),
-                new javafx.scene.control.Label("• « Se déconnecter » garde ta session : la reconnexion suivante est automatique, sans ressaisie."),
-                new javafx.scene.control.Label("\nClique sur ton compte, en bas de la carte de connexion, pour y accéder.")
+                new javafx.scene.control.Label("• Connexion Microsoft par le navigateur : plus de code à recopier, le launcher se connecte tout seul."),
+                new javafx.scene.control.Label("• Nouveau design : fond animé, boutons modernes, réglages et listes de mods / shaders / packs repensés."),
+                new javafx.scene.control.Label("• Compte hors ligne : ton identifiant de joueur ne change plus à chaque lancement."),
+                new javafx.scene.control.Label("\nLe détail complet est dans l'onglet « Infos » de la barre latérale.")
         );
         content.getChildren().forEach(n -> ((javafx.scene.control.Label) n).setWrapText(true));
         alert.getDialogPane().setContent(content);

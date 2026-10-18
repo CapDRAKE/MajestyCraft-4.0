@@ -1,6 +1,9 @@
 package fr.majestycraft.launcher;
 
 import fr.majestycraft.util.UiStyle;
+import fr.majestycraft.util.Icons;
+import fr.majestycraft.util.ListRow;
+import fr.majestycraft.util.ToggleSwitch;
 import fr.majestycraft.util.AmbientBackground;
 import animatefx.animation.ZoomOutDown;
 import com.google.gson.JsonArray;
@@ -29,6 +32,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -118,6 +122,7 @@ public class LauncherShaders extends IScreen {
     private LauncherLabel localStatusLabel;
     private LauncherLabel onlineStatusLabel;
     private LauncherLabel versionCaptionLabel;
+    private Rectangle versionPill;
 
     private LauncherImage heroLogo;
     private LauncherLabel heroTitle;
@@ -244,25 +249,25 @@ public class LauncherShaders extends IScreen {
 
         this.heroSubtitle = new LauncherLabel(root);
         this.heroSubtitle.setText("Gestion locale + catalogue en ligne");
-        this.heroSubtitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        this.heroSubtitle.setStyle("-fx-background-color: transparent; -fx-text-fill: #ffb400");
-        this.heroSubtitle.setPosition(heroX + 10, heroY + 226);
-        this.heroSubtitle.setSize(heroW - 20, 22);
+        this.heroSubtitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        this.heroSubtitle.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,176,0,0.96)");
+        this.heroSubtitle.setPosition(heroX, heroY + 220);
+        this.heroSubtitle.setSize(heroW, 22);
         this.heroSubtitle.setAlignment(Pos.CENTER);
 
-        this.heroLine1 = createHeroLine(root, heroX + 22, heroY + 302, "• Liste les shaderpacks installés");
+        this.heroLine1 = createHeroLine(root, heroX + 22, heroY + 302, "• Tes shaderpacks installés");
         this.heroLine2 = createHeroLine(root, heroX + 22, heroY + 332, "• Ajoute des .zip ou dossiers");
-        this.heroLine3 = createHeroLine(root, heroX + 22, heroY + 362, "• Recherche et télécharge en ligne");
-        this.heroLine4 = createHeroLine(root, heroX + 22, heroY + 392, "• Active, désactive ou supprime");
+        this.heroLine3 = createHeroLine(root, heroX + 22, heroY + 362, "• Catalogue Modrinth intégré");
+        this.heroLine4 = createHeroLine(root, heroX + 22, heroY + 392, "• Active, désactive, supprime");
     }
 
     private LauncherLabel createHeroLine(Pane root, int x, int y, String text) {
         LauncherLabel label = new LauncherLabel(root);
         label.setText(text);
-        label.setFont(FontLoader.loadFont("Poppins-Regular.ttf", "Poppins", 13F));
-        label.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.86)");
+        label.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        label.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.62)");
         label.setPosition(x, y);
-        label.setSize(204, 22);
+        label.setSize(206, 20);
         return label;
     }
 
@@ -285,7 +290,7 @@ public class LauncherShaders extends IScreen {
 
         LauncherLabel subtitle = new LauncherLabel(root);
         subtitle.setText("Ajoute, explore et gère tes shaders pour OptiFine / Iris");
-        subtitle.setFont(FontLoader.loadFont("Poppins-Regular.ttf", "Poppins", 13F));
+        subtitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         subtitle.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.52)");
         subtitle.setPosition(mainX + 118, mainY + 64);
         subtitle.setSize(mainW - 236, 20);
@@ -308,38 +313,48 @@ public class LauncherShaders extends IScreen {
         root.getChildren().add(this.onlineTabButton);
 
         this.localFilterField = new JFXTextField();
-        this.localFilterField.setPromptText("Filtrer les shaderpacks installés...");
+        this.localFilterField.setPromptText("Filtrer mes shaders...");
         styleSearchField(this.localFilterField);
-        this.localFilterField.setLayoutX(mainX + 410);
-        this.localFilterField.setLayoutY(mainY + 98);
-        this.localFilterField.setPrefWidth(210);
-        this.localFilterField.setPrefHeight(34);
+        this.localFilterField.setLayoutX(mainX + mainW - 34 - 128 - 10 - 230);
+        this.localFilterField.setLayoutY(mainY + 94);
+        this.localFilterField.setPrefSize(230, 34);
+        // Filtre au fil de la frappe (le bouton reste pour qui préfère valider).
+        this.localFilterField.textProperty().addListener((obs, old, text) -> applyLocalFilter());
+        this.localFilterField.setOnAction(e -> applyLocalFilter());
         root.getChildren().add(this.localFilterField);
 
-        this.localFilterButton = createGhostButton("Filtrer", 96, 34);
-        this.localFilterButton.setLayoutX(mainX + 640);
-        this.localFilterButton.setLayoutY(mainY + 98);
+        this.localFilterButton = createGhostButton("Filtrer", 128, 34);
+        this.localFilterButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        this.localFilterButton.setGraphic(Icons.stroke(Icons.SEARCH, 14));
+        this.localFilterButton.setGraphicTextGap(8);
+        this.localFilterButton.setLayoutX(mainX + mainW - 34 - 128);
+        this.localFilterButton.setLayoutY(mainY + 94);
         this.localFilterButton.setOnAction(e -> applyLocalFilter());
         root.getChildren().add(this.localFilterButton);
 
         this.onlineSearchField = new JFXTextField();
         this.onlineSearchField.setPromptText("Rechercher un shader...");
         styleSearchField(this.onlineSearchField);
-        this.onlineSearchField.setLayoutX(mainX + 410);
-        this.onlineSearchField.setLayoutY(mainY + 98);
-        this.onlineSearchField.setPrefWidth(210);
-        this.onlineSearchField.setPrefHeight(34);
+        this.onlineSearchField.setLayoutX(mainX + mainW - 34 - 128 - 10 - 230);
+        this.onlineSearchField.setLayoutY(mainY + 94);
+        this.onlineSearchField.setPrefSize(230, 34);
+        this.onlineSearchField.setOnAction(e -> searchOnlineShaders(onlineSearchField.getText(), getChosenMinecraftVersion()));
         root.getChildren().add(this.onlineSearchField);
 
-        this.onlineSearchButton = createGhostButton("Rechercher", 112, 34);
-        this.onlineSearchButton.setLayoutX(mainX + 640);
-        this.onlineSearchButton.setLayoutY(mainY + 98);
+        this.onlineSearchButton = createGhostButton("Rechercher", 128, 34);
+        this.onlineSearchButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        this.onlineSearchButton.setGraphic(Icons.stroke(Icons.SEARCH, 14));
+        this.onlineSearchButton.setGraphicTextGap(8);
+        this.onlineSearchButton.setLayoutX(mainX + mainW - 34 - 128);
+        this.onlineSearchButton.setLayoutY(mainY + 94);
         this.onlineSearchButton.setOnAction(e -> searchOnlineShaders(onlineSearchField.getText(), getChosenMinecraftVersion()));
         root.getChildren().add(this.onlineSearchButton);
 
-        this.refreshButton = createGhostButton("Actualiser", 112, 34);
+        this.refreshButton = createGhostButton("Actualiser", 132, 34);
+        this.refreshButton.setGraphic(Icons.stroke(Icons.REFRESH, 14));
+        this.refreshButton.setGraphicTextGap(8);
         this.refreshButton.setLayoutX(mainX + 34);
-        this.refreshButton.setLayoutY(mainY + 146);
+        this.refreshButton.setLayoutY(mainY + 145);
         this.refreshButton.setOnAction(e -> {
             if (isDiscoverMode()) {
                 searchOnlineShaders(onlineSearchField.getText(), getChosenMinecraftVersion());
@@ -349,26 +364,52 @@ public class LauncherShaders extends IScreen {
         });
         root.getChildren().add(this.refreshButton);
 
+        final int versionButtonX = mainX + mainW - 34 - 40;
+        final int versionPillX = versionButtonX - 8 - 196;
+        final int versionY = mainY + 145;
+
+        this.versionPill = new Rectangle(versionPillX, versionY, 196, 34);
+        this.versionPill.setArcWidth(28);
+        this.versionPill.setArcHeight(28);
+        this.versionPill.setFill(Color.rgb(255, 255, 255, 0.06));
+        this.versionPill.setStroke(Color.rgb(255, 255, 255, 0.12));
+        this.versionPill.setStrokeWidth(1);
+        this.versionPill.setMouseTransparent(true);
+        root.getChildren().add(this.versionPill);
+
         this.versionCaptionLabel = new LauncherLabel(root);
-        this.versionCaptionLabel.setText("Version Minecraft");
-        this.versionCaptionLabel.setFont(FontLoader.loadFont("Poppins-Regular.ttf", "Poppins", 12F));
-        this.versionCaptionLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: #ffb400");
-        this.versionCaptionLabel.setPosition(mainX + 390, mainY + 144);
-        this.versionCaptionLabel.setSize(120, 18);
+        this.versionCaptionLabel.setText("Version");
+        this.versionCaptionLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        this.versionCaptionLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,176,0,0.92)");
+        this.versionCaptionLabel.setPosition(versionPillX + 14, versionY);
+        this.versionCaptionLabel.setSize(58, 34);
+        this.versionCaptionLabel.setMouseTransparent(true);
 
         this.versionField = new JFXTextField();
-        styleSearchField(this.versionField);
+        this.versionField.setLabelFloat(false);
+        this.versionField.setFocusColor(Color.TRANSPARENT);
+        this.versionField.setUnFocusColor(Color.TRANSPARENT);
+        this.versionField.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        this.versionField.setStyle(
+                "-fx-background-color: transparent;" +
+                "-fx-text-fill: rgba(255,255,255,0.95);" +
+                "-fx-prompt-text-fill: rgba(255,255,255,0.40);" +
+                "-fx-padding: 0 6 0 6;"
+        );
         this.versionField.setPromptText("1.21.11");
-        this.versionField.setLayoutX(mainX + 516);
-        this.versionField.setLayoutY(mainY + 140);
-        this.versionField.setPrefWidth(100);
-        this.versionField.setPrefHeight(32);
+        this.versionField.setLayoutX(versionPillX + 72);
+        this.versionField.setLayoutY(versionY + 1);
+        this.versionField.setPrefSize(116, 32);
+        // La pilule entière s'éclaire quand on édite la version.
+        this.versionField.focusedProperty().addListener((obs, was, focused) ->
+                versionPill.setStroke(focused ? Color.rgb(255, 154, 40, 0.85) : Color.rgb(255, 255, 255, 0.12)));
         this.versionField.setOnAction(e -> applyVersionChange());
         root.getChildren().add(this.versionField);
 
-        this.versionApplyButton = createGhostButton("Valider", 94, 32);
-        this.versionApplyButton.setLayoutX(mainX + 626);
-        this.versionApplyButton.setLayoutY(mainY + 140);
+        this.versionApplyButton = ListRow.iconButton(Icons.CHECK, "Appliquer cette version");
+        this.versionApplyButton.setPrefSize(40, 34);
+        this.versionApplyButton.setLayoutX(versionButtonX);
+        this.versionApplyButton.setLayoutY(versionY);
         this.versionApplyButton.setOnAction(e -> applyVersionChange());
         root.getChildren().add(this.versionApplyButton);
 
@@ -378,19 +419,11 @@ public class LauncherShaders extends IScreen {
         this.localPane.setPrefSize(mainW - 48, 394);
         root.getChildren().add(this.localPane);
 
-        LauncherRectangle localBg = new LauncherRectangle(this.localPane, 0, 0, mainW - 48, 394);
-        styleCard(localBg, 0.28);
-
         this.localListView = new ListView<LocalShaderItem>();
-        this.localListView.setLayoutX(12);
-        this.localListView.setLayoutY(12);
-        this.localListView.setPrefSize(mainW - 72, 370);
-        this.localListView.setStyle(
-                "-fx-background-color: transparent;" +
-                "-fx-control-inner-background: transparent;" +
-                "-fx-background-insets: 0;" +
-                "-fx-padding: 6;"
-        );
+        this.localListView.setLayoutX(4);
+        this.localListView.setLayoutY(0);
+        this.localListView.setPrefSize(mainW - 56, 390);
+        ListRow.styleList(this.localListView, "Aucun shaderpack installé pour cette version.\nAjoute un .zip ou explore le catalogue.");
         this.localPane.getChildren().add(this.localListView);
 
         this.onlinePane = new Pane();
@@ -399,41 +432,39 @@ public class LauncherShaders extends IScreen {
         this.onlinePane.setPrefSize(mainW - 48, 394);
         root.getChildren().add(this.onlinePane);
 
-        LauncherRectangle onlineBg = new LauncherRectangle(this.onlinePane, 0, 0, mainW - 48, 394);
-        styleCard(onlineBg, 0.28);
-
         this.onlineListView = new ListView<OnlineShaderItem>();
-        this.onlineListView.setLayoutX(12);
-        this.onlineListView.setLayoutY(12);
-        this.onlineListView.setPrefSize(mainW - 72, 370);
-        this.onlineListView.setStyle(
-                "-fx-background-color: transparent;" +
-                "-fx-control-inner-background: transparent;" +
-                "-fx-background-insets: 0;" +
-                "-fx-padding: 6;"
-        );
+        this.onlineListView.setLayoutX(4);
+        this.onlineListView.setLayoutY(0);
+        this.onlineListView.setPrefSize(mainW - 56, 390);
+        ListRow.styleList(this.onlineListView, "Aucun résultat pour le moment.");
         this.onlinePane.getChildren().add(this.onlineListView);
 
         this.localStatusLabel = new LauncherLabel(root);
-        this.localStatusLabel.setFont(FontLoader.loadFont("Poppins-Regular.ttf", "Poppins", 12F));
+        this.localStatusLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
         this.localStatusLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.58)");
         this.localStatusLabel.setPosition(mainX + 34, mainY + mainH - 80);
         this.localStatusLabel.setSize(mainW - 320, 18);
 
         this.onlineStatusLabel = new LauncherLabel(root);
-        this.onlineStatusLabel.setFont(FontLoader.loadFont("Poppins-Regular.ttf", "Poppins", 12F));
+        this.onlineStatusLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
         this.onlineStatusLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.58)");
         this.onlineStatusLabel.setPosition(mainX + 34, mainY + mainH - 80);
         this.onlineStatusLabel.setSize(mainW - 320, 18);
 
-        this.addButton = createGhostButton("Ajouter shader / zip", 186, 40);
+        this.addButton = createGhostButton("Ajouter un shader", 200, 40);
+        this.addButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        this.addButton.setGraphic(Icons.stroke(Icons.PLUS, 15));
+        this.addButton.setGraphicTextGap(8);
         this.addButton.setLayoutX(mainX + 34);
         this.addButton.setLayoutY(mainY + mainH - 46);
         this.addButton.setOnAction(e -> importShaderpack());
         root.getChildren().add(this.addButton);
 
-        this.openFolderButton = createGhostButton("Ouvrir dossier", 148, 40);
-        this.openFolderButton.setLayoutX(mainX + 232);
+        this.openFolderButton = createGhostButton("Ouvrir le dossier", 196, 40);
+        this.openFolderButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        this.openFolderButton.setGraphic(Icons.stroke(Icons.FOLDER, 15));
+        this.openFolderButton.setGraphicTextGap(8);
+        this.openFolderButton.setLayoutX(mainX + 244);
         this.openFolderButton.setLayoutY(mainY + mainH - 46);
         this.openFolderButton.setOnAction(e -> openShaderpacksFolder());
         root.getChildren().add(this.openFolderButton);
@@ -454,121 +485,83 @@ public class LauncherShaders extends IScreen {
 
     private void configureLocalList() {
         this.localListView.setCellFactory(param -> new ListCell<LocalShaderItem>() {
+            private final ListRow row = new ListRow(param, 42);
+            private final ToggleSwitch toggle = new ToggleSwitch("");
+            private final JFXButton deleteButton = ListRow.iconButton(Icons.TRASH, "Supprimer ce shaderpack", "ml-danger");
+
+            {
+                row.setIcon(fallbackIcon);
+                toggle.setContentDisplay(javafx.scene.control.ContentDisplay.GRAPHIC_ONLY);
+                toggle.setTooltip(new Tooltip("Activer / désactiver ce shaderpack"));
+                row.setActions(toggle, deleteButton);
+            }
+
             @Override
             protected void updateItem(LocalShaderItem item, boolean empty) {
                 super.updateItem(item, empty);
+                setText(null);
                 if (empty || item == null) {
                     setGraphic(null);
-                    setText(null);
-                    setStyle("-fx-background-color: transparent;");
                     return;
                 }
 
-                VBox textBox = new VBox(2);
+                row.setTitle(item.displayName);
+                row.setSubtitle(null);
+                row.setDescription("Modifié le " + dateFormat.format(item.lastModified));
+                row.clearTags();
+                row.addTag(item.enabled ? "Actif" : "Désactivé", item.enabled ? "ml-tag-on" : "ml-tag-off");
+                row.addTag(item.typeLabel);
+                row.addTag(formatSize(item.size));
+                row.setOpacity(item.enabled ? 1.0 : 0.72);
 
-                Label title = new Label(item.displayName);
-                title.setStyle("-fx-text-fill: rgba(255,255,255,0.96); -fx-font-size: 15px; -fx-font-family: 'Comfortaa';");
-
-                Label meta = new Label(item.typeLabel + " • " + formatSize(item.size) + " • " + dateFormat.format(item.lastModified));
-                meta.setStyle("-fx-text-fill: rgba(255,255,255,0.55); -fx-font-size: 11px; -fx-font-family: 'Poppins';");
-
-                Label state = new Label(item.enabled ? "Actif" : "Désactivé");
-                state.setStyle(item.enabled
-                        ? "-fx-text-fill: #ffb400; -fx-font-size: 12px; -fx-font-family: 'Poppins';"
-                        : "-fx-text-fill: rgba(255,255,255,0.42); -fx-font-size: 12px; -fx-font-family: 'Poppins';");
-
-                textBox.getChildren().addAll(title, meta, state);
-                HBox.setHgrow(textBox, Priority.ALWAYS);
-
-                JFXButton toggleButton = createCellButton(item.enabled ? "Désactiver" : "Activer", false);
-                toggleButton.setOnAction(e -> toggleShader(item));
-
-                JFXButton deleteButton = createCellButton("Supprimer", true);
+                toggle.setSelectedInstantly(item.enabled);
+                toggle.setOnAction(e -> toggleShader(item));
                 deleteButton.setOnAction(e -> deleteShader(item));
 
-                HBox actions = new HBox(8, toggleButton, deleteButton);
-                actions.setAlignment(Pos.CENTER_RIGHT);
-
-                HBox row = new HBox(14, textBox, actions);
-                row.setAlignment(Pos.CENTER_LEFT);
-                row.setPrefWidth(660);
-                row.setStyle(
-                        "-fx-background-color: rgba(255,255,255,0.04);" +
-                        "-fx-background-radius: 16;" +
-                        "-fx-border-color: rgba(255,255,255,0.05);" +
-                        "-fx-border-radius: 16;" +
-                        "-fx-padding: 12 14 12 14;"
-                );
-
                 setGraphic(row);
-                setText(null);
-                setStyle("-fx-background-color: transparent; -fx-padding: 6 6 6 6;");
             }
         });
     }
 
     private void configureOnlineList() {
         this.onlineListView.setCellFactory(param -> new ListCell<OnlineShaderItem>() {
+            private final ListRow row = new ListRow(param, 52);
+            private final JFXButton pageButton = ListRow.iconButton(Icons.EXTERNAL, "Voir la page Modrinth");
+            private final JFXButton downloadButton = ListRow.actionButton("Installer", Icons.DOWNLOAD, true);
+
+            {
+                row.setActions(pageButton, downloadButton);
+            }
+
             @Override
             protected void updateItem(final OnlineShaderItem item, boolean empty) {
                 super.updateItem(item, empty);
+                setText(null);
                 if (empty || item == null) {
                     setGraphic(null);
-                    setText(null);
-                    setStyle("-fx-background-color: transparent;");
                     return;
                 }
-                ImageView iconView = createOnlinePreview(item);
 
-                VBox textBox = new VBox(3);
+                row.setIcon(fallbackIcon);
+                Thread imageThread = new Thread(() -> {
+                    Image image = resolveBestProjectImage(item);
+                    // La cellule a pu être réutilisée pour un autre shader entre-temps.
+                    if (image != null) Platform.runLater(() -> { if (getItem() == item) row.setIcon(image); });
+                }, "MajestyLauncher-ShaderImage-" + sanitizeThreadName(item.projectId));
+                imageThread.setDaemon(true);
+                imageThread.start();
 
-                Label title = new Label(item.title);
-                title.setStyle("-fx-text-fill: rgba(255,255,255,0.96); -fx-font-size: 15px; -fx-font-family: 'Comfortaa';");
-                title.setWrapText(true);
+                row.setTitle(item.title);
+                row.setSubtitle("par " + item.author);
+                row.setDescription(item.description == null || item.description.trim().isEmpty() ? "Aucune description." : item.description);
+                row.clearTags();
+                for (String category : item.categoriesLabel.split("\\s*[/,•]\\s*")) row.addTag(category);
+                row.addTag(ListRow.formatCount(item.downloads) + " téléchargements");
 
-                Label author = new Label("par " + item.author);
-                author.setStyle("-fx-text-fill: #ffb400; -fx-font-size: 12px; -fx-font-family: 'Poppins';");
-
-                Label desc = new Label(item.description == null || item.description.trim().isEmpty() ? "Aucune description." : item.description);
-                desc.setWrapText(true);
-                desc.setMaxWidth(430);
-                desc.setStyle("-fx-text-fill: rgba(255,255,255,0.80); -fx-font-size: 12px; -fx-font-family: 'Poppins';");
-
-                Label meta = new Label(item.categoriesLabel + " • " + item.downloads + " téléchargements");
-                meta.setStyle("-fx-text-fill: rgba(255,255,255,0.45); -fx-font-size: 11px; -fx-font-family: 'Poppins';");
-
-                textBox.getChildren().addAll(title, author, desc, meta);
-                HBox.setHgrow(textBox, Priority.ALWAYS);
-
-                JFXButton pageButton = createCellButton("Page", false);
-                pageButton.setPrefSize(78, 32);
-                pageButton.setMinSize(78, 32);
-                pageButton.setMaxSize(78, 32);
                 pageButton.setOnAction(e -> openProjectPage(item));
-
-                JFXButton downloadButton = createCellButton("Télécharger", false);
-                downloadButton.setPrefSize(118, 32);
-                downloadButton.setMinSize(118, 32);
-                downloadButton.setMaxSize(118, 32);
                 downloadButton.setOnAction(e -> downloadOnlineShader(item));
 
-                VBox actions = new VBox(8, pageButton, downloadButton);
-                actions.setAlignment(Pos.CENTER_RIGHT);
-
-                HBox row = new HBox(12, iconView, textBox, actions);
-                row.setAlignment(Pos.CENTER_LEFT);
-                row.setPrefWidth(660);
-                row.setStyle(
-                        "-fx-background-color: rgba(255,255,255,0.04);" +
-                        "-fx-background-radius: 16;" +
-                        "-fx-border-color: rgba(255,255,255,0.05);" +
-                        "-fx-border-radius: 16;" +
-                        "-fx-padding: 12 14 12 14;"
-                );
-
                 setGraphic(row);
-                setText(null);
-                setStyle("-fx-background-color: transparent; -fx-padding: 6 6 6 6;");
             }
         });
     }
@@ -637,6 +630,7 @@ public class LauncherShaders extends IScreen {
         onlineStatusLabel.setManaged(discover);
         versionCaptionLabel.setVisible(discover);
         versionCaptionLabel.setManaged(discover);
+        versionPill.setVisible(discover);
         versionField.setVisible(discover);
         versionField.setManaged(discover);
         versionApplyButton.setVisible(discover);
@@ -1253,18 +1247,8 @@ public class LauncherShaders extends IScreen {
     }
 
     private void styleSearchField(JFXTextField field) {
-        field.setLabelFloat(false);
-        field.setFocusColor(Color.web("#ff9800"));
-        field.setUnFocusColor(Color.rgb(255, 255, 255, 0.18));
-        field.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-background-radius: 16;" +
-                "-fx-border-color: rgba(255,255,255,0.08);" +
-                "-fx-border-radius: 16;" +
-                "-fx-border-width: 1;" +
-                "-fx-prompt-text-fill: rgba(255,255,255,0.35);" +
-                "-fx-text-fill: rgba(255,255,255,0.95);"
-        );
+        field.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        UiStyle.input(field);
     }
 
     private void styleTabButton(JFXButton button, boolean enabled) {
@@ -1295,7 +1279,7 @@ public class LauncherShaders extends IScreen {
         button.setPrefSize(danger ? 98 : 104, 32);
         button.setMinSize(danger ? 98 : 104, 32);
         button.setMaxSize(danger ? 98 : 104, 32);
-        button.setFont(FontLoader.loadFont("Poppins-Regular.ttf", "Poppins", 12F));
+        button.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
         if (danger) UiStyle.danger(button);
         else UiStyle.primary(button);
         return button;

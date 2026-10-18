@@ -1,6 +1,10 @@
 package fr.majestycraft.util;
 
+import com.jfoenix.controls.JFXTextField;
+
 import javafx.scene.control.ButtonBase;
+import javafx.scene.control.TextField;
+import javafx.scene.paint.Color;
 
 /**
  * Styles de boutons communs à tout le launcher : chaque méthode pose une classe CSS
@@ -46,6 +50,19 @@ public final class UiStyle {
     /** Petite action mise en avant sans être principale : orange doux. */
     public static void soft(ButtonBase button) {
         apply(button, "ml-soft");
+    }
+
+    /** Champ de saisie : fond sombre arrondi, bordure orange au focus, sans le trait JFoenix. */
+    public static void input(TextField field) {
+        if (field == null) return;
+        field.setStyle(null);
+        if (!field.getStyleClass().contains("ml-input")) field.getStyleClass().add("ml-input");
+        if (field instanceof JFXTextField) {
+            JFXTextField jfx = (JFXTextField) field;
+            jfx.setLabelFloat(false);
+            jfx.setFocusColor(Color.TRANSPARENT);
+            jfx.setUnFocusColor(Color.TRANSPARENT);
+        }
     }
 
     /** Action destructrice (supprimer...) : rouge doux. */

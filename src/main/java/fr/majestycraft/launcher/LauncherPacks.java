@@ -1,6 +1,8 @@
 package fr.majestycraft.launcher;
 
 import fr.majestycraft.util.UiStyle;
+import fr.majestycraft.util.Icons;
+import fr.majestycraft.util.ListRow;
 import fr.majestycraft.util.AmbientBackground;
 import animatefx.animation.ZoomOutDown;
 import com.google.gson.JsonArray;
@@ -213,8 +215,8 @@ public class LauncherPacks extends IScreen {
         this.heroLogo.setBounds(heroX + 60, heroY + 36, 130, 130);
 
         this.heroTitle = new LauncherLabel(root);
-        this.heroTitle.setText("Ressource Packs");
-        this.heroTitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 27F));
+        this.heroTitle.setText("Packs de ressources");
+        this.heroTitle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
         this.heroTitle.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.96)");
         this.heroTitle.setPosition(heroX, heroY + 186);
         this.heroTitle.setSize(heroW, 34);
@@ -236,14 +238,14 @@ public class LauncherPacks extends IScreen {
         this.heroLine1.setSize(heroW - 48, 20);
 
         this.heroLine2 = new LauncherLabel(root);
-        this.heroLine2.setText("• Découvre des packs via Modrinth");
+        this.heroLine2.setText("• Catalogue Modrinth intégré");
         this.heroLine2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
         this.heroLine2.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.56)");
         this.heroLine2.setPosition(heroX + 24, heroY + 328);
         this.heroLine2.setSize(heroW - 48, 20);
 
         this.heroLine3 = new LauncherLabel(root);
-        this.heroLine3.setText("• Télécharge directement dans le launcher");
+        this.heroLine3.setText("• Installation en un clic");
         this.heroLine3.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
         this.heroLine3.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.44)");
         this.heroLine3.setPosition(heroX + 24, heroY + 356);
@@ -293,30 +295,21 @@ public class LauncherPacks extends IScreen {
 
         this.searchField = new JFXTextField();
         this.searchField.setPromptText("Rechercher un pack...");
-        this.searchField.setPrefWidth(180);
-        this.searchField.setLayoutX(mainX + mainW - 340);
-        this.searchField.setLayoutY(mainY + 100);
+        this.searchField.setPrefSize(180, 34);
+        this.searchField.setLayoutX(mainX + mainW - 34 - 128 - 10 - 180);
+        this.searchField.setLayoutY(mainY + 94);
         this.searchField.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-        this.searchField.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-background-radius: 14;" +
-                "-fx-border-color: rgba(255,255,255,0.12);" +
-                "-fx-border-radius: 14;" +
-                "-fx-border-width: 1;" +
-                "-fx-text-fill: rgba(255,255,255,0.92);" +
-                "-fx-prompt-text-fill: rgba(255,255,255,0.42);" +
-                "-fx-padding: 0 12 0 12;" +
-                "-jfx-focus-color: #ff9800;" +
-                "-jfx-unfocus-color: rgba(255,255,255,0.18);"
-        );
+        UiStyle.input(this.searchField);
         this.searchField.setOnAction(e -> searchOnlinePacks(searchField.getText(), getSelectedMinecraftVersion()));
         root.getChildren().add(this.searchField);
 
         this.refreshButton = new JFXButton("Rechercher");
         styleSecondaryButton(this.refreshButton);
-        this.refreshButton.setLayoutX(mainX + mainW - 60 - 95);
-        this.refreshButton.setLayoutY(mainY + 98);
-        this.refreshButton.setPrefWidth(120);
+        this.refreshButton.setGraphic(Icons.stroke(Icons.SEARCH, 14));
+        this.refreshButton.setGraphicTextGap(8);
+        this.refreshButton.setLayoutX(mainX + mainW - 34 - 128);
+        this.refreshButton.setLayoutY(mainY + 94);
+        this.refreshButton.setPrefSize(128, 34);
         this.refreshButton.setOnAction(e -> searchOnlinePacks(searchField.getText(), getSelectedMinecraftVersion()));
         root.getChildren().add(this.refreshButton);
 
@@ -335,50 +328,44 @@ public class LauncherPacks extends IScreen {
 
         this.onlinePane = new Pane();
         this.onlinePane.setLayoutX(mainX + 28);
-        this.onlinePane.setLayoutY(mainY + 176);
+        this.onlinePane.setLayoutY(mainY + 170);
         this.onlinePane.setPrefSize(mainW - 72, 405);
         root.getChildren().add(this.onlinePane);
 
         this.localListView = new ListView<>();
         this.localListView.setPrefSize(mainW - 72, 405);
-        this.localListView.setStyle(
-                "-fx-background-color: rgba(0,0,0,0);" +
-                "-fx-control-inner-background: rgba(255,255,255,0.04);" +
-                "-fx-background-insets: 0;" +
-                "-fx-background-radius: 18;"
-        );
+        ListRow.styleList(this.localListView, "Aucun pack de ressources installé.\nAjoute un .zip ou explore le catalogue.");
         this.localPane.getChildren().add(this.localListView);
 
         this.onlineListView = new ListView<>();
         this.onlineListView.setPrefSize(mainW - 72, 405);
-        this.onlineListView.setStyle(
-                "-fx-background-color: rgba(0,0,0,0);" +
-                "-fx-control-inner-background: rgba(255,255,255,0.04);" +
-                "-fx-background-insets: 0;" +
-                "-fx-background-radius: 18;"
-        );
+        ListRow.styleList(this.onlineListView, "Aucun résultat pour le moment.");
         this.onlinePane.getChildren().add(this.onlineListView);
 
         this.onlineStatusLabel = new LauncherLabel(root);
         this.onlineStatusLabel.setText("");
         this.onlineStatusLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         this.onlineStatusLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.52);");
-        this.onlineStatusLabel.setPosition(mainX + 34, mainY + 592);
+        this.onlineStatusLabel.setPosition(mainX + 34, mainY + mainH - 84);
         this.onlineStatusLabel.setSize(280, 18);
 
         this.addButton = new JFXButton(BUTTON_ADD_PACK);
         styleSecondaryButton(this.addButton);
+        this.addButton.setGraphic(Icons.stroke(Icons.PLUS, 15));
+        this.addButton.setGraphicTextGap(8);
         this.addButton.setLayoutX(mainX + 34);
         this.addButton.setLayoutY(mainY + mainH - 54);
-        this.addButton.setPrefWidth(150);
+        this.addButton.setPrefWidth(170);
         this.addButton.setOnAction(e -> addResourcePack());
         root.getChildren().add(this.addButton);
 
-        this.openFolderButton = new JFXButton("Ouvrir dossier");
+        this.openFolderButton = new JFXButton("Ouvrir le dossier");
         styleSecondaryButton(this.openFolderButton);
-        this.openFolderButton.setLayoutX(mainX + 300);
+        this.openFolderButton.setGraphic(Icons.stroke(Icons.FOLDER, 15));
+        this.openFolderButton.setGraphicTextGap(8);
+        this.openFolderButton.setLayoutX(mainX + 216);
         this.openFolderButton.setLayoutY(mainY + mainH - 54);
-        this.openFolderButton.setPrefWidth(150);
+        this.openFolderButton.setPrefWidth(186);
         this.openFolderButton.setOnAction(e -> openResourcePackFolder());
         root.getChildren().add(this.openFolderButton);
 
@@ -536,38 +523,26 @@ public class LauncherPacks extends IScreen {
 
     private void configureLocalList() {
         localListView.setCellFactory(param -> new ListCell<ResourcePackItem>() {
-            private final ImageView packImageView = new ImageView();
-            private final Label nameLabel = new Label();
-            private final JFXButton deleteButton = new JFXButton("Supprimer");
-            private final VBox textBox = new VBox(nameLabel);
-            private final HBox hbox = new HBox(14, packImageView, textBox, deleteButton);
+            private final ListRow row = new ListRow(param, 46);
+            private final JFXButton deleteButton = ListRow.iconButton(Icons.TRASH, "Supprimer ce pack", "ml-danger");
 
             {
-                packImageView.setFitWidth(46);
-                packImageView.setFitHeight(46);
-
-                nameLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-                nameLabel.setStyle("-fx-text-fill: white;");
-
-                deleteButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
-                UiStyle.danger(deleteButton);
-
-                hbox.setAlignment(Pos.CENTER_LEFT);
-                textBox.setPrefWidth(320);
+                row.setActions(deleteButton);
             }
 
             @Override
             protected void updateItem(ResourcePackItem item, boolean empty) {
                 super.updateItem(item, empty);
+                setText(null);
 
                 if (empty || item == null) {
-                    setText(null);
                     setGraphic(null);
                     return;
                 }
 
-                packImageView.setImage(item.icon != null ? item.icon : fallbackIcon);
-                nameLabel.setText(item.displayName);
+                row.setIcon(item.icon != null ? item.icon : fallbackIcon);
+                row.setTitle(item.displayName);
+                row.setTags(item.fileName != null && item.fileName.toLowerCase(java.util.Locale.ROOT).endsWith(".zip") ? "Archive ZIP" : "Dossier");
 
                 deleteButton.setOnAction(event -> {
                     if (showConfirmationDialog(DIALOG_CONFIRMATION_REMOVAL, DIALOG_CONFIRMATION_REMOVAL_MSG)) {
@@ -580,63 +555,27 @@ public class LauncherPacks extends IScreen {
                     }
                 });
 
-                setStyle("-fx-background-color: transparent;");
-                setGraphic(hbox);
+                setGraphic(row);
             }
         });
     }
 
     private void configureOnlineList() {
         onlineListView.setCellFactory(param -> new ListCell<OnlinePackItem>() {
-            private final ImageView iconView = new ImageView();
-            private final Label titleLabel = new Label();
-            private final Label authorLabel = new Label();
-            private final Label descLabel = new Label();
-            private final Label statsLabel = new Label();
-
-            private final VBox textBox = new VBox(titleLabel, authorLabel, descLabel, statsLabel);
-
-            private final JFXButton openButton = new JFXButton("Page");
-            private final JFXButton downloadButton = new JFXButton("Télécharger");
-            private final VBox actionsBox = new VBox(openButton, downloadButton);
-
-            private final HBox row = new HBox(14, iconView, textBox, actionsBox);
+            private final ListRow row = new ListRow(param, 52);
+            private final JFXButton openButton = ListRow.iconButton(Icons.EXTERNAL, "Voir la page Modrinth");
+            private final JFXButton downloadButton = ListRow.actionButton("Installer", Icons.DOWNLOAD, true);
 
             {
-                iconView.setFitWidth(54);
-                iconView.setFitHeight(54);
-
-                titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-                titleLabel.setStyle("-fx-text-fill: white;");
-
-                authorLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-                authorLabel.setStyle("-fx-text-fill: rgba(255,176,0,0.90);");
-
-                descLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-                descLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.66);");
-
-                statsLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
-                statsLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.46);");
-
-                openButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-                UiStyle.secondary(openButton);
-
-                downloadButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-                UiStyle.primary(downloadButton);
-
-                textBox.setPrefWidth(330);
-                actionsBox.setSpacing(8);
-                actionsBox.setPrefWidth(110);
-                actionsBox.setAlignment(Pos.CENTER);
-                row.setAlignment(Pos.CENTER_LEFT);
+                row.setActions(openButton, downloadButton);
             }
 
             @Override
             protected void updateItem(OnlinePackItem item, boolean empty) {
                 super.updateItem(item, empty);
+                setText(null);
 
                 if (empty || item == null) {
-                    setText(null);
                     setGraphic(null);
                     return;
                 }
@@ -644,30 +583,30 @@ public class LauncherPacks extends IScreen {
                 if (item.iconUrl != null && !item.iconUrl.isEmpty()) {
                     Image cached = remoteImageCache.get(item.iconUrl);
                     if (cached != null) {
-                        iconView.setImage(cached);
+                        row.setIcon(cached);
                     } else {
-                        iconView.setImage(fallbackIcon);
+                        row.setIcon(fallbackIcon);
                         String iconUrl = item.iconUrl;
                         Thread imageThread = new Thread(() -> {
                             Image loaded = loadRemoteImageSafe(iconUrl, fallbackIcon);
-                            Platform.runLater(() -> iconView.setImage(loaded));
+                            // La cellule a pu être réutilisée pour un autre pack entre-temps.
+                            Platform.runLater(() -> { if (getItem() == item) row.setIcon(loaded); });
                         }, "MajestyLauncher-PackIcon");
                         imageThread.setDaemon(true);
                         imageThread.start();
                     }
                 } else {
-                    iconView.setImage(fallbackIcon);
+                    row.setIcon(fallbackIcon);
                 }
 
-                titleLabel.setText(item.title);
-                authorLabel.setText("par " + item.author);
-                descLabel.setText(item.description == null || item.description.isEmpty() ? "Aucune description." : item.description);
-                statsLabel.setText(item.downloads + " téléchargements");
+                row.setTitle(item.title);
+                row.setSubtitle("par " + item.author);
+                row.setDescription(item.description == null || item.description.isEmpty() ? "Aucune description." : item.description);
+                row.setTags(ListRow.formatCount(item.downloads) + " téléchargements");
 
                 openButton.setOnAction(e -> openExternalLink(MODRINTH_WEB_RESOURCEPACK + item.slug));
                 downloadButton.setOnAction(e -> downloadOnlinePack(item));
 
-                setStyle("-fx-background-color: transparent;");
                 setGraphic(row);
             }
         });

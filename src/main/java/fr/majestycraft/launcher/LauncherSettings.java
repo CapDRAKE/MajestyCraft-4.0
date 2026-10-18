@@ -3,6 +3,7 @@ package fr.majestycraft.launcher;
 import fr.majestycraft.util.Icons;
 import fr.majestycraft.util.UiStyle;
 import fr.majestycraft.util.AmbientBackground;
+import fr.majestycraft.util.ToggleSwitch;
 import com.jfoenix.controls.*;
 
 import fr.majestycraft.*;
@@ -18,13 +19,16 @@ import javafx.animation.ParallelTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.*;
 import javafx.scene.shape.Rectangle;
@@ -48,21 +52,21 @@ public class LauncherSettings extends IScreen {
     private final JFXComboBox<String> versionList;
     private final JFXComboBox<String> LanguageList;
 
-    private final JFXCheckBox autoLogin;
-    private final JFXCheckBox connect;
-    private static JFXCheckBox useVanilla;
-    private static JFXCheckBox useForge;
-    private static JFXCheckBox useFabric;
-    private static JFXCheckBox useQuilt;
-    private static JFXCheckBox useNeoForge;
-    private static JFXCheckBox useOptifine;
-    private final JFXCheckBox useDiscord;
-    private final JFXCheckBox useMusic;
-    private final JFXCheckBox useVMArguments;
+    private final ToggleSwitch autoLogin;
+    private final ToggleSwitch connect;
+    private static ToggleButton useVanilla;
+    private static ToggleButton useForge;
+    private static ToggleButton useFabric;
+    private static ToggleButton useQuilt;
+    private static ToggleButton useNeoForge;
+    private static ToggleButton useOptifine;
+    private final ToggleSwitch useDiscord;
+    private final ToggleSwitch useMusic;
+    private final ToggleSwitch useVMArguments;
 
     private final LauncherTextField vmArguments;
 
-    private JFXCheckBox includeSnapshots;
+    private ToggleSwitch includeSnapshots;
     private boolean includeSnapshotsEnabled = true;
 
     private double xOffSet;
@@ -199,14 +203,14 @@ public class LauncherSettings extends IScreen {
         this.heroSubtitle.setSize(260, 24);
 
         this.heroLine1 = new LauncherLabel(root);
-        this.heroLine1.setText("• Vanilla, Forge, Fabric, Quilt, NeoForge, OptiFine");
+        this.heroLine1.setText("• Version et modloader");
         this.heroLine1.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         this.heroLine1.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.70)");
         this.heroLine1.setPosition(120, 362);
         this.heroLine1.setSize(260, 20);
 
         this.heroLine2 = new LauncherLabel(root);
-        this.heroLine2.setText("• RAM, fenêtre, langue...");
+        this.heroLine2.setText("• Mémoire, fenêtre, langue");
         this.heroLine2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         this.heroLine2.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.58)");
         this.heroLine2.setPosition(120, 388);
@@ -219,27 +223,27 @@ public class LauncherSettings extends IScreen {
         this.heroLine3.setPosition(120, 414);
         this.heroLine3.setSize(270, 20);
 
-        final int cardW = 565;
-        final int cardH = 660;
+        final int cardW = 600;
+        final int cardH = 618;
         final int cardX = 360;
-        final int cardY = 65;
+        final int cardY = 66;
 
         LauncherRectangle card = new LauncherRectangle(root, cardX, cardY, cardW, cardH);
         card.setArcWidth(34);
         card.setArcHeight(34);
-        card.setFill(Color.rgb(8, 12, 18, 0.74));
+        card.setFill(Color.rgb(8, 12, 18, 0.78));
         card.setStroke(Color.rgb(255, 255, 255, 0.10));
         card.setStrokeWidth(1);
         card.setEffect(new DropShadow(36, Color.rgb(0, 0, 0, 0.72)));
         card.setMouseTransparent(true);
 
+        /* ===== En-tête ===== */
         LauncherLabel titleLabel = new LauncherLabel(root);
         titleLabel.setText(LABEL_SETTINGS);
         titleLabel.setStyle("-fx-text-fill: white;");
-        titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 28F));
-        titleLabel.setSize(cardW, 38);
-        titleLabel.setPosition(cardX, cardY + 24);
-        titleLabel.setAlignment(Pos.CENTER);
+        titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 24F));
+        titleLabel.setSize(cardW - 110, 34);
+        titleLabel.setPosition(cardX + 28, cardY + 22);
 
         LauncherLabel subTitleLabel = new LauncherLabel(root);
         fr.majestycraft.profiles.ProfileManager pmForTitle = fr.majestycraft.profiles.ProfileManager.get();
@@ -248,165 +252,45 @@ public class LauncherSettings extends IScreen {
         subTitleLabel.setText(activeProfileName != null
                 ? "Profil actif : " + activeProfileName + "  •  version, modloader et RAM s'appliquent à ce profil"
                 : "Configuration du jeu et du launcher");
-        subTitleLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.45);");
+        subTitleLabel.getStyleClass().add("ml-hint");
         subTitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-        subTitleLabel.setSize(cardW, 20);
-        subTitleLabel.setPosition(cardX, cardY + 58);
-        subTitleLabel.setAlignment(Pos.CENTER);
+        subTitleLabel.setSize(cardW - 110, 18);
+        subTitleLabel.setPosition(cardX + 30, cardY + 58);
 
-        JFXButton closeButton = new JFXButton("✕");
-        closeButton.setText("");
+        JFXButton closeButton = new JFXButton();
         closeButton.setGraphic(Icons.stroke(Icons.CLOSE, 16));
         closeButton.setPrefSize(36, 32);
         UiStyle.apply(closeButton, "ml-window", "ml-window-close");
-        closeButton.setLayoutX(cardX + cardW - 50);
-        closeButton.setLayoutY(cardY + 18);
+        closeButton.setLayoutX(cardX + cardW - 54);
+        closeButton.setLayoutY(cardY + 20);
         closeButton.setOnAction(event -> closeWithAnimation(root, (Stage) closeButton.getScene().getWindow()));
         root.getChildren().add(closeButton);
 
-        LauncherLabel sectionGame = new LauncherLabel(root);
-        sectionGame.setText("JEU");
-        sectionGame.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-        sectionGame.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,176,0,0.95);");
-        sectionGame.setPosition(cardX + 40, cardY + 96);
-        sectionGame.setSize(120, 20);
+        /* ===== Deux blocs : JEU (à gauche) et LAUNCHER (à droite) ===== */
+        final int gap = 16;
+        final int sectionW = (cardW - 48 - gap) / 2;
+        final int sectionH = 432;
+        final int sectionY = cardY + 94;
+        final int leftSection = cardX + 24;
+        final int rightSection = leftSection + sectionW + gap;
+        final int pad = 18;
+        final int leftX = leftSection + pad;
+        final int rightX = rightSection + pad;
+        final int fieldW = sectionW - pad * 2;
 
-        LauncherLabel sectionLauncher = new LauncherLabel(root);
-        sectionLauncher.setText("LAUNCHER");
-        sectionLauncher.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-        sectionLauncher.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,176,0,0.95);");
-        sectionLauncher.setPosition(cardX + 290, cardY + 96);
-        sectionLauncher.setSize(120, 20);
-
-        final int leftX = cardX + 40;
-        final int rightX = cardX + 290;
-        final int fieldW = 220;
-
-        /* ===== Taille fenêtre ===== */
-        LauncherLabel windowsSizeLabel = new LauncherLabel(root);
-        windowsSizeLabel.setText(LABEL_WINDOW_SIZE);
-        windowsSizeLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        windowsSizeLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-        windowsSizeLabel.setSize(fieldW, 22);
-        windowsSizeLabel.setPosition(leftX, cardY + 126);
-
-        this.windowsSizeList = new JFXComboBox<>();
-        populateSizeList();
-        styleCombo(this.windowsSizeList);
-        this.windowsSizeList.getStyleClass().add("combo-modern");
-        this.windowsSizeList.setPromptText("Sélectionner...");
-        this.windowsSizeList.setPrefSize(fieldW, 32);
-        this.windowsSizeList.setLayoutX(leftX);
-        this.windowsSizeList.setLayoutY(cardY + 152);
-        this.windowsSizeList.setVisibleRowCount(6);
-
-        this.windowsSizeList.setButtonCell(new ListCell<String>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty ? null : item);
-                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-            }
-        });
-
-        this.windowsSizeList.setCellFactory(cb -> new ListCell<String>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty ? null : item);
-                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-            }
-        });
-
-        String sizeDesc = null;
-        Object cfgSize = pane.getConfig().getValue(EnumConfig.GAME_SIZE);
-        if (cfgSize != null) {
-            String s = String.valueOf(cfgSize).trim();
-            if (s.contains("x")) {
-                sizeDesc = s;
-            } else {
-                try {
-                    sizeDesc = GameSize.getWindowSize(Integer.parseInt(s)).getDesc();
-                } catch (Exception ignored) {}
-            }
-        }
-
-        if (sizeDesc == null || !this.windowsSizeList.getItems().contains(sizeDesc)) {
-            if (!this.windowsSizeList.getItems().isEmpty()) {
-                sizeDesc = this.windowsSizeList.getItems().get(0);
-            }
-        }
-
-        if (sizeDesc != null) {
-            this.windowsSizeList.setValue(sizeDesc);
-            this.windowsSizeList.getSelectionModel().select(sizeDesc);
-        }
-
-        root.getChildren().add(this.windowsSizeList);
-
-        /* ===== Langue ===== */
-        LauncherLabel languageLabel = new LauncherLabel(root);
-        languageLabel.setText(LANGUAGE);
-        languageLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        languageLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-        languageLabel.setSize(fieldW, 22);
-        languageLabel.setPosition(rightX, cardY + 126);
-
-        this.LanguageList = new JFXComboBox<>();
-        languageList();
-        styleCombo(this.LanguageList);
-        this.LanguageList.getStyleClass().add("combo-modern");
-        this.LanguageList.setPrefSize(fieldW, 32);
-        this.LanguageList.setLayoutX(rightX);
-        this.LanguageList.setLayoutY(cardY + 152);
-        this.LanguageList.setVisibleRowCount(5);
-
-        this.LanguageList.setButtonCell(new ListCell<String>() {
-            @Override protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty ? null : item);
-                setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-            }
-        });
-
-        this.LanguageList.setCellFactory(cb -> new ListCell<String>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty ? null : item);
-                setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-            }
-        });
-
-        // Les anciennes versions enregistraient "Fran?ais" (accent perdu dans la valeur
-        // par défaut) : toute langue inconnue revient au français.
-        String savedLanguage = (String) pane.getConfig().getValue(EnumConfig.LANGUAGE);
-        this.LanguageList.setValue(this.LanguageList.getItems().contains(savedLanguage) ? savedLanguage : "Français");
-        this.LanguageList.setOnAction(event -> {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle(Main.bundle.getString("alert.title"));
-            alert.setHeaderText(Main.bundle.getString("alert.header"));
-            alert.setContentText(Main.bundle.getString("alert.content"));
-            alert.showAndWait();
-        });
-        root.getChildren().add(this.LanguageList);
+        Region gameSection = createSection(root, leftSection, sectionY, sectionW, sectionH);
+        Region launcherSection = createSection(root, rightSection, sectionY, sectionW, sectionH);
+        LauncherLabel sectionGame = createSectionTitle(root, "JEU", Icons.PLAY, leftX, sectionY + 16);
+        LauncherLabel sectionLauncher = createSectionTitle(root, "LAUNCHER", Icons.SETTINGS, rightX, sectionY + 16);
 
         /* ===== Version ===== */
-        LauncherLabel versionLabel = new LauncherLabel(root);
-        versionLabel.setText(LABEL_CHOOSE_VERSION);
-        versionLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        versionLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-        versionLabel.setSize(fieldW, 22);
-        versionLabel.setPosition(leftX, cardY + 212);
+        LauncherLabel versionLabel = createFieldLabel(root, LABEL_CHOOSE_VERSION, leftX, sectionY + 50, fieldW);
 
         this.versionList = new JFXComboBox<>();
         styleCombo(this.versionList);
-        this.versionList.getStyleClass().add("combo-modern");
-        this.versionList.setPrefSize(fieldW, 32);
+        this.versionList.setPrefSize(fieldW, 34);
         this.versionList.setLayoutX(leftX);
-        this.versionList.setLayoutY(cardY + 238);
+        this.versionList.setLayoutY(sectionY + 74);
         this.versionList.setVisibleRowCount(12);
 
         this.versionList.setButtonCell(new ListCell<String>() {
@@ -477,11 +361,7 @@ public class LauncherSettings extends IScreen {
         else if (cfgSnap instanceof String) includeSnapshotsEnabled = Boolean.parseBoolean((String) cfgSnap);
         else includeSnapshotsEnabled = true;
 
-        this.includeSnapshots = new JFXCheckBox(LABEL_INCLUDE_SNAPSHOTS);
-        this.includeSnapshots.setSelected(includeSnapshotsEnabled);
-        styleCheckBox(this.includeSnapshots);
-        this.includeSnapshots.setLayoutX(rightX);
-        this.includeSnapshots.setLayoutY(cardY + 236);
+        this.includeSnapshots = createSwitch(root, LABEL_INCLUDE_SNAPSHOTS, includeSnapshotsEnabled, leftX, sectionY + 116, fieldW);
         this.includeSnapshots.setOnAction(e -> {
             includeSnapshotsEnabled = includeSnapshots.isSelected();
             pane.getConfig().updateValue(CFG_INCLUDE_SNAPSHOTS, includeSnapshotsEnabled);
@@ -489,7 +369,6 @@ public class LauncherSettings extends IScreen {
             String preferred = this.versionList.getValue();
             populateVersionListFromMojang(pane, preferred);
         });
-        root.getChildren().add(this.includeSnapshots);
 
         loadForgeAvailableVersionsAsync(pane);
         loadFabricAvailableVersionsAsync(pane);
@@ -499,6 +378,30 @@ public class LauncherSettings extends IScreen {
         populateVersionListFromMojang(pane, (String) pane.getConfig().getValue(EnumConfig.VERSION));
         this.versionList.setOnAction(event -> applyModRestrictionsForVersion(versionList.getValue(), pane));
 
+        /* ===== Modloader : une pastille par chargeur, un seul choix possible ===== */
+        this.modloaderLabel = createFieldLabel(root, "Modloader", leftX, sectionY + 156, fieldW);
+
+        final int chipGap = 8;
+        final int chipW = (fieldW - chipGap * 2) / 3;
+        final int chipRow1 = sectionY + 180;
+        final int chipRow2 = chipRow1 + 30 + chipGap;
+        useVanilla = createModloaderChip("Vanilla", leftX, chipRow1, chipW, Utils.ModloaderType.VANILLA);
+        useForge = createModloaderChip("Forge", leftX + chipW + chipGap, chipRow1, chipW, Utils.ModloaderType.FORGE);
+        useFabric = createModloaderChip("Fabric", leftX + (chipW + chipGap) * 2, chipRow1, chipW, Utils.ModloaderType.FABRIC);
+        useQuilt = createModloaderChip("Quilt", leftX, chipRow2, chipW, Utils.ModloaderType.QUILT);
+        useNeoForge = createModloaderChip("NeoForge", leftX + chipW + chipGap, chipRow2, chipW, Utils.ModloaderType.NEOFORGE);
+        useOptifine = createModloaderChip("OptiFine", leftX + (chipW + chipGap) * 2, chipRow2, chipW, Utils.ModloaderType.OPTIFINE);
+
+        root.getChildren().add(useVanilla);
+        root.getChildren().add(useForge);
+        root.getChildren().add(useFabric);
+        root.getChildren().add(useQuilt);
+        root.getChildren().add(useNeoForge);
+        root.getChildren().add(useOptifine);
+
+        setSelectedModloader(resolveConfiguredModloader(pane));
+        applyModRestrictionsForVersion(this.versionList.getValue(), pane);
+
         /* ===== RAM ===== */
         final int systemRamGb = detectSystemRamGb();
         // Plafond du slider : on ne laisse pas allouer plus que la RAM physique
@@ -507,26 +410,17 @@ public class LauncherSettings extends IScreen {
         // Seuil au-delà duquel on avertit (il faut laisser de la RAM à l'OS).
         final int safeMax = Math.max(2, systemRamGb - 2);
 
-        LauncherLabel ramLabel = new LauncherLabel(root);
-        ramLabel.setText(LABEL_RAM_ALLOC);
-        ramLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        ramLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-        ramLabel.setSize(260, 22);
-        ramLabel.setPosition(leftX, cardY + 292);
-
-        LauncherLabel ramSystemHint = new LauncherLabel(root);
-        ramSystemHint.setText("RAM système détectée : " + systemRamGb + " Go");
-        ramSystemHint.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
-        ramSystemHint.setStyle("-fx-text-fill: rgba(255,255,255,0.45);");
-        ramSystemHint.setSize(260, 16);
-        ramSystemHint.setPosition(leftX, cardY + 312);
+        LauncherLabel ramLabel = createFieldLabel(root, LABEL_RAM_ALLOC, leftX, sectionY + 270, fieldW - 80);
 
         this.memorySliderLabel = new LauncherLabel(root);
-        this.memorySliderLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        this.memorySliderLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-        this.memorySliderLabel.setSize(90, 22);
-        this.memorySliderLabel.setPosition(cardX + cardW - 110, cardY + 292);
-        this.memorySliderLabel.setAlignment(Pos.CENTER_RIGHT);
+        this.memorySliderLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        this.memorySliderLabel.getStyleClass().add("ml-badge");
+        this.memorySliderLabel.setPrefHeight(22);
+        this.memorySliderLabel.setMinWidth(Region.USE_PREF_SIZE);
+        // Pastille calée à droite du bloc, quelle que soit la largeur du texte.
+        this.memorySliderLabel.layoutXProperty().bind(
+                this.memorySliderLabel.widthProperty().multiply(-1).add(leftX + fieldW));
+        this.memorySliderLabel.setLayoutY(sectionY + 268);
 
         this.memorySlider = new JFXSlider();
         this.memorySlider.setMin(1);
@@ -540,8 +434,8 @@ public class LauncherSettings extends IScreen {
         this.memorySlider.setValue(Math.max(1, Math.min(initialRam, sliderMax)));
 
         this.memorySlider.setLayoutX(leftX);
-        this.memorySlider.setLayoutY(cardY + 336);
-        this.memorySlider.setPrefWidth(cardW - 80);
+        this.memorySlider.setLayoutY(sectionY + 302);
+        this.memorySlider.setPrefWidth(fieldW);
         this.memorySlider.setBlockIncrement(1);
         this.memorySlider.setStyle(
                 "-jfx-default-thumb: #ff9800;" +
@@ -552,131 +446,180 @@ public class LauncherSettings extends IScreen {
         this.memorySlider.valueProperty().addListener((ov, oldVal, newVal) ->
                 memorySlider.setValue(Math.round(newVal.doubleValue()))
         );
-        this.memorySlider.valueProperty().addListener((obs, o, n) -> {
-            int gb = n.intValue();
-            memorySliderLabel.setText(gb + " GB");
-            // Rouge orangé quand on dépasse le seuil sûr (trop peu de RAM pour l'OS).
-            memorySliderLabel.setStyle(gb > safeMax
-                    ? "-fx-text-fill: rgba(255,140,90,0.98); -fx-font-weight: bold;"
-                    : "-fx-text-fill: rgba(255,255,255,0.92);");
-        });
+        this.memorySlider.valueProperty().addListener((obs, o, n) -> updateRamBadge(n.intValue(), safeMax));
         root.getChildren().add(this.memorySlider);
-        int gb0 = (int) this.memorySlider.getValue();
-        this.memorySliderLabel.setText(gb0 + " GB");
-        this.memorySliderLabel.setStyle(gb0 > safeMax
-                ? "-fx-text-fill: rgba(255,140,90,0.98); -fx-font-weight: bold;"
-                : "-fx-text-fill: rgba(255,255,255,0.92);");
+        updateRamBadge((int) this.memorySlider.getValue(), safeMax);
 
-        /* ===== Toggles ===== */
-        this.modloaderLabel = new LauncherLabel(root);
-        this.modloaderLabel.setText("Modloader");
-        this.modloaderLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        this.modloaderLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
-        this.modloaderLabel.setSize(fieldW, 22);
-        this.modloaderLabel.setPosition(leftX, cardY + 356);
+        LauncherLabel ramSystemHint = new LauncherLabel(root);
+        ramSystemHint.setText("RAM système détectée : " + systemRamGb + " Go");
+        ramSystemHint.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
+        ramSystemHint.getStyleClass().add("ml-hint");
+        ramSystemHint.setSize(fieldW, 16);
+        ramSystemHint.setPosition(leftX, sectionY + 326);
 
-        final int modloaderCol2X = leftX + 118;
-        useVanilla = createModloaderCheckBox("Vanilla", leftX, cardY + 382, Utils.ModloaderType.VANILLA);
-        useForge = createModloaderCheckBox("Forge", leftX, cardY + 414, Utils.ModloaderType.FORGE);
-        useFabric = createModloaderCheckBox("Fabric", leftX, cardY + 446, Utils.ModloaderType.FABRIC);
-        useQuilt = createModloaderCheckBox("Quilt", modloaderCol2X, cardY + 382, Utils.ModloaderType.QUILT);
-        useNeoForge = createModloaderCheckBox("NeoForge", modloaderCol2X, cardY + 414, Utils.ModloaderType.NEOFORGE);
-        useOptifine = createModloaderCheckBox("OptiFine", modloaderCol2X, cardY + 446, Utils.ModloaderType.OPTIFINE);
+        /* ===== Taille fenêtre ===== */
+        LauncherLabel windowsSizeLabel = createFieldLabel(root, LABEL_WINDOW_SIZE, leftX, sectionY + 356, fieldW);
 
-        root.getChildren().add(useVanilla);
-        root.getChildren().add(useForge);
-        root.getChildren().add(useFabric);
-        root.getChildren().add(useQuilt);
-        root.getChildren().add(useNeoForge);
-        root.getChildren().add(useOptifine);
+        this.windowsSizeList = new JFXComboBox<>();
+        populateSizeList();
+        styleCombo(this.windowsSizeList);
+        this.windowsSizeList.setPromptText("Sélectionner...");
+        this.windowsSizeList.setPrefSize(fieldW, 34);
+        this.windowsSizeList.setLayoutX(leftX);
+        this.windowsSizeList.setLayoutY(sectionY + 380);
+        this.windowsSizeList.setVisibleRowCount(6);
 
-        setSelectedModloader(resolveConfiguredModloader(pane));
-        applyModRestrictionsForVersion(this.versionList.getValue(), pane);
-
-        this.useMusic = new JFXCheckBox(LABEL_PLAY_MUSIC);
-        Object cfgMusic = pane.getConfig().getValue(EnumConfig.USE_MUSIC);
-        this.useMusic.setSelected(cfgMusic instanceof Boolean ? (Boolean) cfgMusic : false);
-        styleCheckBox(this.useMusic);
-        this.useMusic.setLayoutX(rightX);
-        this.useMusic.setLayoutY(cardY + 478);
-        this.useMusic.setOnAction(e -> {
-            pane.getConfig().updateValue("usemusic", useMusic.isSelected());
-            pane.getMediaPlayer().setMute(!useMusic.isSelected());
+        this.windowsSizeList.setButtonCell(new ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : item);
+                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
+            }
         });
-        root.getChildren().add(this.useMusic);
 
-        this.autoLogin = new JFXCheckBox(LABEL_AUTO_CONNECT);
-        Object cfgAutoLogin = pane.getConfig().getValue(EnumConfig.AUTOLOGIN);
-        this.autoLogin.setSelected(cfgAutoLogin instanceof Boolean ? (Boolean) cfgAutoLogin : false);
-        styleCheckBox(this.autoLogin);
-        this.autoLogin.setLayoutX(rightX);
-        this.autoLogin.setLayoutY(cardY + 382);
-        root.getChildren().add(this.autoLogin);
+        this.windowsSizeList.setCellFactory(cb -> new ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : item);
+                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
+            }
+        });
 
-        this.useDiscord = new JFXCheckBox(LABEL_DISCORD_STATUS);
-        Object cfgDiscord = pane.getConfig().getValue(EnumConfig.USE_DISCORD);
-        this.useDiscord.setSelected(cfgDiscord instanceof Boolean ? (Boolean) cfgDiscord : false);
-        styleCheckBox(this.useDiscord);
-        this.useDiscord.setLayoutX(rightX);
-        this.useDiscord.setLayoutY(cardY + 414);
+        String sizeDesc = null;
+        Object cfgSize = pane.getConfig().getValue(EnumConfig.GAME_SIZE);
+        if (cfgSize != null) {
+            String s = String.valueOf(cfgSize).trim();
+            if (s.contains("x")) {
+                sizeDesc = s;
+            } else {
+                try {
+                    sizeDesc = GameSize.getWindowSize(Integer.parseInt(s)).getDesc();
+                } catch (Exception ignored) {}
+            }
+        }
+
+        if (sizeDesc == null || !this.windowsSizeList.getItems().contains(sizeDesc)) {
+            if (!this.windowsSizeList.getItems().isEmpty()) {
+                sizeDesc = this.windowsSizeList.getItems().get(0);
+            }
+        }
+
+        if (sizeDesc != null) {
+            this.windowsSizeList.setValue(sizeDesc);
+            this.windowsSizeList.getSelectionModel().select(sizeDesc);
+        }
+
+        root.getChildren().add(this.windowsSizeList);
+
+        /* ===== Langue ===== */
+        LauncherLabel languageLabel = createFieldLabel(root, LANGUAGE, rightX, sectionY + 50, fieldW);
+
+        this.LanguageList = new JFXComboBox<>();
+        languageList();
+        styleCombo(this.LanguageList);
+        this.LanguageList.setPrefSize(fieldW, 34);
+        this.LanguageList.setLayoutX(rightX);
+        this.LanguageList.setLayoutY(sectionY + 74);
+        this.LanguageList.setVisibleRowCount(5);
+
+        this.LanguageList.setButtonCell(new ListCell<String>() {
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : item);
+                setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
+            }
+        });
+
+        this.LanguageList.setCellFactory(cb -> new ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : item);
+                setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
+            }
+        });
+
+        // Les anciennes versions enregistraient "Fran?ais" (accent perdu dans la valeur
+        // par défaut) : toute langue inconnue revient au français.
+        String savedLanguage = (String) pane.getConfig().getValue(EnumConfig.LANGUAGE);
+        this.LanguageList.setValue(this.LanguageList.getItems().contains(savedLanguage) ? savedLanguage : "Français");
+        this.LanguageList.setOnAction(event -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle(Main.bundle.getString("alert.title"));
+            alert.setHeaderText(Main.bundle.getString("alert.header"));
+            alert.setContentText(Main.bundle.getString("alert.content"));
+            alert.showAndWait();
+        });
+        root.getChildren().add(this.LanguageList);
+
+        /* ===== Interrupteurs du launcher ===== */
+        this.autoLogin = createSwitch(root, LABEL_AUTO_CONNECT,
+                pane.getConfig().getValue(EnumConfig.AUTOLOGIN), rightX, sectionY + 126, fieldW);
+
+        this.useDiscord = createSwitch(root, LABEL_DISCORD_STATUS,
+                pane.getConfig().getValue(EnumConfig.USE_DISCORD), rightX, sectionY + 162, fieldW);
         this.useDiscord.setOnAction(e -> {
             if (useDiscord.isSelected()) pane.getRpc().start();
             else pane.getRpc().stop();
         });
-        root.getChildren().add(this.useDiscord);
 
-        this.useVMArguments = new JFXCheckBox(LABEL_USE_JVM_ARGUMENTS);
-        Object cfgUseVmArgs = pane.getConfig().getValue(EnumConfig.USE_VM_ARGUMENTS);
-        this.useVMArguments.setSelected(cfgUseVmArgs instanceof Boolean ? (Boolean) cfgUseVmArgs : false);
-        styleCheckBox(this.useVMArguments);
-        this.useVMArguments.setLayoutX(rightX);
-        this.useVMArguments.setLayoutY(cardY + 446);
-        root.getChildren().add(this.useVMArguments);
+        this.useMusic = createSwitch(root, LABEL_PLAY_MUSIC,
+                pane.getConfig().getValue(EnumConfig.USE_MUSIC), rightX, sectionY + 198, fieldW);
+        this.useMusic.setOnAction(e -> {
+            pane.getConfig().updateValue("usemusic", useMusic.isSelected());
+            pane.getMediaPlayer().setMute(!useMusic.isSelected());
+        });
 
-        this.vmArguments = new LauncherTextField(root);
-        this.vmArguments.setText((String) pane.getConfig().getValue(EnumConfig.VM_ARGUMENTS));
-        this.vmArguments.setSize(cardW - 80, 30);
-        this.vmArguments.setPosition(leftX, cardY + 526);
-        this.vmArguments.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-text-fill: rgba(255,255,255,0.92);" +
-                "-fx-prompt-text-fill: rgba(255,255,255,0.42);" +
-                "-fx-background-radius: 14;" +
-                "-fx-border-color: rgba(255,255,255,0.14);" +
-                "-fx-border-radius: 14;" +
-                "-fx-border-width: 1;"
-        );
-        this.useVMArguments.setOnAction(e -> vmArguments.setDisable(!useVMArguments.isSelected()));
-        this.vmArguments.setDisable(!this.useVMArguments.isSelected());
-
-        this.connect = new JFXCheckBox(LABEL_CONNECT_SERVER);
-        Object cfgConnect = pane.getConfig().getValue(EnumConfig.USE_CONNECT);
-        this.connect.setSelected(cfgConnect instanceof Boolean ? (Boolean) cfgConnect : false);
-        styleCheckBox(this.connect);
-        this.connect.setLayoutX(leftX);
-        this.connect.setLayoutY(cardY + 570);
-        this.connect.setPrefWidth(cardW - 80);
+        this.connect = createSwitch(root, LABEL_CONNECT_SERVER,
+                pane.getConfig().getValue(EnumConfig.USE_CONNECT), rightX, sectionY + 234, fieldW);
         this.connect.setWrapText(true);
         this.connect.setOnAction(e -> {
             pane.getConfig().updateValue("useConnect", connect.isSelected());
             if (connect.isSelected()) engine.reg(App.getGameConnect());
         });
-        root.getChildren().add(this.connect);
+
+        LauncherRectangle divider = new LauncherRectangle(root, rightX, sectionY + 300, fieldW, 1);
+        divider.setFill(Color.rgb(255, 255, 255, 0.08));
+
+        /* ===== Arguments JVM ===== */
+        this.useVMArguments = createSwitch(root, LABEL_USE_JVM_ARGUMENTS,
+                pane.getConfig().getValue(EnumConfig.USE_VM_ARGUMENTS), rightX, sectionY + 318, fieldW);
+
+        this.vmArguments = new LauncherTextField(root);
+        this.vmArguments.setText((String) pane.getConfig().getValue(EnumConfig.VM_ARGUMENTS));
+        this.vmArguments.setPromptText("-XX:+UseG1GC ...");
+        this.vmArguments.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        this.vmArguments.getStyleClass().add("ml-input");
+        this.vmArguments.setSize(fieldW, 34);
+        this.vmArguments.setPosition(rightX, sectionY + 356);
+        this.useVMArguments.setOnAction(e -> vmArguments.setDisable(!useVMArguments.isSelected()));
+        this.vmArguments.setDisable(!this.useVMArguments.isSelected());
 
         /* ===== Boutons ===== */
+        final int footerY = sectionY + sectionH + 22;
+
         JFXButton openGameDirButton = new JFXButton(BUTTON_OPEN_GAME_DIR);
         styleSecondaryButton(openGameDirButton);
-        openGameDirButton.setLayoutX(leftX);
-        openGameDirButton.setLayoutY(cardY + cardH - 58);
-        openGameDirButton.setPrefWidth(250);
+        openGameDirButton.setGraphic(Icons.stroke(Icons.FOLDER, 16));
+        openGameDirButton.setGraphicTextGap(10);
+        openGameDirButton.setLayoutX(leftSection);
+        openGameDirButton.setLayoutY(footerY);
+        openGameDirButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        openGameDirButton.setPrefSize(sectionW, 42);
         openGameDirButton.setOnAction(e -> openGameDirectory());
         root.getChildren().add(openGameDirButton);
 
         JFXButton saveButton = new JFXButton(BUTTON_VALIDATE);
         stylePrimaryButton(saveButton);
-        saveButton.setLayoutX(cardX + cardW - 40 - 210);
-        saveButton.setLayoutY(cardY + cardH - 58);
-        saveButton.setPrefWidth(210);
+        saveButton.setGraphic(Icons.stroke(Icons.CHECK, 16));
+        saveButton.setGraphicTextGap(10);
+        saveButton.setLayoutX(rightSection + sectionW - 200);
+        saveButton.setLayoutY(footerY);
+        saveButton.setPrefSize(200, 42);
         saveButton.setOnAction(event -> {
             if (versionList.isDisabled() || "Chargement...".equals(versionList.getValue())) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -762,36 +705,21 @@ public class LauncherSettings extends IScreen {
 
             animateIn(card, 28, 0, 100);
             animateIn(titleLabel, 20, 0, 160);
-            animateIn(subTitleLabel, 20, 0, 210);
+            animateIn(subTitleLabel, 20, 0, 200);
+            animateIn(closeButton, 0, 0, 200);
 
-            animateIn(windowsSizeLabel, 18, 0, 240);
-            animateIn(this.windowsSizeList, 18, 0, 270);
-            animateIn(languageLabel, 18, 0, 300);
-            animateIn(this.LanguageList, 18, 0, 330);
+            // Chaque bloc entre d'un seul tenant (fond, titre et contrôles ensemble).
+            Node[] gameBlock = {gameSection, sectionGame, versionLabel, this.versionList, this.includeSnapshots,
+                    modloaderLabel, useVanilla, useForge, useFabric, useQuilt, useNeoForge, useOptifine,
+                    ramLabel, this.memorySliderLabel, this.memorySlider, ramSystemHint,
+                    windowsSizeLabel, this.windowsSizeList};
+            Node[] launcherBlock = {launcherSection, sectionLauncher, languageLabel, this.LanguageList,
+                    autoLogin, useDiscord, useMusic, connect, divider, useVMArguments, vmArguments};
+            for (Node node : gameBlock) animateIn(node, 0, 14, 240);
+            for (Node node : launcherBlock) animateIn(node, 0, 14, 320);
 
-            animateIn(versionLabel, 18, 0, 360);
-            animateIn(this.versionList, 18, 0, 390);
-            animateIn(this.includeSnapshots, 18, 0, 420);
-
-            animateIn(ramLabel, 18, 0, 450);
-            animateIn(this.memorySlider, 18, 0, 480);
-            animateIn(this.memorySliderLabel, 18, 0, 500);
-
-            animateIn(modloaderLabel, 12, 0, 520);
-            animateIn(useVanilla, 12, 0, 545);
-            animateIn(useForge, 12, 0, 570);
-            animateIn(useFabric, 12, 0, 595);
-            animateIn(useQuilt, 12, 0, 620);
-            animateIn(useNeoForge, 12, 0, 645);
-            animateIn(useOptifine, 12, 0, 670);
-            animateIn(autoLogin, 12, 0, 545);
-            animateIn(useDiscord, 12, 0, 570);
-            animateIn(useVMArguments, 12, 0, 595);
-            animateIn(useMusic, 12, 0, 620);
-            animateIn(vmArguments, 12, 0, 695);
-            animateIn(connect, 12, 0, 720);
-            animateIn(openGameDirButton, 0, 14, 745);
-            animateIn(saveButton, 0, 14, 770);
+            animateIn(openGameDirButton, 0, 14, 420);
+            animateIn(saveButton, 0, 14, 460);
 
             PauseTransition refreshAfterEntrance = new PauseTransition(Duration.millis(1220));
             refreshAfterEntrance.setOnFinished(event -> applyModRestrictionsForVersion(this.versionList.getValue(), pane));
@@ -882,21 +810,69 @@ public class LauncherSettings extends IScreen {
     }
 
     private void styleCombo(JFXComboBox<String> cb) {
-        cb.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-background-radius: 14;" +
-                "-fx-border-color: rgba(255,255,255,0.14);" +
-                "-fx-border-radius: 14;" +
-                "-fx-border-width: 1;" +
-                "-fx-text-fill: white;" +
-                "-fx-font-family: 'Comfortaa';"
-        );
+        cb.getStyleClass().addAll("combo-modern", "ml-combo");
+        cb.setFocusColor(Color.TRANSPARENT);
+        cb.setUnFocusColor(Color.TRANSPARENT);
     }
 
-    private void styleCheckBox(JFXCheckBox box) {
-        box.setOpacity(1.0);
-        box.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-        box.setStyle("-fx-text-fill: rgba(255,255,255,0.92); -jfx-checked-color: #ff9800; -jfx-unchecked-color: rgba(255,255,255,0.42)");
+    /** Fond d'un bloc de réglages (JEU, LAUNCHER). */
+    private Region createSection(Pane root, int x, int y, int w, int h) {
+        Region section = new Region();
+        section.getStyleClass().add("ml-section");
+        section.setLayoutX(x);
+        section.setLayoutY(y);
+        section.setPrefSize(w, h);
+        section.setMouseTransparent(true);
+        root.getChildren().add(section);
+        return section;
+    }
+
+    private LauncherLabel createSectionTitle(Pane root, String text, String icon, int x, int y) {
+        LauncherLabel title = new LauncherLabel(root);
+        title.setText(text);
+        title.setGraphic(Icons.stroke(icon, 13));
+        title.setGraphicTextGap(8);
+        title.getStyleClass().add("ml-section-title");
+        title.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        title.setPosition(x, y);
+        title.setSize(200, 20);
+        return title;
+    }
+
+    private LauncherLabel createFieldLabel(Pane root, String text, int x, int y, int w) {
+        LauncherLabel label = new LauncherLabel(root);
+        label.setText(withoutColon(text));
+        label.getStyleClass().add("ml-field-label");
+        label.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        label.setPosition(x, y);
+        label.setSize(w, 20);
+        return label;
+    }
+
+    /** Les libellés traduits finissent parfois par « : », inutile au-dessus d'un champ. */
+    private static String withoutColon(String text) {
+        return text == null ? "" : text.replaceAll("\\s*:\\s*$", "");
+    }
+
+    /** Interrupteur initialisé depuis une valeur de config (booléen ou texte "true"). */
+    private ToggleSwitch createSwitch(Pane root, String text, Object configValue, int x, int y, int w) {
+        ToggleSwitch toggle = new ToggleSwitch(text);
+        toggle.setSelected(configValue instanceof Boolean
+                ? (Boolean) configValue
+                : Boolean.parseBoolean(String.valueOf(configValue)));
+        toggle.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        toggle.setPrefWidth(w);
+        toggle.setLayoutX(x);
+        toggle.setLayoutY(y);
+        root.getChildren().add(toggle);
+        return toggle;
+    }
+
+    private void updateRamBadge(int gb, int safeMax) {
+        memorySliderLabel.setText(gb + " Go");
+        // Rouge quand on dépasse le seuil sûr (trop peu de RAM laissée à l'OS).
+        memorySliderLabel.getStyleClass().remove("ml-badge-warn");
+        if (gb > safeMax) memorySliderLabel.getStyleClass().add("ml-badge-warn");
     }
 
     private void stylePrimaryButton(JFXButton btn) {
@@ -1250,14 +1226,16 @@ public class LauncherSettings extends IScreen {
         return true;
     }
 
-    private JFXCheckBox createModloaderCheckBox(String label, int x, int y, Utils.ModloaderType modloaderType) {
-        JFXCheckBox checkBox = new JFXCheckBox(label);
-        styleCheckBox(checkBox);
-        checkBox.setPrefWidth(108);
-        checkBox.setLayoutX(x);
-        checkBox.setLayoutY(y);
-        checkBox.setOnAction(event -> handleModloaderToggle(modloaderType));
-        return checkBox;
+    private ToggleButton createModloaderChip(String label, int x, int y, int width, Utils.ModloaderType modloaderType) {
+        ToggleButton chip = new ToggleButton(label);
+        UiStyle.apply(chip, "ml-chip");
+        chip.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        chip.setPadding(new Insets(0, 2, 0, 2));
+        chip.setPrefSize(width, 30);
+        chip.setLayoutX(x);
+        chip.setLayoutY(y);
+        chip.setOnAction(event -> handleModloaderToggle(modloaderType));
+        return chip;
     }
 
     private Utils.ModloaderType resolveConfiguredModloader(LauncherPanel pane) {
@@ -1270,7 +1248,7 @@ public class LauncherSettings extends IScreen {
             return;
         }
 
-        JFXCheckBox target = getCheckBoxForModloader(modloaderType);
+        ToggleButton target = getCheckBoxForModloader(modloaderType);
         if (target == null) {
             return;
         }
@@ -1322,7 +1300,7 @@ public class LauncherSettings extends IScreen {
                 || (useOptifine != null && useOptifine.isSelected());
     }
 
-    private JFXCheckBox getCheckBoxForModloader(Utils.ModloaderType modloaderType) {
+    private ToggleButton getCheckBoxForModloader(Utils.ModloaderType modloaderType) {
         if (modloaderType == Utils.ModloaderType.VANILLA) {
             return useVanilla;
         }
@@ -1341,7 +1319,7 @@ public class LauncherSettings extends IScreen {
         return useOptifine;
     }
 
-    private void applyModloaderAvailability(JFXCheckBox checkBox, boolean allowed) {
+    private void applyModloaderAvailability(ToggleButton checkBox, boolean allowed) {
         if (checkBox == null) {
             return;
         }
