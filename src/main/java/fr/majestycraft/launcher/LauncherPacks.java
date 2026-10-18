@@ -1,5 +1,7 @@
 package fr.majestycraft.launcher;
 
+import fr.majestycraft.util.UiStyle;
+import fr.majestycraft.util.AmbientBackground;
 import animatefx.animation.ZoomOutDown;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -149,15 +151,8 @@ public class LauncherPacks extends IScreen {
             st.setY(event.getScreenY() - yOffSet);
         });
 
-        this.drawBackgroundImage(engine, root, "background.png");
+        AmbientBackground.installResponsive(root, false);
 
-        Rectangle overlay = new Rectangle(W, H);
-        overlay.setFill(new LinearGradient(
-                0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.rgb(0, 0, 0, 0.18)),
-                new Stop(1, Color.rgb(0, 0, 0, 0.72))
-        ));
-        root.getChildren().add(overlay);
 
         LauncherRectangle leftDock = new LauncherRectangle(root, 0, 0, 84, H);
         leftDock.setFill(new LinearGradient(
@@ -389,11 +384,7 @@ public class LauncherPacks extends IScreen {
 
         this.quitButton = new LauncherButton(root);
         this.quitButton.setText(QUITTER_BUTTON_TEXT);
-        this.quitButton.setStyle(
-                "-fx-background-color: linear-gradient(to right, #ff9800, #ff6d00);" +
-                "-fx-background-radius: 18;" +
-                "-fx-text-fill: white;"
-        );
+        UiStyle.primary(this.quitButton);
         this.quitButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
         this.quitButton.setPosition(mainX + mainW - 150, mainY + mainH - 54);
         this.quitButton.setSize(110, 38);
@@ -429,22 +420,7 @@ public class LauncherPacks extends IScreen {
     }
 
     private void applyTabState(JFXButton button, boolean active) {
-        if (active) {
-            button.setStyle(
-                    "-fx-background-radius: 16;" +
-                    "-fx-text-fill: white;" +
-                    "-fx-background-color: linear-gradient(to right, #ff9800, #ff6d00);"
-            );
-        } else {
-            button.setStyle(
-                    "-fx-background-radius: 16;" +
-                    "-fx-text-fill: rgba(255,255,255,0.86);" +
-                    "-fx-background-color: rgba(255,255,255,0.08);" +
-                    "-fx-border-color: rgba(255,255,255,0.10);" +
-                    "-fx-border-radius: 16;" +
-                    "-fx-border-width: 1;"
-            );
-        }
+        UiStyle.tab(button, active);
     }
 
     private void styleTabButton(JFXButton button, boolean active) {
@@ -464,14 +440,7 @@ public class LauncherPacks extends IScreen {
 
     private void styleSecondaryButton(JFXButton btn) {
         btn.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        btn.setStyle(
-                "-fx-background-radius: 18;" +
-                "-fx-text-fill: white;" +
-                "-fx-background-color: rgba(255,255,255,0.10);" +
-                "-fx-border-color: rgba(255,255,255,0.16);" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;"
-        );
+        UiStyle.secondary(btn);
     }
 
     private void animateIn(Node node, double fromX, double fromY, int delayMs) {
@@ -581,13 +550,7 @@ public class LauncherPacks extends IScreen {
                 nameLabel.setStyle("-fx-text-fill: white;");
 
                 deleteButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
-                deleteButton.setStyle(
-                        "-fx-background-color: rgba(255,80,80,0.18);" +
-                        "-fx-background-radius: 14;" +
-                        "-fx-text-fill: white;" +
-                        "-fx-border-color: rgba(255,255,255,0.10);" +
-                        "-fx-border-radius: 14;"
-                );
+                UiStyle.danger(deleteButton);
 
                 hbox.setAlignment(Pos.CENTER_LEFT);
                 textBox.setPrefWidth(320);
@@ -656,18 +619,10 @@ public class LauncherPacks extends IScreen {
                 statsLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.46);");
 
                 openButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-                openButton.setStyle(
-                        "-fx-background-color: rgba(255,255,255,0.10);" +
-                        "-fx-background-radius: 14;" +
-                        "-fx-text-fill: white;"
-                );
+                UiStyle.secondary(openButton);
 
                 downloadButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-                downloadButton.setStyle(
-                        "-fx-background-color: linear-gradient(to right, #ff9800, #ff6d00);" +
-                        "-fx-background-radius: 14;" +
-                        "-fx-text-fill: white;"
-                );
+                UiStyle.primary(downloadButton);
 
                 textBox.setPrefWidth(330);
                 actionsBox.setSpacing(8);

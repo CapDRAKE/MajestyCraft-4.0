@@ -98,35 +98,219 @@
     -fx-background-color: rgba(255,255,255,0.75);
 }
 
-/* Popup dropdown */
-.jfx-combo-box-popup .list-view {
-    -fx-background-color: rgba(16,16,16,0.96);
+/* Menu déroulant des listes (classe réelle : .combo-box-popup) */
+.combo-box-popup .list-view {
+    -fx-background-color: #141922;
+    -fx-background-insets: 0;
+    -fx-border-color: rgba(255,255,255,0.10);
+    -fx-border-radius: 14;
     -fx-background-radius: 14;
     -fx-padding: 6;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.70), 24, 0, 0, 8);
 }
 
-.jfx-combo-box-popup .list-cell {
+.combo-box-popup .list-cell {
     -fx-background-color: transparent;
     -fx-text-fill: rgba(255,255,255,0.88);
     -fx-padding: 8 12;
     -fx-background-radius: 10;
 }
 
-.jfx-combo-box-popup .list-cell:hover {
+.combo-box-popup .list-cell:filled:hover {
     -fx-background-color: rgba(255,255,255,0.10);
 }
 
-.jfx-combo-box-popup .list-cell:selected {
+.combo-box-popup .list-cell:filled:selected {
     -fx-background-color: rgba(255,109,0,0.28);
     -fx-text-fill: white;
 }
 
 /* Scrollbar plus discret (optionnel) */
-.jfx-combo-box-popup .scroll-bar:vertical .thumb {
+.combo-box-popup .scroll-bar:vertical .thumb {
     -fx-background-color: rgba(255,255,255,0.20);
     -fx-background-radius: 8;
 }
-.jfx-combo-box-popup .scroll-bar:vertical {
+.combo-box-popup .scroll-bar:vertical {
     -fx-background-color: transparent;
 }
+
+/* =====================================================================
+   MajestyLauncher - boutons modernes (classes ml-*)
+   Rayon commun : 14 px. Les icônes vectorielles (fr.majestycraft.util.Icons)
+   portent la classe .ml-icon : leur couleur suit l'état du bouton.
+   ===================================================================== */
+
+.ml-side, .ml-primary, .ml-secondary, .ml-window, .ml-tab, .ml-chip, .ml-soft, .ml-danger {
+    -fx-background-insets: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-cursor: hand;
+}
+
+/* Barre latérale : bouton discret, l'icône s'éclaire au survol */
+.ml-side {
+    -fx-background-color: transparent;
+    -fx-background-radius: 14;
+    -fx-border-color: transparent;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+}
+.ml-side .ml-icon { -fx-stroke: rgba(255,255,255,0.62); }
+.ml-side:hover {
+    -fx-background-color: rgba(255,255,255,0.08);
+    -fx-border-color: rgba(255,255,255,0.10);
+}
+.ml-side:hover .ml-icon { -fx-stroke: #ffffff; }
+.ml-side:pressed { -fx-background-color: rgba(255,255,255,0.14); }
+.ml-side:focused { -fx-border-color: rgba(255,154,40,0.55); }
+/* Compte Microsoft connecté */
+.ml-side.ml-connected {
+    -fx-background-color: rgba(80,200,120,0.12);
+    -fx-border-color: rgba(95,220,135,0.55);
+}
+
+/* Action principale (JOUER) */
+.ml-primary {
+    -fx-background-color: linear-gradient(to right, #ffa630, #ff7a00);
+    -fx-background-radius: 14;
+    -fx-text-fill: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(255,122,0,0.38), 18, 0, 0, 4);
+}
+.ml-primary .ml-icon-fill { -fx-fill: #ffffff; -fx-stroke: #ffffff; }
+.ml-primary:hover {
+    -fx-background-color: linear-gradient(to right, #ffb54d, #ff8a1a);
+    -fx-effect: dropshadow(gaussian, rgba(255,140,0,0.58), 24, 0, 0, 6);
+}
+.ml-primary:pressed {
+    -fx-background-color: linear-gradient(to right, #f29420, #ec6c00);
+    -fx-effect: dropshadow(gaussian, rgba(255,122,0,0.28), 10, 0, 0, 2);
+}
+.ml-primary:disabled { -fx-opacity: 0.55; }
+
+/* Actions secondaires (Microsoft, Site, Discord, réglages des profils) */
+.ml-secondary {
+    -fx-background-color: rgba(255,255,255,0.06);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(255,255,255,0.12);
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-text-fill: rgba(255,255,255,0.92);
+}
+.ml-secondary .ml-icon { -fx-stroke: rgba(255,255,255,0.78); }
+.ml-secondary:hover {
+    -fx-background-color: rgba(255,255,255,0.11);
+    -fx-border-color: rgba(255,255,255,0.24);
+}
+.ml-secondary:hover .ml-icon { -fx-stroke: #ffffff; }
+.ml-secondary:pressed { -fx-background-color: rgba(255,255,255,0.16); }
+.ml-secondary:focused { -fx-border-color: rgba(255,154,40,0.60); }
+.ml-secondary:disabled { -fx-opacity: 0.5; }
+
+/* Texte appuyé pour une action secondaire importante (connexion Microsoft) */
+.ml-strong {
+    -fx-font-family: "Segoe UI";
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+/* Commandes de fenêtre (réduire, fermer) */
+.ml-window {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-padding: 0;
+}
+.ml-window .ml-icon { -fx-stroke: rgba(255,255,255,0.62); }
+.ml-window:hover { -fx-background-color: rgba(255,255,255,0.10); }
+.ml-window:hover .ml-icon { -fx-stroke: #ffffff; }
+.ml-window-close:hover { -fx-background-color: #e5484d; }
+
+/* Champ de saisie (pseudo) : bordure orange au focus, sans le trait JFoenix */
+.ml-input {
+    -fx-background-color: rgba(255,255,255,0.06);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(255,255,255,0.12);
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-text-fill: rgba(255,255,255,0.95);
+    -fx-prompt-text-fill: rgba(255,255,255,0.45);
+    -fx-padding: 0 16 0 16;
+    -jfx-focus-color: transparent;
+    -jfx-unfocus-color: transparent;
+}
+.ml-input:hover { -fx-border-color: rgba(255,255,255,0.22); }
+.ml-input:focused {
+    -fx-background-color: rgba(255,255,255,0.09);
+    -fx-border-color: rgba(255,154,40,0.85);
+}
+.ml-input:disabled { -fx-opacity: 0.75; }
+
+/* Gros bouton d'action (JOUER) : texte appuyé */
+.ml-cta {
+    -fx-font-family: "Segoe UI";
+    -fx-font-weight: bold;
+    -fx-font-size: 17px;
+}
+
+/* Onglets en pilule (Infos, Packs, Mods, Shaders) */
+.ml-tab {
+    -fx-background-color: rgba(255,255,255,0.06);
+    -fx-background-radius: 999;
+    -fx-border-color: rgba(255,255,255,0.12);
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+    -fx-text-fill: rgba(255,255,255,0.78);
+}
+.ml-tab:hover {
+    -fx-background-color: rgba(255,255,255,0.11);
+    -fx-text-fill: #ffffff;
+}
+.ml-tab.ml-tab-active {
+    -fx-background-color: linear-gradient(to right, #ffa630, #ff7a00);
+    -fx-border-color: transparent;
+    -fx-text-fill: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(255,122,0,0.30), 12, 0, 0, 2);
+}
+.ml-tab.ml-tab-active:hover { -fx-background-color: linear-gradient(to right, #ffb54d, #ff8a1a); }
+
+/* Filtres (loader...) : le filtre actif est teinté d'orange */
+.ml-chip {
+    -fx-background-color: rgba(255,255,255,0.06);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(255,255,255,0.10);
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-text-fill: rgba(255,255,255,0.82);
+}
+.ml-chip:hover { -fx-background-color: rgba(255,255,255,0.11); -fx-text-fill: #ffffff; }
+.ml-chip.ml-chip-active {
+    -fx-background-color: rgba(255,152,0,0.22);
+    -fx-border-color: rgba(255,176,0,0.55);
+    -fx-text-fill: #ffffff;
+}
+
+/* Petite action mise en avant : orange doux */
+.ml-soft {
+    -fx-background-color: rgba(255,170,40,0.16);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(255,176,0,0.30);
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-text-fill: #ffffff;
+}
+.ml-soft:hover { -fx-background-color: rgba(255,170,40,0.28); -fx-border-color: rgba(255,176,0,0.55); }
+.ml-soft:pressed { -fx-background-color: rgba(255,170,40,0.36); }
+
+/* Action destructrice : rouge doux, plus franc au survol */
+.ml-danger {
+    -fx-background-color: rgba(229,72,77,0.16);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(229,72,77,0.40);
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-text-fill: #ffb3b5;
+}
+.ml-danger:hover { -fx-background-color: rgba(229,72,77,0.30); -fx-text-fill: #ffffff; }
+.ml-danger:pressed { -fx-background-color: rgba(229,72,77,0.42); }
+
+.ml-tab:disabled, .ml-chip:disabled, .ml-soft:disabled, .ml-danger:disabled { -fx-opacity: 0.5; }

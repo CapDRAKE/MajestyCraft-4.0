@@ -1,5 +1,7 @@
 package fr.majestycraft.launcher;
 
+import fr.majestycraft.util.UiStyle;
+import fr.majestycraft.util.AmbientBackground;
 import animatefx.animation.ZoomOutDown;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -174,17 +176,8 @@ public class LauncherMods extends IScreen {
         this.selectedMinecraftVersion = resolveInitialMinecraftVersion();
         this.selectedLoader = resolveInitialLoader();
 
-        installResponsiveBackground(root, engine, "background.png");
+        AmbientBackground.installResponsive(root, false);
 
-        Rectangle overlay = new Rectangle();
-        overlay.widthProperty().bind(root.widthProperty());
-        overlay.heightProperty().bind(root.heightProperty());
-        overlay.setFill(new LinearGradient(
-                0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.rgb(0, 0, 0, 0.18)),
-                new Stop(1, Color.rgb(0, 0, 0, 0.75))
-        ));
-        root.getChildren().add(overlay);
 
         Rectangle leftDock = new Rectangle();
         leftDock.setWidth(84);
@@ -487,11 +480,7 @@ public class LauncherMods extends IScreen {
 
         this.quitButton = new LauncherButton(root);
         this.quitButton.setText("Retour");
-        this.quitButton.setStyle(
-                "-fx-background-color: linear-gradient(to right, #ff9800, #ff6d00);" +
-                "-fx-background-radius: 18;" +
-                "-fx-text-fill: white;"
-        );
+        UiStyle.primary(this.quitButton);
         this.quitButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
         this.quitButton.setPosition(mainX + mainW - 150, mainY + mainH - 54);
         this.quitButton.setSize(110, 38);
@@ -572,22 +561,7 @@ public class LauncherMods extends IScreen {
     }
 
     private void applyTabState(JFXButton button, boolean active) {
-        if (active) {
-            button.setStyle(
-                    "-fx-background-radius: 16;" +
-                    "-fx-text-fill: white;" +
-                    "-fx-background-color: linear-gradient(to right, #ff9800, #ff6d00);"
-            );
-        } else {
-            button.setStyle(
-                    "-fx-background-radius: 16;" +
-                    "-fx-text-fill: rgba(255,255,255,0.86);" +
-                    "-fx-background-color: rgba(255,255,255,0.08);" +
-                    "-fx-border-color: rgba(255,255,255,0.10);" +
-                    "-fx-border-radius: 16;" +
-                    "-fx-border-width: 1;"
-            );
-        }
+        UiStyle.tab(button, active);
     }
 
     private void applyLoaderState() {
@@ -600,25 +574,7 @@ public class LauncherMods extends IScreen {
 
     private void styleLoaderButton(JFXButton button, boolean active) {
         if (button == null) return;
-        if (active) {
-            button.setStyle(
-                    "-fx-background-radius: 14;" +
-                    "-fx-text-fill: white;" +
-                    "-fx-background-color: rgba(255,152,0,0.28);" +
-                    "-fx-border-color: rgba(255,176,0,0.50);" +
-                    "-fx-border-radius: 14;" +
-                    "-fx-border-width: 1;"
-            );
-        } else {
-            button.setStyle(
-                    "-fx-background-radius: 14;" +
-                    "-fx-text-fill: rgba(255,255,255,0.86);" +
-                    "-fx-background-color: rgba(255,255,255,0.06);" +
-                    "-fx-border-color: rgba(255,255,255,0.10);" +
-                    "-fx-border-radius: 14;" +
-                    "-fx-border-width: 1;"
-            );
-        }
+        UiStyle.chip(button, active);
     }
 
     private void styleTabButton(JFXButton button, boolean active) {
@@ -638,14 +594,7 @@ public class LauncherMods extends IScreen {
 
     private void styleSecondaryButton(JFXButton btn) {
         btn.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        btn.setStyle(
-                "-fx-background-radius: 18;" +
-                "-fx-text-fill: white;" +
-                "-fx-background-color: rgba(255,255,255,0.10);" +
-                "-fx-border-color: rgba(255,255,255,0.16);" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;"
-        );
+        UiStyle.secondary(btn);
     }
 
     private void animateIn(Node node, double fromX, double fromY, int delayMs) {
@@ -1095,11 +1044,7 @@ public class LauncherMods extends IScreen {
 
                 stylePillButton(openButton, false);
                 downloadButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-                downloadButton.setStyle(
-                        "-fx-background-color: linear-gradient(to right, #ff9800, #ff6d00);" +
-                        "-fx-background-radius: 14;" +
-                        "-fx-text-fill: white;"
-                );
+                UiStyle.primary(downloadButton);
 
                 textBox.setPrefWidth(430);
                 textBox.setSpacing(3);
@@ -1153,34 +1098,13 @@ public class LauncherMods extends IScreen {
 
     private void stylePillButton(JFXButton button, boolean enabledAccent) {
         button.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-        if (enabledAccent) {
-            button.setStyle(
-                    "-fx-background-color: rgba(255,176,0,0.18);" +
-                    "-fx-background-radius: 14;" +
-                    "-fx-text-fill: white;" +
-                    "-fx-border-color: rgba(255,176,0,0.24);" +
-                    "-fx-border-radius: 14;"
-            );
-        } else {
-            button.setStyle(
-                    "-fx-background-color: rgba(255,255,255,0.10);" +
-                    "-fx-background-radius: 14;" +
-                    "-fx-text-fill: white;" +
-                    "-fx-border-color: rgba(255,255,255,0.10);" +
-                    "-fx-border-radius: 14;"
-            );
-        }
+        if (enabledAccent) UiStyle.soft(button);
+        else UiStyle.secondary(button);
     }
 
     private void styleDangerButton(JFXButton button) {
         button.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-        button.setStyle(
-                "-fx-background-color: rgba(255,80,80,0.18);" +
-                "-fx-background-radius: 14;" +
-                "-fx-text-fill: white;" +
-                "-fx-border-color: rgba(255,255,255,0.10);" +
-                "-fx-border-radius: 14;"
-        );
+        UiStyle.danger(button);
     }
 
     private String readableSize(long bytes) {
@@ -1520,16 +1444,6 @@ public class LauncherMods extends IScreen {
         }
     }
 
-    private void installResponsiveBackground(Pane root, GameEngine engine, String imageName) {
-        Image backgroundImage = getResourceLocation().loadImage(engine, imageName);
-        ImageView backgroundView = new ImageView(backgroundImage);
-        backgroundView.setPreserveRatio(false);
-        backgroundView.fitWidthProperty().bind(root.widthProperty());
-        backgroundView.fitHeightProperty().bind(root.heightProperty());
-        backgroundView.setLayoutX(0);
-        backgroundView.setLayoutY(0);
-        root.getChildren().add(backgroundView);
-    }
 
     private void downloadFile(String fileUrl, File destination) throws IOException {
         HttpURLConnection connection = null;

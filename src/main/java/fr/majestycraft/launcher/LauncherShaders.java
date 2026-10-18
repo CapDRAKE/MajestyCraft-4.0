@@ -1,5 +1,7 @@
 package fr.majestycraft.launcher;
 
+import fr.majestycraft.util.UiStyle;
+import fr.majestycraft.util.AmbientBackground;
 import animatefx.animation.ZoomOutDown;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -155,17 +157,8 @@ public class LauncherShaders extends IScreen {
             st.setY(event.getScreenY() - yOffSet);
         });
 
-        installResponsiveBackground(root, engine, "background.png");
+        AmbientBackground.installResponsive(root, false);
 
-        Rectangle overlay = new Rectangle();
-        overlay.widthProperty().bind(root.widthProperty());
-        overlay.heightProperty().bind(root.heightProperty());
-        overlay.setFill(new LinearGradient(
-                0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.rgb(0, 0, 0, 0.18)),
-                new Stop(1, Color.rgb(0, 0, 0, 0.75))
-        ));
-        root.getChildren().add(overlay);
 
         Rectangle leftDock = new Rectangle();
         leftDock.setWidth(84);
@@ -433,14 +426,14 @@ public class LauncherShaders extends IScreen {
         this.onlineStatusLabel.setPosition(mainX + 34, mainY + mainH - 80);
         this.onlineStatusLabel.setSize(mainW - 320, 18);
 
-        this.addButton = createGhostButton("Ajouter shader / zip", 166, 40);
+        this.addButton = createGhostButton("Ajouter shader / zip", 186, 40);
         this.addButton.setLayoutX(mainX + 34);
         this.addButton.setLayoutY(mainY + mainH - 46);
         this.addButton.setOnAction(e -> importShaderpack());
         root.getChildren().add(this.addButton);
 
         this.openFolderButton = createGhostButton("Ouvrir dossier", 148, 40);
-        this.openFolderButton.setLayoutX(mainX + 212);
+        this.openFolderButton.setLayoutX(mainX + 232);
         this.openFolderButton.setLayoutY(mainY + mainH - 46);
         this.openFolderButton.setOnAction(e -> openShaderpacksFolder());
         root.getChildren().add(this.openFolderButton);
@@ -1278,50 +1271,33 @@ public class LauncherShaders extends IScreen {
         button.setButtonType(JFXButton.ButtonType.RAISED);
         button.setPrefHeight(34);
         button.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
-        button.setTextFill(Color.WHITE);
         applyTabState(button, enabled);
-        installHoverScale(button);
     }
 
     private void applyTabState(JFXButton button, boolean active) {
         if (button == null) return;
-        button.setStyle(active
-                ? "-fx-background-color: linear-gradient(#ff9f1a, #ff7a00); -fx-background-radius: 16; -fx-text-fill: white;"
-                : "-fx-background-color: rgba(255,255,255,0.06); -fx-background-radius: 16; -fx-border-color: rgba(255,255,255,0.10); -fx-border-radius: 16; -fx-border-width: 1; -fx-text-fill: white;");
+        UiStyle.tab(button, active);
     }
 
     private JFXButton createGhostButton(String text, double w, double h) {
         JFXButton button = new JFXButton(text);
-        button.setButtonType(JFXButton.ButtonType.RAISED);
         button.setPrefSize(w, h);
         button.setMinSize(w, h);
         button.setMaxSize(w, h);
         button.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
-        button.setTextFill(Color.WHITE);
-        button.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.06);" +
-                "-fx-background-radius: 18;" +
-                "-fx-border-color: rgba(255,255,255,0.10);" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;" +
-                "-fx-text-fill: white;"
-        );
+        UiStyle.secondary(button);
         button.setRipplerFill(Color.rgb(255, 152, 0, 0.35));
-        installHoverScale(button);
         return button;
     }
 
     private JFXButton createCellButton(String text, boolean danger) {
         JFXButton button = new JFXButton(text);
-        button.setButtonType(JFXButton.ButtonType.RAISED);
         button.setPrefSize(danger ? 98 : 104, 32);
         button.setMinSize(danger ? 98 : 104, 32);
         button.setMaxSize(danger ? 98 : 104, 32);
         button.setFont(FontLoader.loadFont("Poppins-Regular.ttf", "Poppins", 12F));
-        button.setTextFill(Color.WHITE);
-        button.setStyle(danger
-                ? "-fx-background-color: rgba(255,120,120,0.20); -fx-background-radius: 16; -fx-border-color: rgba(255,140,140,0.24); -fx-border-radius: 16; -fx-border-width: 1;"
-                : "-fx-background-color: linear-gradient(#ff9f1a, #ff7a00); -fx-background-radius: 16;");
+        if (danger) UiStyle.danger(button);
+        else UiStyle.primary(button);
         return button;
     }
 
@@ -1335,38 +1311,10 @@ public class LauncherShaders extends IScreen {
     }
 
     private void styleSidebarFooterButton(LauncherButton button, boolean primary) {
-        String style = primary
-                ? "-fx-background-color: linear-gradient(#ff9f1a, #ff7a00); -fx-background-radius: 18; -fx-text-fill: white;"
-                : "-fx-background-color: rgba(255,255,255,0.06); -fx-background-radius: 18; -fx-border-color: rgba(255,255,255,0.10); -fx-border-radius: 18; -fx-border-width: 1; -fx-text-fill: white;";
-        button.setStyle(style);
-        installHoverScale(button);
+        if (primary) UiStyle.primary(button);
+        else UiStyle.secondary(button);
     }
 
-    private void installResponsiveBackground(Pane root, GameEngine engine, String imageName) {
-        Image backgroundImage = getResourceLocation().loadImage(engine, imageName);
-        ImageView backgroundView = new ImageView(backgroundImage);
-        backgroundView.setPreserveRatio(false);
-        backgroundView.fitWidthProperty().bind(root.widthProperty());
-        backgroundView.fitHeightProperty().bind(root.heightProperty());
-        backgroundView.setLayoutX(0);
-        backgroundView.setLayoutY(0);
-        root.getChildren().add(backgroundView);
-    }
-
-    private void installHoverScale(Node node) {
-        node.setOnMouseEntered(e -> {
-            javafx.animation.ScaleTransition st = new javafx.animation.ScaleTransition(Duration.millis(120), node);
-            st.setToX(1.04);
-            st.setToY(1.04);
-            st.play();
-        });
-        node.setOnMouseExited(e -> {
-            javafx.animation.ScaleTransition st = new javafx.animation.ScaleTransition(Duration.millis(120), node);
-            st.setToX(1.0);
-            st.setToY(1.0);
-            st.play();
-        });
-    }
 
     private void animateIn(Node node, double fromX, double fromY, int delayMs) {
         if (node == null) return;

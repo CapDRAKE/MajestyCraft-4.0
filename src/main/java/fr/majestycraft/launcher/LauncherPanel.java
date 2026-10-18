@@ -17,6 +17,9 @@ import fr.majestycraft.Main;
 import fr.majestycraft.Utils;
 import fr.majestycraft.profiles.LauncherProfile;
 import fr.majestycraft.profiles.ProfileManager;
+import fr.majestycraft.util.AmbientBackground;
+import fr.majestycraft.util.Icons;
+import fr.majestycraft.util.UiStyle;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.updater.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
@@ -42,6 +45,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.ContentDisplay;
@@ -199,7 +203,8 @@ public class LauncherPanel extends IScreen {
     public LauncherPanel(Pane root, GameEngine engine) {
         this.engine = engine;
 
-        this.drawBackgroundImage(engine, root, "heading.jpg");
+        // Fond dessiné en code (lueurs, terrain en blocs, braises) : plus d'image de fond.
+        AmbientBackground.install(root, engine.getWidth(), engine.getHeight(), true);
         Platform.runLater(root::requestFocus);
 
         this.config = new LauncherConfig(engine);
@@ -275,70 +280,6 @@ public class LauncherPanel extends IScreen {
             st.setToY(1.0);
             st.play();
         });
-    }
-
-    private void styleSidebarButton(LauncherButton button) {
-        button.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.06);" +
-                "-fx-background-radius: 18;" +
-                "-fx-border-color: rgba(255,255,255,0.10);" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;"
-        );
-    }
-
-    private void styleGhostButton(LauncherButton button) {
-        button.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.06);" +
-                "-fx-background-radius: 18;" +
-                "-fx-border-color: rgba(255,255,255,0.12);" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;" +
-                "-fx-text-fill: white;"
-        );
-    }
-
-    private void stylePrimaryButton(JFXButton button) {
-        button.setStyle(
-                "-fx-background-color: linear-gradient(#ffb347, #ff7a00);" +
-                "-fx-background-radius: 20;" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 17px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-border-color: rgba(255,255,255,0.16);" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 20;"
-        );
-        button.setEffect(new DropShadow(18, Color.rgb(255, 128, 0, 0.34)));
-    }
-
-    private void styleSecondaryButton(JFXButton button) {
-        button.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-background-radius: 20;" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 15px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-border-color: rgba(255,255,255,0.16);" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 20;"
-        );
-        button.setEffect(new DropShadow(16, Color.rgb(0, 0, 0, 0.20)));
-    }
-
-    private void styleUsernameField(JFXTextField field) {
-        field.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.10);" +
-                "-fx-background-radius: 20;" +
-                "-fx-border-color: rgba(255,255,255,0.14);" +
-                "-fx-border-radius: 20;" +
-                "-fx-border-width: 1;" +
-                "-fx-text-fill: rgba(255,255,255,0.95);" +
-                "-fx-prompt-text-fill: rgba(255,255,255,0.52);" +
-                "-fx-padding: 0 18 0 18;" +
-                "-jfx-focus-color: #ff8a00;" +
-                "-jfx-unfocus-color: rgba(255,255,255,0.18);"
-        );
     }
 
     private void styleModalActionButton(Button button, boolean primary) {
@@ -859,24 +800,18 @@ public class LauncherPanel extends IScreen {
     /** Reflète l'état de connexion sur l'icône Microsoft de la sidebar. */
     private void setMicrosoftButtonConnected(boolean connected) {
         if (microsoftButton != null) {
-            microsoftButton.setStyle(connected
-                    ? "-fx-background-color: rgba(80,200,120,0.16);" +
-                      "-fx-background-radius: 18;" +
-                      "-fx-border-color: rgba(95,220,135,0.70);" +
-                      "-fx-border-radius: 18;" +
-                      "-fx-border-width: 1.4;"
-                    : "-fx-background-color: rgba(255,255,255,0.06);" +
-                      "-fx-background-radius: 18;" +
-                      "-fx-border-color: rgba(255,255,255,0.10);" +
-                      "-fx-border-radius: 18;" +
-                      "-fx-border-width: 1;");
+            // Bordure et fond verts : classe ml-connected de css/design.css.
+            microsoftButton.getStyleClass().remove("ml-connected");
+            if (connected) {
+                microsoftButton.getStyleClass().add("ml-connected");
+            }
             microsoftButton.setTooltip(new Tooltip(connected ? "Compte Microsoft connecté" : "Connexion Microsoft"));
         }
         if (microsoftStateCaption != null) {
-            microsoftStateCaption.setText(connected ? "● Connecté" : "Hors ligne");
+            microsoftStateCaption.setText(connected ? "Connecté" : "Compte");
             microsoftStateCaption.setStyle(connected
                     ? "-fx-background-color: transparent; -fx-text-fill: rgba(110,225,140,0.95);"
-                    : "-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.45);");
+                    : "-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.55);");
         }
     }
 
@@ -1024,7 +959,7 @@ public class LauncherPanel extends IScreen {
                 }
                 setText(item);
                 setStyle(dropdown
-                        ? "-fx-text-fill: black;"
+                        ? "-fx-text-fill: rgba(255,255,255,0.92);"
                         : "-fx-text-fill: rgba(255,255,255,0.94);");
                 String hex = null;
                 int i = getIndex();
@@ -1092,14 +1027,6 @@ public class LauncherPanel extends IScreen {
     }
 
     private void setupBackGround(Pane root) {
-        Rectangle overlay = new Rectangle(engine.getWidth(), engine.getHeight());
-        overlay.setFill(new LinearGradient(
-                0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.rgb(0, 0, 0, 0.14)),
-                new Stop(1, Color.rgb(0, 0, 0, 0.70))
-        ));
-        root.getChildren().add(overlay);
-
         LauncherRectangle leftDock = new LauncherRectangle(root, 0, 0, 84, engine.getHeight());
         leftDock.setFill(new LinearGradient(
                 0, 0, 1, 0, true, CycleMethod.NO_CYCLE,
@@ -1168,23 +1095,20 @@ public class LauncherPanel extends IScreen {
         subtitleLabel.setSize(170, 18);
         subtitleLabel.setAlignment(Pos.CENTER);
 
+        // Commandes de fenêtre : icônes au trait, fond au survol (rouge pour fermer).
         LauncherButton closeButton = new LauncherButton(root);
-        LauncherImage closeImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "close.png"));
-        closeImg.setSize(14, 14);
-        closeButton.setGraphic(closeImg);
-        closeButton.setBackground(null);
-        closeButton.setPosition(engine.getWidth() - 32, 10);
-        closeButton.setSize(16, 16);
+        UiStyle.apply(closeButton, "ml-window", "ml-window-close");
+        closeButton.setGraphic(Icons.stroke(Icons.CLOSE, 15));
+        closeButton.setPosition(engine.getWidth() - 46, 8);
+        closeButton.setSize(36, 30);
         closeButton.setOnAction(event -> System.exit(0));
         closeButton.setTooltip(new Tooltip("Fermer"));
 
         LauncherButton reduceButton = new LauncherButton(root);
-        LauncherImage reduceImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "reduce.png"));
-        reduceImg.setSize(14, 14);
-        reduceButton.setGraphic(reduceImg);
-        reduceButton.setBackground(null);
-        reduceButton.setPosition(engine.getWidth() - 60, 10);
-        reduceButton.setSize(16, 16);
+        UiStyle.apply(reduceButton, "ml-window");
+        reduceButton.setGraphic(Icons.stroke(Icons.MINUS, 15));
+        reduceButton.setPosition(engine.getWidth() - 86, 8);
+        reduceButton.setSize(36, 30);
         reduceButton.setOnAction(event -> {
             Stage stage = (Stage) ((LauncherButton) event.getSource()).getScene().getWindow();
             stage.setIconified(true);
@@ -1246,36 +1170,29 @@ public class LauncherPanel extends IScreen {
     }
 
     private void setupButtons(Pane root) {
+        // Barre latérale : 7 boutons au même pas, chacun avec sa légende, centrés
+        // verticalement sous le logo.
         int sbX = 17;
-        int sbY = 122;
-        int step = 72;
+        int sbY = 116;
+        int step = 86;
         int size = 50;
 
         this.microsoftButton = new LauncherButton(root);
-        styleSidebarButton(this.microsoftButton);
-        LauncherImage microsoftImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "microsoft.png"));
-        microsoftImg.setSize(22, 22);
-        this.microsoftButton.setGraphic(microsoftImg);
+        UiStyle.apply(this.microsoftButton, "ml-side");
+        this.microsoftButton.setGraphic(Icons.microsoftLogo(22));
         this.microsoftButton.setPosition(sbX, sbY);
         this.microsoftButton.setSize(size, size);
         this.microsoftButton.setOnAction(event -> launchMicrosoftFlow(root));
         this.microsoftButton.setTooltip(new Tooltip("Connexion Microsoft"));
-        installHoverScale(this.microsoftButton);
 
-        // Petit état sous l'icône Microsoft : gris "Hors ligne" / vert "Connecté".
-        this.microsoftStateCaption = new LauncherLabel(root);
-        this.microsoftStateCaption.setText("Hors ligne");
-        this.microsoftStateCaption.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 9F));
-        this.microsoftStateCaption.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.45);");
-        this.microsoftStateCaption.setAlignment(Pos.CENTER);
-        this.microsoftStateCaption.setPosition(sbX - 15, sbY + size + 1);
-        this.microsoftStateCaption.setSize(80, 12);
+        // Légende du bouton Compte : "Compte", puis "Connecté" en vert une fois
+        // connecté (voir setMicrosoftButtonConnected). Animée à part dans update().
+        this.microsoftStateCaption = addSidebarCaption(root, "Compte", sbX, sbY, size);
+        sidebarCaptions.remove(this.microsoftStateCaption);
 
         this.infoButton = new LauncherButton(root);
-        styleSidebarButton(this.infoButton);
-        LauncherImage infoImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "info.png"));
-        infoImg.setSize(22, 22);
-        this.infoButton.setGraphic(infoImg);
+        UiStyle.apply(this.infoButton, "ml-side");
+        this.infoButton.setGraphic(Icons.stroke(Icons.INFO, 22));
         this.infoButton.setPosition(sbX, sbY + step);
         this.infoButton.setSize(size, size);
         this.infoButton.setOnAction(event -> {
@@ -1291,13 +1208,11 @@ public class LauncherPanel extends IScreen {
             stage.show();
         });
         this.infoButton.setTooltip(new Tooltip("Informations"));
-        installHoverScale(this.infoButton);
+        addSidebarCaption(root, "Infos", sbX, sbY + step, size);
 
         this.settingsButton = new LauncherButton(root);
-        styleSidebarButton(this.settingsButton);
-        LauncherImage settingsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "settings.png"));
-        settingsImg.setSize(22, 22);
-        this.settingsButton.setGraphic(settingsImg);
+        UiStyle.apply(this.settingsButton, "ml-side");
+        this.settingsButton.setGraphic(Icons.stroke(Icons.SETTINGS, 22));
         this.settingsButton.setPosition(sbX, sbY + step * 2);
         this.settingsButton.setSize(size, size);
         this.settingsButton.setOnAction(event -> {
@@ -1317,33 +1232,25 @@ public class LauncherPanel extends IScreen {
             stage.showAndWait();
         });
         this.settingsButton.setTooltip(new Tooltip("Paramètres"));
-        installHoverScale(this.settingsButton);
+        addSidebarCaption(root, "Réglages", sbX, sbY + step * 2, size);
 
-        // Les icônes avec un texte sous l'icône (profils/packs/mods/shaders) ont
-        // plus d'espace vertical (labeledStep) que le pas standard (step).
-        int labeledStep = 90;
         int profilesY = sbY + step * 3;
-        int packsY = profilesY + labeledStep;
-        int modsY = packsY + labeledStep;
-        int shadersY = modsY + labeledStep;
+        int packsY = sbY + step * 4;
+        int modsY = sbY + step * 5;
+        int shadersY = sbY + step * 6;
 
         this.profilesButton = new LauncherButton(root);
-        styleSidebarButton(this.profilesButton);
-        LauncherImage profilesImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "profiles.png"));
-        profilesImg.setSize(22, 22);
-        this.profilesButton.setGraphic(profilesImg);
+        UiStyle.apply(this.profilesButton, "ml-side");
+        this.profilesButton.setGraphic(Icons.stroke(Icons.LAYERS, 22));
         this.profilesButton.setPosition(sbX, profilesY);
         this.profilesButton.setSize(size, size);
         this.profilesButton.setOnAction(event -> openProfilesPanel());
         this.profilesButton.setTooltip(new Tooltip("Profils de jeu"));
-        installHoverScale(this.profilesButton);
         addSidebarCaption(root, "Profils", sbX, profilesY, size);
 
         this.packsButton = new LauncherButton(root);
-        styleSidebarButton(this.packsButton);
-        LauncherImage packImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "pack.png"));
-        packImg.setSize(22, 22);
-        this.packsButton.setGraphic(packImg);
+        UiStyle.apply(this.packsButton, "ml-side");
+        this.packsButton.setGraphic(Icons.stroke(Icons.IMAGE, 22));
         this.packsButton.setPosition(sbX, packsY);
         this.packsButton.setSize(size, size);
         this.packsButton.setOnAction(event -> {
@@ -1359,14 +1266,11 @@ public class LauncherPanel extends IScreen {
             stage.showAndWait();
         });
         this.packsButton.setTooltip(new Tooltip("Packs de textures"));
-        installHoverScale(this.packsButton);
         addSidebarCaption(root, "Packs", sbX, packsY, size);
 
         this.modsButton = new LauncherButton(root);
-        styleSidebarButton(this.modsButton);
-        LauncherImage modsImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "mods.png"));
-        modsImg.setSize(22, 22);
-        this.modsButton.setGraphic(modsImg);
+        UiStyle.apply(this.modsButton, "ml-side");
+        this.modsButton.setGraphic(Icons.stroke(Icons.BOX, 22));
         this.modsButton.setPosition(sbX, modsY);
         this.modsButton.setSize(size, size);
         this.modsButton.setOnAction(event -> {
@@ -1382,14 +1286,11 @@ public class LauncherPanel extends IScreen {
             stage.showAndWait();
         });
         this.modsButton.setTooltip(new Tooltip("Mods"));
-        installHoverScale(this.modsButton);
         addSidebarCaption(root, "Mods", sbX, modsY, size);
 
         this.shadersButton = new LauncherButton(root);
-        styleSidebarButton(this.shadersButton);
-        LauncherImage shadersImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "shaderpacks.png"));
-        shadersImg.setSize(22, 22);
-        this.shadersButton.setGraphic(shadersImg);
+        UiStyle.apply(this.shadersButton, "ml-side");
+        this.shadersButton.setGraphic(Icons.stroke(Icons.SUN, 22));
         this.shadersButton.setPosition(sbX, shadersY);
         this.shadersButton.setSize(size, size);
         this.shadersButton.setOnAction(event -> {
@@ -1405,7 +1306,6 @@ public class LauncherPanel extends IScreen {
             stage.showAndWait();
         });
         this.shadersButton.setTooltip(new Tooltip("Shaders"));
-        installHoverScale(this.shadersButton);
         addSidebarCaption(root, "Shaders", sbX, shadersY, size);
 
         int quickW = 155;
@@ -1415,69 +1315,118 @@ public class LauncherPanel extends IScreen {
 
         this.voteButton = new LauncherButton(root);
         this.voteButton.setText(BUTTON_SITE);
-        this.voteButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
+        this.voteButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
         this.voteButton.setPosition(138, quickY);
         this.voteButton.setSize(quickW, quickH);
-        styleGhostButton(this.voteButton);
+        UiStyle.apply(this.voteButton, "ml-secondary");
+        this.voteButton.setGraphic(Icons.stroke(Icons.GLOBE, 17));
+        this.voteButton.setGraphicTextGap(10);
         this.voteButton.setOnAction(event -> openLink(SITE_URL));
-        installHoverScale(this.voteButton);
 
         this.boutiqueButton = new LauncherButton(root);
         this.boutiqueButton.setText(BUTTON_DISCORD);
-        this.boutiqueButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 16F));
+        this.boutiqueButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
         this.boutiqueButton.setPosition(138 + quickW + quickGap, quickY);
         this.boutiqueButton.setSize(quickW, quickH);
-        styleGhostButton(this.boutiqueButton);
+        UiStyle.apply(this.boutiqueButton, "ml-secondary");
+        this.boutiqueButton.setGraphic(Icons.stroke(Icons.MESSAGE, 17));
+        this.boutiqueButton.setGraphicTextGap(10);
         this.boutiqueButton.setOnAction(event -> openLink(DISCORD_URL));
-        installHoverScale(this.boutiqueButton);
 
-        int iconSize = 56;
-        int iconGap = 84;
-        int socialStartX = 145;
+        // Réseaux : pastilles rondes identiques, alignées sur le texte d'accueil.
+        int socialSize = 46;
+        int socialGap = 14;
+        int socialStartX = 138;
+        this.tiktokButton = createSocialButton(root, "tiktok.png", "TikTok", INSTAGRAM_URL,
+                socialStartX, socialY, socialSize);
+        this.minestratorButton = createSocialButton(root, "minestrator.png", "Minestrator", MINESTRATOR_URL,
+                socialStartX + (socialSize + socialGap), socialY, socialSize);
+        this.twitterButton = createSocialButton(root, "twitter_icon.png", "Twitter", TWITTER_URL,
+                socialStartX + (socialSize + socialGap) * 2, socialY, socialSize);
+        this.youtubeButton = createSocialButton(root, "yt_icon.png", "YouTube", YOUTUBE_URL,
+                socialStartX + (socialSize + socialGap) * 3, socialY, socialSize);
+    }
 
-        this.tiktokButton = new LauncherButton(root);
-        this.tiktokButton.setInvisible();
-        this.tiktokButton.setPosition(socialStartX, socialY);
-        LauncherImage tiktokImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "tiktok.png"));
-        tiktokImg.setSize(iconSize, iconSize);
-        this.tiktokButton.setGraphic(tiktokImg);
-        this.tiktokButton.setSize(iconSize, iconSize);
-        this.tiktokButton.setBackground(null);
-        this.tiktokButton.setOnAction(event -> openLink(INSTAGRAM_URL));
-        installHoverScale(this.tiktokButton);
+    /**
+     * Bouton réseau social : pastille ronde, logo en gris discret au repos, couleurs
+     * d'origine et léger agrandissement au survol.
+     */
+    private LauncherButton createSocialButton(Pane root, String imageName, String tooltip, String url,
+                                              int x, int y, int size) {
+        String idle = "-fx-background-color: rgba(255,255,255,0.06);"
+                + "-fx-background-radius: 999;"
+                + "-fx-border-color: rgba(255,255,255,0.12);"
+                + "-fx-border-radius: 999;"
+                + "-fx-border-width: 1;"
+                + "-fx-padding: 0;"
+                + "-fx-cursor: hand;";
+        String hover = "-fx-background-color: rgba(255,255,255,0.12);"
+                + "-fx-background-radius: 999;"
+                + "-fx-border-color: rgba(255,170,60,0.55);"
+                + "-fx-border-radius: 999;"
+                + "-fx-border-width: 1;"
+                + "-fx-padding: 0;"
+                + "-fx-cursor: hand;";
 
-        this.minestratorButton = new LauncherButton(root);
-        this.minestratorButton.setInvisible();
-        this.minestratorButton.setPosition(socialStartX + iconGap, socialY);
-        LauncherImage minestratorImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "minestrator.png"));
-        minestratorImg.setSize(iconSize, iconSize);
-        this.minestratorButton.setGraphic(minestratorImg);
-        this.minestratorButton.setSize(iconSize, iconSize);
-        this.minestratorButton.setBackground(null);
-        this.minestratorButton.setOnAction(event -> openLink(MINESTRATOR_URL));
-        installHoverScale(this.minestratorButton);
+        LauncherButton button = new LauncherButton(root);
+        Image colored = getResourceLocation().loadImage(engine, imageName);
+        Image muted = toMonochrome(colored);
+        LauncherImage icon = new LauncherImage(root, muted);
+        icon.setSize(24, 24);
+        icon.setPreserveRatio(true);
+        icon.setOpacity(0.85);
 
-        this.twitterButton = new LauncherButton(root);
-        this.twitterButton.setInvisible();
-        this.twitterButton.setPosition(socialStartX + iconGap * 2, socialY);
-        LauncherImage twitterImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "twitter_icon.png"));
-        twitterImg.setSize(iconSize, iconSize);
-        this.twitterButton.setGraphic(twitterImg);
-        this.twitterButton.setSize(iconSize, iconSize);
-        this.twitterButton.setBackground(null);
-        this.twitterButton.setOnAction(event -> openLink(TWITTER_URL));
-        installHoverScale(this.twitterButton);
+        button.setGraphic(icon);
+        button.setPosition(x, y);
+        button.setSize(size, size);
+        button.setStyle(idle);
+        button.setTooltip(new Tooltip(tooltip));
+        button.setOnAction(event -> openLink(url));
+        button.setOnMouseEntered(e -> {
+            button.setStyle(hover);
+            icon.setImage(colored);
+            icon.setOpacity(1);
+            ScaleTransition st = new ScaleTransition(javafx.util.Duration.millis(120), button);
+            st.setToX(1.08);
+            st.setToY(1.08);
+            st.play();
+        });
+        button.setOnMouseExited(e -> {
+            button.setStyle(idle);
+            icon.setImage(muted);
+            icon.setOpacity(0.85);
+            ScaleTransition st = new ScaleTransition(javafx.util.Duration.millis(120), button);
+            st.setToX(1.0);
+            st.setToY(1.0);
+            st.play();
+        });
+        return button;
+    }
 
-        this.youtubeButton = new LauncherButton(root);
-        this.youtubeButton.setInvisible();
-        this.youtubeButton.setPosition(socialStartX + iconGap * 3, socialY);
-        LauncherImage youtubeImg = new LauncherImage(root, getResourceLocation().loadImage(engine, "yt_icon.png"));
-        youtubeImg.setSize(iconSize, iconSize);
-        this.youtubeButton.setGraphic(youtubeImg);
-        this.youtubeButton.setSize(iconSize, iconSize);
-        this.youtubeButton.setBackground(null);
-        this.youtubeButton.setOnAction(event -> openLink(YOUTUBE_URL));
-        installHoverScale(this.youtubeButton);
+    /**
+     * Version gris clair d'un logo, d'après la luminance perçue de chaque pixel
+     * (ramenée entre 55 % et 100 % de blanc pour rester lisible sur fond sombre).
+     * ColorAdjust ne convient pas : il désature en gardant la luminosité HSB, et un
+     * rouge ou un bleu purs deviennent blancs (le triangle de YouTube disparaissait).
+     */
+    private static Image toMonochrome(Image source) {
+        if (source == null || source.getPixelReader() == null) {
+            return source;
+        }
+        int w = (int) source.getWidth();
+        int h = (int) source.getHeight();
+        javafx.scene.image.PixelReader reader = source.getPixelReader();
+        javafx.scene.image.WritableImage out = new javafx.scene.image.WritableImage(w, h);
+        javafx.scene.image.PixelWriter writer = out.getPixelWriter();
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
+                Color c = reader.getColor(x, y);
+                double luma = 0.299 * c.getRed() + 0.587 * c.getGreen() + 0.114 * c.getBlue();
+                double grey = 0.55 + 0.45 * luma;
+                writer.setColor(x, y, new Color(grey, grey, grey, c.getOpacity()));
+            }
+        }
+        return out;
     }
 
     /**
@@ -1497,16 +1446,18 @@ public class LauncherPanel extends IScreen {
     }
 
     private void setupConnectionsGUI(Pane root) {
-        this.connectionGlow = new Rectangle(connX - 22, connY - 22, connW + 44, connH + 44);
-        this.connectionGlow.setArcWidth(46);
-        this.connectionGlow.setArcHeight(46);
-        this.connectionGlow.setFill(new LinearGradient(
-                0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.rgb(255, 166, 0, 0.15)),
-                new Stop(0.50, Color.rgb(255, 255, 255, 0.03)),
-                new Stop(1, Color.rgb(255, 122, 0, 0.08))
+        // Halo diffus derrière la carte : le dégradé radial s'éteint avant les bords du
+        // rectangle, il n'y a donc aucun contour visible (l'ancien halo rectangulaire
+        // dépassait de la carte et se lisait comme un second cadre).
+        int glowMargin = 90;
+        this.connectionGlow = new Rectangle(connX - glowMargin, connY - glowMargin,
+                connW + glowMargin * 2, connH + glowMargin * 2);
+        this.connectionGlow.setFill(new RadialGradient(
+                0, 0, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE,
+                new Stop(0, Color.rgb(255, 138, 0, 0.16)),
+                new Stop(0.55, Color.rgb(255, 120, 0, 0.07)),
+                new Stop(1, Color.TRANSPARENT)
         ));
-        this.connectionGlow.setEffect(new DropShadow(54, Color.rgb(255, 132, 0, 0.18)));
         this.connectionGlow.setMouseTransparent(true);
         root.getChildren().add(this.connectionGlow);
 
@@ -1558,7 +1509,7 @@ public class LauncherPanel extends IScreen {
         this.usernameField.setPrefHeight(48);
         this.usernameField.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
         this.usernameField.setPromptText(INPUT_PSEUDO_OR_EMAIL);
-        styleUsernameField(this.usernameField);
+        this.usernameField.getStyleClass().add("ml-input");
 
         if (!cfgBool(EnumConfig.USE_MICROSOFT)) {
             this.usernameField.setText((String) this.config.getValue(EnumConfig.USERNAME));
@@ -1607,21 +1558,20 @@ public class LauncherPanel extends IScreen {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty ? null : item);
-                setStyle("-fx-text-fill: black;");
+                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
             }
         });
         this.profileCombo.setOnAction(event -> onProfileComboChanged());
         root.getChildren().add(this.profileCombo);
 
-        this.manageProfilesButton = new JFXButton("⚙");
+        this.manageProfilesButton = new JFXButton();
         this.manageProfilesButton.setLayoutX(connX + connW - 68);
         this.manageProfilesButton.setLayoutY(connY + 262);
         this.manageProfilesButton.setPrefSize(40, 38);
-        this.manageProfilesButton.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        styleSecondaryButton(this.manageProfilesButton);
+        UiStyle.apply(this.manageProfilesButton, "ml-secondary");
+        this.manageProfilesButton.setGraphic(Icons.stroke(Icons.SETTINGS, 18));
         this.manageProfilesButton.setTooltip(new Tooltip("Gérer les profils"));
         this.manageProfilesButton.setOnAction(event -> openProfilesPanel());
-        installHoverScale(this.manageProfilesButton);
         root.getChildren().add(this.manageProfilesButton);
 
         refreshProfilesUI();
@@ -1632,9 +1582,9 @@ public class LauncherPanel extends IScreen {
         this.playButton.setLayoutY(connY + 314);
         this.playButton.setPrefWidth(connW - 56);
         this.playButton.setPrefHeight(52);
-        this.playButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 18F));
-        stylePrimaryButton(this.playButton);
-        installHoverScale(this.playButton);
+        UiStyle.apply(this.playButton, "ml-primary", "ml-cta");
+        this.playButton.setGraphic(Icons.filled(Icons.PLAY, 16));
+        this.playButton.setGraphicTextGap(12);
         this.playButton.setOnAction(event -> onPlayClicked(root));
         root.getChildren().add(this.playButton);
 
@@ -1644,16 +1594,11 @@ public class LauncherPanel extends IScreen {
         this.microsoftInlineButton.setLayoutY(connY + 376);
         this.microsoftInlineButton.setPrefWidth(connW - 56);
         this.microsoftInlineButton.setPrefHeight(38);
-        this.microsoftInlineButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-        styleSecondaryButton(this.microsoftInlineButton);
-        ImageView microsoftInlineIcon = new ImageView(getResourceLocation().loadImage(engine, "microsoft.png"));
-        microsoftInlineIcon.setFitWidth(16);
-        microsoftInlineIcon.setFitHeight(16);
-        this.microsoftInlineButton.setGraphic(microsoftInlineIcon);
+        UiStyle.apply(this.microsoftInlineButton, "ml-secondary", "ml-strong");
+        this.microsoftInlineButton.setGraphic(Icons.microsoftLogo(15));
         this.microsoftInlineButton.setGraphicTextGap(10);
         this.microsoftInlineButton.setContentDisplay(ContentDisplay.LEFT);
         this.microsoftInlineButton.setOnAction(event -> launchMicrosoftFlow(root));
-        installHoverScale(this.microsoftInlineButton);
         root.getChildren().add(this.microsoftInlineButton);
 
         int autoCardWidth = 620;

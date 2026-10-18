@@ -1,5 +1,7 @@
 package fr.majestycraft.launcher;
 
+import fr.majestycraft.util.UiStyle;
+import fr.majestycraft.util.AmbientBackground;
 import com.jfoenix.controls.JFXButton;
 
 import fr.majestycraft.Main;
@@ -78,18 +80,11 @@ public class LauncherInfo extends IScreen {
     private boolean showingNews = false;
 
     public LauncherInfo(final Pane root, final GameEngine engine, final LauncherPanel pane) {
-        this.drawBackgroundImage(engine, root, "background.png");
+        AmbientBackground.installResponsive(root, false);
 
         final int W = engine.getWidth();
         final int H = engine.getHeight();
 
-        Rectangle overlay = new Rectangle(W, H);
-        overlay.setFill(new LinearGradient(
-                0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.rgb(0, 0, 0, 0.18)),
-                new Stop(1, Color.rgb(0, 0, 0, 0.74))
-        ));
-        root.getChildren().add(overlay);
 
         LauncherRectangle leftDock = new LauncherRectangle(root, 0, 0, 84, H);
         leftDock.setFill(new LinearGradient(
@@ -235,14 +230,7 @@ public class LauncherInfo extends IScreen {
         /* ===================== Boutons bas ===================== */
         LauncherButton logsButton = new LauncherButton(root);
         logsButton.setText("Voir les logs");
-        logsButton.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-background-radius: 18;" +
-                "-fx-text-fill: rgba(255,255,255,0.9);" +
-                "-fx-border-color: rgba(255,255,255,0.16);" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;"
-        );
+        UiStyle.secondary(logsButton);
         logsButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
         logsButton.setPosition(mainX + mainW - 150 - 150, mainY + mainH + 30);
         logsButton.setSize(140, 36);
@@ -255,11 +243,7 @@ public class LauncherInfo extends IScreen {
 
         this.quitButton = new LauncherButton(root);
         this.quitButton.setText(QUITTER_BUTTON_TEXT);
-        this.quitButton.setStyle(
-                "-fx-background-color: linear-gradient(to right, #ff9800, #ff6d00);" +
-                "-fx-background-radius: 18;" +
-                "-fx-text-fill: white;"
-        );
+        UiStyle.primary(this.quitButton);
         this.quitButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
         this.quitButton.setPosition(mainX + mainW - 150, mainY + mainH + 30);
         this.quitButton.setSize(110, 36);
@@ -510,26 +494,15 @@ public class LauncherInfo extends IScreen {
 
     private void styleTab(JFXButton b, boolean active) {
         if (b == null) return;
-        // Police figée en inline pour éviter que le survol ne change taille/police.
-        String base = "-fx-font-family: 'Comfortaa';-fx-font-size: 13px;-fx-background-radius: 999;-fx-border-radius: 999;-fx-border-width: 1;";
-        b.setStyle(active
-                ? base + "-fx-background-color: linear-gradient(#ffb347, #ff7a00);-fx-text-fill: white;-fx-font-weight: bold;-fx-border-color: rgba(255,255,255,0.16);"
-                : base + "-fx-background-color: rgba(255,255,255,0.06);-fx-text-fill: rgba(255,255,255,0.75);-fx-border-color: rgba(255,255,255,0.12);");
+        b.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        UiStyle.tab(b, active);
     }
 
     private JFXButton ghostButton(String text, int width) {
         JFXButton b = new JFXButton(text);
         b.setPrefSize(width, 32);
-        b.setStyle(
-                "-fx-font-family: 'Comfortaa';" +
-                "-fx-font-size: 12px;" +
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-background-radius: 14;" +
-                "-fx-text-fill: rgba(255,255,255,0.88);" +
-                "-fx-border-color: rgba(255,255,255,0.14);" +
-                "-fx-border-radius: 14;" +
-                "-fx-border-width: 1;"
-        );
+        b.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        UiStyle.secondary(b);
         return b;
     }
 

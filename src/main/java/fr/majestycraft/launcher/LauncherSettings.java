@@ -1,5 +1,8 @@
 package fr.majestycraft.launcher;
 
+import fr.majestycraft.util.Icons;
+import fr.majestycraft.util.UiStyle;
+import fr.majestycraft.util.AmbientBackground;
 import com.jfoenix.controls.*;
 
 import fr.majestycraft.*;
@@ -162,16 +165,9 @@ public class LauncherSettings extends IScreen {
             st.setY(event.getScreenY() - yOffSet);
         });
 
-        this.drawBackgroundImage(engine, root, "background.png");
+        AmbientBackground.installResponsive(root, false);
         pane.getConfig().loadConfiguration();
 
-        Rectangle overlay = new Rectangle(W, H);
-        overlay.setFill(new LinearGradient(
-                0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.rgb(0, 0, 0, 0.18)),
-                new Stop(1, Color.rgb(0, 0, 0, 0.72))
-        ));
-        root.getChildren().add(overlay);
 
         LauncherRectangle leftDock = new LauncherRectangle(root, 0, 0, 84, H);
         leftDock.setFill(new LinearGradient(
@@ -259,12 +255,10 @@ public class LauncherSettings extends IScreen {
         subTitleLabel.setAlignment(Pos.CENTER);
 
         JFXButton closeButton = new JFXButton("✕");
-        closeButton.setStyle(
-                "-fx-background-color: transparent;" +
-                "-fx-text-fill: rgba(255,255,255,0.85);" +
-                "-fx-font-size: 18px;" +
-                "-fx-cursor: hand;"
-        );
+        closeButton.setText("");
+        closeButton.setGraphic(Icons.stroke(Icons.CLOSE, 16));
+        closeButton.setPrefSize(36, 32);
+        UiStyle.apply(closeButton, "ml-window", "ml-window-close");
         closeButton.setLayoutX(cardX + cardW - 50);
         closeButton.setLayoutY(cardY + 18);
         closeButton.setOnAction(event -> closeWithAnimation(root, (Stage) closeButton.getScene().getWindow()));
@@ -320,7 +314,7 @@ public class LauncherSettings extends IScreen {
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty ? null : item);
-                setStyle("-fx-text-fill: black;");
+                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
             }
         });
 
@@ -382,11 +376,14 @@ public class LauncherSettings extends IScreen {
                 super.updateItem(item, empty);
                 setText(empty ? null : item);
                 setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-                setStyle("-fx-text-fill: black;");
+                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
             }
         });
 
-        this.LanguageList.setValue((String) pane.getConfig().getValue(EnumConfig.LANGUAGE));
+        // Les anciennes versions enregistraient "Fran?ais" (accent perdu dans la valeur
+        // par défaut) : toute langue inconnue revient au français.
+        String savedLanguage = (String) pane.getConfig().getValue(EnumConfig.LANGUAGE);
+        this.LanguageList.setValue(this.LanguageList.getItems().contains(savedLanguage) ? savedLanguage : "Français");
         this.LanguageList.setOnAction(event -> {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle(Main.bundle.getString("alert.title"));
@@ -427,8 +424,8 @@ public class LauncherSettings extends IScreen {
             private final VBox box = new VBox(header, value);
 
             {
-                header.setStyle("-fx-text-fill: #666666; -fx-font-size: 11px; -fx-padding: 6 0 2 0;");
-                value.setStyle("-fx-text-fill: black; -fx-font-size: 13px; -fx-padding: 0 0 6 0;");
+                header.setStyle("-fx-text-fill: rgba(255,255,255,0.45); -fx-font-size: 11px; -fx-padding: 6 0 2 0;");
+                value.setStyle("-fx-text-fill: rgba(255,255,255,0.92); -fx-font-size: 13px; -fx-padding: 0 0 6 0;");
                 setGraphic(box);
             }
 
@@ -440,7 +437,7 @@ public class LauncherSettings extends IScreen {
                     return;
                 }
                 setGraphic(box);
-                setStyle("-fx-text-fill: black;");
+                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
                 value.setText(item + (isSnapshot(item) ? " (snapshot)" : ""));
 
                 if ("Chargement...".equals(item)) {
@@ -671,7 +668,7 @@ public class LauncherSettings extends IScreen {
         styleSecondaryButton(openGameDirButton);
         openGameDirButton.setLayoutX(leftX);
         openGameDirButton.setLayoutY(cardY + cardH - 58);
-        openGameDirButton.setPrefWidth(210);
+        openGameDirButton.setPrefWidth(250);
         openGameDirButton.setOnAction(e -> openGameDirectory());
         root.getChildren().add(openGameDirButton);
 
@@ -904,24 +901,12 @@ public class LauncherSettings extends IScreen {
 
     private void stylePrimaryButton(JFXButton btn) {
         btn.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
-        btn.setStyle(
-                "-fx-background-radius: 18;" +
-                "-fx-text-fill: white;" +
-                "-fx-background-color: linear-gradient(to right, #ff9800, #ff6d00);" +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 18, 0.2, 0, 6);"
-        );
+        UiStyle.primary(btn);
     }
 
     private void styleSecondaryButton(JFXButton btn) {
         btn.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
-        btn.setStyle(
-                "-fx-background-radius: 18;" +
-                "-fx-text-fill: white;" +
-                "-fx-background-color: rgba(255,255,255,0.10);" +
-                "-fx-border-color: rgba(255,255,255,0.16);" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;"
-        );
+        UiStyle.secondary(btn);
     }
 
     private GameLinks buildGameLinks(String version, Utils.ModloaderType modloaderType) throws IOException {

@@ -1,5 +1,8 @@
 package fr.majestycraft.launcher;
 
+import fr.majestycraft.util.Icons;
+import fr.majestycraft.util.UiStyle;
+import fr.majestycraft.util.AmbientBackground;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXComboBox;
 import com.jfoenix.controls.JFXTextField;
@@ -84,15 +87,8 @@ public class LauncherProfiles extends IScreen {
             st.setY(event.getScreenY() - yOffSet);
         });
 
-        this.drawBackgroundImage(engine, root, "background.png");
+        AmbientBackground.installResponsive(root, false);
 
-        Rectangle overlay = new Rectangle(W, H);
-        overlay.setFill(new LinearGradient(
-                0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.rgb(0, 0, 0, 0.18)),
-                new Stop(1, Color.rgb(0, 0, 0, 0.72))
-        ));
-        root.getChildren().add(overlay);
 
         LauncherRectangle leftDock = new LauncherRectangle(root, 0, 0, 84, H);
         leftDock.setFill(new LinearGradient(
@@ -175,12 +171,10 @@ public class LauncherProfiles extends IScreen {
         subTitleLabel.setAlignment(Pos.CENTER);
 
         JFXButton closeButton = new JFXButton("✕");
-        closeButton.setStyle(
-                "-fx-background-color: transparent;" +
-                "-fx-text-fill: rgba(255,255,255,0.85);" +
-                "-fx-font-size: 18px;" +
-                "-fx-cursor: hand;"
-        );
+        closeButton.setText("");
+        closeButton.setGraphic(Icons.stroke(Icons.CLOSE, 16));
+        closeButton.setPrefSize(36, 32);
+        UiStyle.apply(closeButton, "ml-window", "ml-window-close");
         closeButton.setLayoutX(cardX + cardW - 50);
         closeButton.setLayoutY(cardY + 18);
         closeButton.setOnAction(event -> ((Stage) closeButton.getScene().getWindow()).close());
@@ -259,17 +253,8 @@ public class LauncherProfiles extends IScreen {
         this.createButton.setPrefSize(300, 38);
         // font-family + font-size figés EN INLINE : sinon le survol laisse le CSS
         // JFoenix/.button-raised reprendre le dessus et change police + taille.
-        this.createButton.setStyle(
-                "-fx-background-color: linear-gradient(#ffb347, #ff7a00);" +
-                "-fx-background-radius: 16;" +
-                "-fx-text-fill: white;" +
-                "-fx-font-family: 'Comfortaa';" +
-                "-fx-font-size: 14px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-border-color: rgba(255,255,255,0.16);" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 16;"
-        );
+        this.createButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        UiStyle.primary(this.createButton);
         this.createButton.setOnAction(event -> onCreateProfile());
         root.getChildren().add(this.createButton);
 
@@ -277,16 +262,8 @@ public class LauncherProfiles extends IScreen {
         importButton.setLayoutX(cardX + 40 + 315);
         importButton.setLayoutY(cardY + 198);
         importButton.setPrefSize(cardW - 80 - 315, 38);
-        importButton.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-background-radius: 16;" +
-                "-fx-text-fill: rgba(255,255,255,0.9);" +
-                "-fx-font-family: 'Comfortaa';" +
-                "-fx-font-size: 13px;" +
-                "-fx-border-color: rgba(255,255,255,0.16);" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 16;"
-        );
+        importButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        UiStyle.secondary(importButton);
         importButton.setOnAction(event -> onImportProfile());
         root.getChildren().add(importButton);
 
@@ -582,23 +559,10 @@ public class LauncherProfiles extends IScreen {
         b.setPrefHeight(32);
         // Largeur auto (s'ajuste au texte) : avec un espacement HBox uniforme, les
         // écarts restent réguliers sans risque de débordement quand il y a 5 boutons.
-        // Police figée en inline (voir createButton) pour éviter le changement au survol.
-        String common = "-fx-font-family: 'Comfortaa';-fx-font-size: 12px;-fx-background-radius: 12;-fx-padding: 4 12 4 12;";
-        if (primary) {
-            b.setStyle(common +
-                    "-fx-background-color: linear-gradient(#ffb347, #ff7a00);" +
-                    "-fx-text-fill: white;" +
-                    "-fx-font-weight: bold;"
-            );
-        } else {
-            b.setStyle(common +
-                    "-fx-background-color: rgba(255,255,255,0.08);" +
-                    "-fx-text-fill: rgba(255,255,255,0.88);" +
-                    "-fx-border-color: rgba(255,255,255,0.14);" +
-                    "-fx-border-radius: 12;" +
-                    "-fx-border-width: 1;"
-            );
-        }
+        b.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        if (primary) UiStyle.primary(b);
+        else UiStyle.secondary(b);
+        b.setStyle("-fx-padding: 4 12 4 12;");
         return b;
     }
 
@@ -622,7 +586,7 @@ public class LauncherProfiles extends IScreen {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty ? null : item);
-                setStyle("-fx-text-fill: black;");
+                setStyle("-fx-text-fill: rgba(255,255,255,0.92);");
             }
         });
     }
