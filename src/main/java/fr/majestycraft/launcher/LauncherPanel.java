@@ -21,6 +21,12 @@ import fr.majestycraft.util.AmbientBackground;
 import fr.majestycraft.util.Icons;
 import fr.majestycraft.util.UiStyle;
 import fr.majestycraft.util.SystemOpen;
+import fr.majestycraft.util.MajestyDialog;
+import fr.majestycraft.mods.CrashDoctor;
+import fr.majestycraft.mods.ModActions;
+import fr.majestycraft.mods.ModCompatibility;
+import fr.majestycraft.mods.ModrinthApi;
+import fr.majestycraft.mods.PerformanceMode;
 import fr.trxyy.alternative.alternative_api.*;
 import fr.trxyy.alternative.alternative_api.updater.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
@@ -225,6 +231,8 @@ public class LauncherPanel extends IScreen {
             ProfileManager pm = ProfileManager.get();
             if (pm != null) pm.addSessionPlaytime(playedMs);
         };
+        // Jeu fermé sur une erreur : diagnostic en français avec correctifs en un clic.
+        fr.trxyy.alternative.alternative_api.build.GameRunner.gameCrashCallback = this::onGameCrashed;
 
         computeLayout();
 
@@ -882,10 +890,109 @@ public class LauncherPanel extends IScreen {
     private void startGame() {
         if (launchInProgress) return;
         launchInProgress = true;
+
+        // Profil moddé avec des mods actifs : contrôle de compatibilité avant de lancer
+        ProfileManager pm = ProfileManager.get();
+        LauncherProfile active = pm == null ? null : pm.getActive();
+        final java.io.File mods = ModActions.modsDir(engine);
+        final boolean modded = active != null && !ModrinthApi.loadersFor(active.getModloaderType()).isEmpty();
+        java.io.File[] jars = mods.listFiles((d, n) -> n.toLowerCase(java.util.Locale.ROOT).endsWith(".jar"));
+        if (!modded || jars == null || jars.length == 0) {
+            proceedLaunch();
+            return;
+        }
+
+        final String mc = active.getVersion();
+        final Utils.ModloaderType loader = active.getModloaderType();
+        final String playText = playButton.getText();
+        playButton.setText("Vérification des mods...");
+        Thread check = new Thread(() -> {
+            ModCompatibility.Report report = ModCompatibility.check(mods, mc, loader);
+            Platform.runLater(() -> {
+                playButton.setText(playText);
+                if (report.isEmpty()) {
+                    proceedLaunch();
+                } else {
+                    showCompatibilityDialog(report, mods, mc, loader);
+                }
+            });
+        }, "MajestyLauncher-ModCheck");
+        check.setDaemon(true);
+        check.start();
+    }
+
+    /** Lancement effectif, une fois les mods vérifiés. */
+    private void proceedLaunch() {
         ProfileManager pm = ProfileManager.get();
         if (pm != null) pm.beginSession();
+        launchStartedAt = System.currentTimeMillis();
         updateDiscordForActiveProfile(true);
         update();
+    }
+
+    private long launchStartedAt;
+
+    private void showCompatibilityDialog(ModCompatibility.Report report, java.io.File mods, String mc, Utils.ModloaderType loader) {
+        String loaderLabel = loader.name().charAt(0) + loader.name().substring(1).toLowerCase(java.util.Locale.ROOT);
+        if (loader == Utils.ModloaderType.NEOFORGE) loaderLabel = "NeoForge";
+        VBox list = new VBox(6);
+        for (ModCompatibility.Issue issue : report.issues) {
+            list.getChildren().add(MajestyDialog.text("•  " + issue.describe(mc, loaderLabel), 12F, "rgba(255,255,255,0.86)"));
+        }
+        String intro = report.issues.size() == 1
+                ? "Un problème risque d'empêcher le jeu de démarrer :"
+                : report.issues.size() + " problèmes risquent d'empêcher le jeu de démarrer :";
+        MajestyDialog dialog = new MajestyDialog(engine.getStage(), "MODS", "Vérification avant de jouer", intro)
+                .content(list)
+                .cancel("Annuler")
+                .action("Lancer quand même", "secondary", this::proceedLaunch)
+                .work("Tout corriger", "primary", progress -> ModActions.fixAll(report, mods, mc, loader, progress))
+                .afterWork(() -> launchInProgress = false);
+        dialog.showAndWait();
+        // Fermée sans lancer (Annuler, ou après correction) : JOUER redevient utilisable
+        if (!hiddenDuringUpdate.isEmpty() || updateTimeline != null && updateTimeline.getStatus() == Animation.Status.RUNNING) return;
+        launchInProgress = false;
+    }
+
+    /** Le jeu s'est fermé sur une erreur (appelé hors du thread JavaFX par la lib). */
+    private void onGameCrashed(int exitCode, java.io.File gameLog) {
+        ProfileManager pm = ProfileManager.get();
+        LauncherProfile active = pm == null ? null : pm.getActive();
+        CrashDoctor.Context ctx = new CrashDoctor.Context();
+        ctx.gameLog = gameLog;
+        ctx.gameDir = fr.trxyy.alternative.alternative_api.GameProfilePaths.resolveRuntimeGameDirectory(engine);
+        ctx.modsDir = ModActions.modsDir(engine);
+        ctx.mcVersion = active != null ? active.getVersion() : null;
+        ctx.loader = active != null ? active.getModloaderType() : null;
+        ctx.ramGb = active != null ? (int) Math.round(active.getRam()) : 2;
+        ctx.systemRamGb = PerformanceMode.detectMachine().totalRamGb;
+        ctx.exitCode = exitCode;
+        ctx.sessionStart = launchStartedAt;
+        CrashDoctor.Diagnosis diagnosis = CrashDoctor.analyze(ctx);
+
+        Platform.runLater(() -> {
+            if (engine.getStage() != null) engine.getStage().show();
+            MajestyDialog dialog = new MajestyDialog(engine.getStage(), "MINECRAFT S'EST FERMÉ", diagnosis.title, diagnosis.explanation);
+            if (diagnosis.evidence != null) {
+                dialog.content(MajestyDialog.text("Dans le journal : " + diagnosis.evidence, 10.5F, "rgba(255,255,255,0.45)"));
+            }
+            dialog.cancel("Fermer");
+            for (CrashDoctor.Fix fix : diagnosis.fixes) {
+                boolean opens = fix.kind == CrashDoctor.FixKind.OPEN_LOG || fix.kind == CrashDoctor.FixKind.OPEN_MODS;
+                if (opens) {
+                    dialog.action(fix.label, "secondary", () -> {
+                        try {
+                            ModActions.apply(fix, ctx, config, s -> { });
+                        } catch (java.io.IOException ignored) {
+                            // ouverture best effort
+                        }
+                    });
+                } else {
+                    dialog.work(fix.label, "primary", progress -> ModActions.apply(fix, ctx, config, progress));
+                }
+            }
+            dialog.show();
+        });
     }
 
     /**
@@ -1767,7 +1874,60 @@ public class LauncherPanel extends IScreen {
         root.getChildren().add(this.bar);
     }
 
+    /** Éléments escamotés pendant la mise à jour, avec leur état d'origine (visible, désactivé). */
+    private final java.util.Map<javafx.scene.Node, boolean[]> hiddenDuringUpdate = new java.util.LinkedHashMap<>();
+
+    private void rememberStateBeforeUpdate() {
+        hiddenDuringUpdate.clear();
+        java.util.List<javafx.scene.Node> nodes = new java.util.ArrayList<>(java.util.Arrays.asList(
+                microsoftButton, infoButton, settingsButton, profilesButton, packsButton, modsButton, shadersButton,
+                microsoftStateCaption, connectionGlow, connectionEyebrowLabel, connectionSubtitleLabel,
+                heroLogo, heroTitleLabel, heroSubtitleLabel, heroTextLine1, heroTextLine2, titleCrack,
+                usernameField, rememberMe, playButton, microsoftInlineButton, profileCombo, manageProfilesButton,
+                profileCaptionLabel, connexionRectangle, avatarCard, voteButton, boutiqueButton,
+                tiktokButton, minestratorButton, twitterButton, youtubeButton, avatar));
+        nodes.addAll(sidebarCaptions);
+        for (javafx.scene.Node node : nodes) {
+            if (node != null) hiddenDuringUpdate.put(node, new boolean[]{node.isVisible(), node.isDisable()});
+        }
+    }
+
+    /**
+     * La mise à jour s'est arrêtée sans lancer le jeu (version impossible sur ce
+     * processeur, téléchargement en échec...) ou le jeu a planté : on réaffiche la
+     * carte de connexion telle qu'elle était, au lieu de laisser des boutons
+     * désactivés qui obligeaient à relancer le launcher.
+     */
+    private void restoreAfterUpdate(String reason) {
+        if (this.updateTimeline != null) this.updateTimeline.stop();
+        // Sans cela, JOUER réapparaît mais reste sans effet (protection contre le double clic).
+        this.launchInProgress = false;
+        for (java.util.Map.Entry<javafx.scene.Node, boolean[]> entry : hiddenDuringUpdate.entrySet()) {
+            javafx.scene.Node node = entry.getKey();
+            node.setOpacity(1);
+            node.setScaleX(1);
+            node.setScaleY(1);
+            node.setTranslateX(0);
+            node.setTranslateY(0);
+            node.setRotate(0);
+            node.setVisible(entry.getValue()[0]);
+            node.setDisable(entry.getValue()[1]);
+        }
+        hiddenDuringUpdate.clear();
+        for (javafx.scene.Node node : new javafx.scene.Node[]{updateRectangle, updateLabel, currentStep, currentFileLabel, percentageLabel, bar, updateAvatar}) {
+            if (node != null) node.setVisible(false);
+        }
+        if (reason != null && !reason.trim().isEmpty()) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+            alert.setTitle("MajestyLauncher");
+            alert.setHeaderText("Le jeu n'a pas pu être lancé");
+            alert.setContentText(reason);
+            alert.show();
+        }
+    }
+
     public void update() {
+        rememberStateBeforeUpdate();
         if (microsoftButton != null) new ZoomOutDown(microsoftButton).setResetOnFinished(false).play();
         if (infoButton != null) new ZoomOutDown(infoButton).setResetOnFinished(false).play();
         if (settingsButton != null) new ZoomOutDown(settingsButton).setResetOnFinished(false).play();
@@ -1902,6 +2062,14 @@ public class LauncherPanel extends IScreen {
             this.currentStep.setText(engine.getGameUpdater().getCurrentInfo());
         }
         this.bar.setProgress(percent / 100.0D);
+
+        // Mise à jour terminée alors que la fenêtre est toujours affichée : le jeu n'a pas
+        // démarré (erreur) ou s'est fermé sur un crash. On rend la main au joueur.
+        if (this.gameUpdater != null && !this.gameUpdater.isAlive()
+                && engine.getStage() != null && engine.getStage().isShowing()) {
+            String reason = this.gameUpdater.hasDownloadError() ? this.gameUpdater.getCurrentInfo() : null;
+            restoreAfterUpdate(reason);
+        }
     }
 
     private Parent createSettingsPanel(Pane root) {
@@ -2023,6 +2191,13 @@ public class LauncherPanel extends IScreen {
      * à recopier). Le code d'appareil reste disponible en secours.
      */
     private void startMicrosoftLogin(Pane root, boolean launchAfter) {
+        // Chromebook : le navigateur tourne dans ChromeOS, hors du conteneur Linux où
+        // écoute le launcher ; le retour vers localhost n'y arriverait pas toujours.
+        // Le code d'appareil, lui, se valide depuis n'importe quel navigateur.
+        if (fr.trxyy.alternative.alternative_api.utils.OperatingSystem.isChromeOS()) {
+            startMicrosoftDeviceCodeLogin(root, launchAfter);
+            return;
+        }
         final MicrosoftBrowserAuth browserAuth = new MicrosoftBrowserAuth().setLauncherName("MajestyLauncher");
         // true quand le joueur (ou un échec d'ouverture du navigateur) bascule sur le
         // code d'appareil : le flux navigateur s'arrête alors sans toucher à l'interface.

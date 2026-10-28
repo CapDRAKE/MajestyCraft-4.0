@@ -437,3 +437,6 @@
 .scroll-bar .thumb:hover, .scroll-bar .thumb:pressed { -fx-background-color: rgba(255,255,255,0.30); }
 .scroll-bar .increment-button, .scroll-bar .decrement-button { -fx-padding: 0; -fx-pref-height: 0; -fx-pref-width: 0; -fx-background-color: transparent; }
 .scroll-bar .increment-arrow, .scroll-bar .decrement-arrow { -fx-padding: 0; }
+
+/* Étiquette « mise à jour disponible » (onglet Installés des mods) */
+.ml-tag-update { -fx-background-color: rgba(255,152,0,0.20); -fx-text-fill: #ffcf8a; }

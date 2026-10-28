@@ -56,6 +56,8 @@ public final class Icons {
     public static final String SEARCH = "M19 11a8 8 0 1 1-16 0a8 8 0 1 1 16 0z M21 21l-4.35-4.35";
     public static final String PLUS = "M12 5v14 M5 12h14";
     public static final String REFRESH = "M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15";
+    /** Mode performance : un éclair. */
+    public static final String ZAP = "M13 2L3 14h9l-1 8 10-12h-9l1-8z";
     /** Activer / désactiver. */
     public static final String POWER = "M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10";
 

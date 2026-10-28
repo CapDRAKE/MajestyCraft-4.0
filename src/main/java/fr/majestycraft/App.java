@@ -651,7 +651,9 @@ public class App extends AlternativeBase {
             }
         }
         if (os.contains("mac")) {
-            return Paths.get(System.getProperty("user.home"), "Library", "Application Support", ".majestycraft");
+            // Même dossier que la lib (GameUtils.getWorkingDirectory), sans point : sinon
+            // les bibliothèques OptiFine étaient installées à côté du dossier du jeu.
+            return Paths.get(System.getProperty("user.home"), "Library", "Application Support", "majestycraft");
         }
         return Paths.get(System.getProperty("user.home"), ".majestycraft");
     }

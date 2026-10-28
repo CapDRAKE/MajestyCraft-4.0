@@ -5,6 +5,13 @@ import fr.majestycraft.util.Icons;
 import fr.majestycraft.util.ListRow;
 import fr.majestycraft.util.ToggleSwitch;
 import fr.majestycraft.util.SystemOpen;
+import fr.majestycraft.util.MajestyDialog;
+import fr.majestycraft.mods.ModActions;
+import fr.majestycraft.mods.ModUpdates;
+import fr.majestycraft.mods.ModrinthApi;
+import fr.majestycraft.mods.PerformanceMode;
+import fr.majestycraft.profiles.LauncherProfile;
+import fr.majestycraft.profiles.ProfileManager;
 import fr.majestycraft.util.AmbientBackground;
 import animatefx.animation.ZoomOutDown;
 import com.google.gson.JsonArray;
@@ -121,6 +128,10 @@ public class LauncherMods extends IScreen {
     private JFXButton addButton;
     private JFXButton refreshButton;
     private JFXButton openFolderButton;
+    private JFXButton performanceButton;
+    private JFXButton updatesButton;
+    /** Mises à jour trouvées pour les fichiers de l'onglet Installés. */
+    private final java.util.Map<File, ModUpdates.Update> pendingUpdates = new java.util.HashMap<>();
     private LauncherButton quitButton;
 
     private JFXButton loaderAnyButton;
@@ -414,9 +425,32 @@ public class LauncherMods extends IScreen {
 
         this.localPane = new Pane();
         this.localPane.setLayoutX(mainX + 28);
-        this.localPane.setLayoutY(mainY + 148);
-        this.localPane.setPrefSize(mainW - 72, 427);
+        this.localPane.setLayoutY(mainY + 192);
+        this.localPane.setPrefSize(mainW - 72, 383);
         root.getChildren().add(this.localPane);
+
+        // Onglet Installés : actions sur les mods du profil
+        this.performanceButton = new JFXButton("Mode performance");
+        this.performanceButton.setGraphic(Icons.stroke(Icons.ZAP, 15));
+        this.performanceButton.setGraphicTextGap(8);
+        this.performanceButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        UiStyle.soft(this.performanceButton);
+        this.performanceButton.setLayoutX(mainX + 34);
+        this.performanceButton.setLayoutY(mainY + 145);
+        this.performanceButton.setPrefSize(200, 34);
+        this.performanceButton.setOnAction(event -> onPerformanceMode());
+        root.getChildren().add(this.performanceButton);
+
+        this.updatesButton = new JFXButton("Vérifier les mises à jour");
+        this.updatesButton.setGraphic(Icons.stroke(Icons.REFRESH, 14));
+        this.updatesButton.setGraphicTextGap(8);
+        this.updatesButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
+        UiStyle.secondary(this.updatesButton);
+        this.updatesButton.setLayoutX(mainX + 244);
+        this.updatesButton.setLayoutY(mainY + 145);
+        this.updatesButton.setPrefSize(250, 34);
+        this.updatesButton.setOnAction(event -> onUpdates());
+        root.getChildren().add(this.updatesButton);
 
         this.onlinePane = new Pane();
         this.onlinePane.setLayoutX(mainX + 28);
@@ -425,7 +459,7 @@ public class LauncherMods extends IScreen {
         root.getChildren().add(this.onlinePane);
 
         this.localListView = new ListView<LocalModItem>();
-        this.localListView.setPrefSize(mainW - 72, 427);
+        this.localListView.setPrefSize(mainW - 72, 383);
         ListRow.styleList(this.localListView, "Aucun mod installé pour ce profil.\nAjoute un fichier .jar ou explore le catalogue.");
         this.localPane.getChildren().add(this.localListView);
 
@@ -514,6 +548,8 @@ public class LauncherMods extends IScreen {
         localStatusLabel.setManaged(!discover);
         addButton.setVisible(true);
         addButton.setManaged(true);
+        performanceButton.setVisible(!discover);
+        updatesButton.setVisible(!discover);
 
         loaderAnyButton.setVisible(discover);
         loaderForgeButton.setVisible(discover);
@@ -902,6 +938,197 @@ public class LauncherMods extends IScreen {
                 "Impossible d'ouvrir le dossier des mods.\n" + modsDir.getAbsolutePath()));
     }
 
+    // ------------------------------------------------------------------ profil actif
+
+    private LauncherProfile activeProfile() {
+        ProfileManager pm = ProfileManager.get();
+        return pm == null ? null : pm.getActive();
+    }
+
+    private javafx.stage.Window window() {
+        return localListView.getScene() != null ? localListView.getScene().getWindow() : null;
+    }
+
+    // ------------------------------------------------------------------ mises à jour
+
+    private void onUpdates() {
+        LauncherProfile profile = activeProfile();
+        if (profile == null) return;
+        if (ModrinthApi.loadersFor(profile.getModloaderType()).isEmpty()) {
+            new MajestyDialog(window(), "MODS", "Pas de mods à mettre à jour",
+                    "Le profil « " + profile.getName() + " » n'utilise pas de modloader (Fabric, Quilt, Forge ou NeoForge).")
+                    .action("Compris", "primary", null).show();
+            return;
+        }
+        if (!pendingUpdates.isEmpty()) {
+            showUpdatesDialog(profile);
+            return;
+        }
+        updatesButton.setDisable(true);
+        updatesButton.setText("Recherche...");
+        Thread t = new Thread(() -> {
+            java.util.List<ModUpdates.Update> found;
+            String error = null;
+            try {
+                found = ModUpdates.find(modsDir, profile.getVersion(), profile.getModloaderType());
+            } catch (IOException e) {
+                found = java.util.Collections.emptyList();
+                error = "Modrinth est injoignable pour le moment.";
+            }
+            final java.util.List<ModUpdates.Update> updates = found;
+            final String message = error;
+            Platform.runLater(() -> {
+                updatesButton.setDisable(false);
+                pendingUpdates.clear();
+                for (ModUpdates.Update u : updates) pendingUpdates.put(u.jar.file, u);
+                refreshUpdatesButton();
+                filterLocalMods(searchField.getText());
+                if (message != null) localStatusLabel.setText(message);
+                else if (updates.isEmpty()) localStatusLabel.setText("Tous tes mods sont à jour pour " + profile.getVersion() + ".");
+            });
+        }, "MajestyLauncher-ModUpdates");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void refreshUpdatesButton() {
+        if (pendingUpdates.isEmpty()) {
+            updatesButton.setText("Vérifier les mises à jour");
+            UiStyle.secondary(updatesButton);
+        } else {
+            updatesButton.setText("Tout mettre à jour (" + pendingUpdates.size() + ")");
+            UiStyle.primary(updatesButton);
+        }
+    }
+
+    private void showUpdatesDialog(LauncherProfile profile) {
+        final java.util.List<ModUpdates.Update> updates = new java.util.ArrayList<>(pendingUpdates.values());
+        javafx.scene.layout.VBox list = new javafx.scene.layout.VBox(6);
+        for (ModUpdates.Update u : updates) {
+            list.getChildren().add(MajestyDialog.text("•  " + u.title + " : " + u.currentName() + "  →  " + u.latestName(),
+                    12F, "rgba(255,255,255,0.86)"));
+        }
+        new MajestyDialog(window(), "MISES À JOUR",
+                updates.size() == 1 ? "1 mise à jour disponible" : updates.size() + " mises à jour disponibles",
+                "Versions compatibles avec Minecraft " + profile.getVersion() + ", vérifiées après téléchargement.")
+                .content(list)
+                .cancel("Plus tard")
+                .work("Tout mettre à jour", "primary", progress -> {
+                    int ok = 0;
+                    java.util.List<String> failed = new java.util.ArrayList<>();
+                    for (ModUpdates.Update u : updates) {
+                        progress.accept("Mise à jour de " + u.title + "...");
+                        try {
+                            ModUpdates.apply(u);
+                            ok++;
+                        } catch (IOException e) {
+                            failed.add(u.title);
+                        }
+                    }
+                    return ok + " mod(s) mis à jour." + (failed.isEmpty() ? "" : " Échec : " + String.join(", ", failed) + ".");
+                })
+                .afterWork(() -> {
+                    pendingUpdates.clear();
+                    refreshUpdatesButton();
+                    loadLocalMods();
+                })
+                .show();
+    }
+
+    // ------------------------------------------------------------------ mode performance
+
+    private void onPerformanceMode() {
+        LauncherProfile profile = activeProfile();
+        if (profile == null) return;
+        PerformanceMode.Machine machine = PerformanceMode.detectMachine();
+        Utils.ModloaderType loader = profile.getModloaderType();
+        boolean modded = PerformanceMode.supportsMods(loader);
+        int ram = PerformanceMode.recommendedRamGb(machine, modded || loader == Utils.ModloaderType.VANILLA);
+        String ramLine = "Mémoire : " + ram + " Go (actuellement " + (int) Math.round(profile.getRam()) + " Go).";
+        String machineLine = "Machine détectée : " + machine.describe() + ".";
+
+        if (modded) {
+            new MajestyDialog(window(), "MODE PERFORMANCE", "Optimiser « " + profile.getName() + " »",
+                    machineLine + "\n" + ramLine + "\nMods d'optimisation reconnus pour " + loaderName(loader) + " "
+                            + profile.getVersion() + " (rendu, mémoire, entités...), installés depuis Modrinth avec "
+                            + "leurs dépendances. Rien n'est installé en double.")
+                    .cancel("Annuler")
+                    .work("Activer", "primary", progress -> {
+                        PerformanceMode.Result r = PerformanceMode.installMods(modsDir, profile.getVersion(), loader, progress);
+                        applyPerformanceSettings(profile, ram);
+                        return performanceSummary(r, ram);
+                    })
+                    .afterWork(this::loadLocalMods)
+                    .show();
+        } else if (loader == Utils.ModloaderType.VANILLA) {
+            String copyName = profile.getName() + " · Performance";
+            new MajestyDialog(window(), "MODE PERFORMANCE", "Passer par Fabric",
+                    machineLine + "\nLes mods d'optimisation ont besoin de Fabric. Le launcher crée une copie de ce profil "
+                            + "en Fabric (« " + copyName + " »), y installe les mods et l'active. Ton profil actuel n'est pas modifié.\n"
+                            + ramLine)
+                    .cancel("Annuler")
+                    .work("Créer et optimiser", "primary", progress -> {
+                        ProfileManager pm = ProfileManager.get();
+                        LauncherProfile copy = pm.create(copyName, profile.getVersion(), Utils.ModloaderType.FABRIC);
+                        copy.setRam(ram);
+                        pm.update(copy);
+                        File copyMods = new File(pm.resolveProfileDirectory(copy), "mods");
+                        PerformanceMode.Result r = PerformanceMode.installMods(copyMods, profile.getVersion(), Utils.ModloaderType.FABRIC, progress);
+                        java.util.concurrent.CountDownLatch activated = new java.util.concurrent.CountDownLatch(1);
+                        Platform.runLater(() -> {
+                            pm.activate(copy, engineRef);
+                            fr.majestycraft.App.getInstance().applyGameLinksFromConfigAsync();
+                            paneRef.refreshProfilesUI();
+                            activated.countDown();
+                        });
+                        activated.await();
+                        ModActions.setRam(ram, paneRef.getConfig());
+                        return "Profil « " + copyName + " » créé et activé. " + performanceSummary(r, ram);
+                    })
+                    .show();
+        } else {
+            new MajestyDialog(window(), "MODE PERFORMANCE", "OptiFine optimise déjà ce profil",
+                    machineLine + "\nLes mods d'optimisation ne sont pas compatibles avec OptiFine : seule la mémoire est ajustée. "
+                            + "Pour aller plus loin, crée un profil Fabric.\n" + ramLine)
+                    .cancel("Annuler")
+                    .work("Régler la mémoire", "primary", progress -> {
+                        applyPerformanceSettings(profile, ram);
+                        return "Mémoire réglée sur " + ram + " Go.";
+                    })
+                    .show();
+        }
+    }
+
+    /** Mémoire conseillée et arguments JVM obsolètes retirés (profil + configuration). */
+    private void applyPerformanceSettings(LauncherProfile profile, int ram) {
+        ModActions.setRam(ram, paneRef.getConfig());
+        String cleaned = PerformanceMode.cleanVmArguments(profile.getVmArguments());
+        if (!cleaned.equals(profile.getVmArguments() == null ? "" : profile.getVmArguments().trim())) {
+            profile.setVmArguments(cleaned);
+            ProfileManager.get().update(profile);
+            paneRef.getConfig().updateValue("vmarguments", cleaned);
+        }
+    }
+
+    private static String performanceSummary(PerformanceMode.Result r, int ram) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(r.installed.isEmpty() ? "Aucun mod à ajouter." : "Installé : " + String.join(", ", r.installed) + ".");
+        if (!r.alreadyPresent.isEmpty()) sb.append(" Déjà là : ").append(String.join(", ", r.alreadyPresent)).append('.');
+        if (!r.unavailable.isEmpty()) sb.append(" Indisponible pour cette version : ").append(String.join(", ", r.unavailable)).append('.');
+        sb.append(" Mémoire : ").append(ram).append(" Go.");
+        return sb.toString();
+    }
+
+    private static String loaderName(Utils.ModloaderType t) {
+        switch (t) {
+            case FABRIC: return "Fabric";
+            case QUILT: return "Quilt";
+            case FORGE: return "Forge";
+            case NEOFORGE: return "NeoForge";
+            default: return t.name();
+        }
+    }
+
     private void toggleLocalMod(LocalModItem item) {
         String currentName = item.file.getName();
         String targetName;
@@ -969,6 +1196,8 @@ public class LauncherMods extends IScreen {
                 row.addTag(item.enabled ? "Actif" : "Désactivé", item.enabled ? "ml-tag-on" : "ml-tag-off");
                 row.addTag(item.loaderLabel);
                 row.addTag(readableSize(item.size));
+                ModUpdates.Update update = pendingUpdates.get(item.file);
+                if (update != null) row.addTag("Mise à jour : " + update.latestName(), "ml-tag-update");
                 row.setOpacity(item.enabled ? 1.0 : 0.72);
 
                 toggle.setSelectedInstantly(item.enabled);

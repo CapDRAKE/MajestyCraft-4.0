@@ -1,6 +1,24 @@
 {
   "versions": [
     {
+      "version": "5.2",
+      "date": "28/10/2026",
+      "entries": [
+        { "type": "new", "text": "Diagnostic de crash : quand Minecraft se ferme sur une erreur, le launcher lit le journal et t'explique la cause en français (mémoire insuffisante, mod manquant ou incompatible, mod en double, Java trop ancien, pilote graphique...), avec la ligne du journal en preuve." },
+        { "type": "new", "text": "Corrections en un clic après un crash : désactiver le mod fautif, installer le mod manquant depuis Modrinth, ajuster la mémoire, ouvrir le journal ou le dossier des mods." },
+        { "type": "new", "text": "Vérification avant de jouer : au clic sur JOUER, les mods du profil sont contrôlés. Un mod prévu pour un autre loader ou une autre version de Minecraft, ou une dépendance absente, est signalé avant le lancement, avec « Tout corriger », « Lancer quand même » ou « Annuler »." },
+        { "type": "new", "text": "Mode performance (Mods › Installés) : le launcher détecte ta machine, règle la mémoire recommandée et installe les mods d'optimisation adaptés à ton loader (Sodium, Lithium, FerriteCore, EntityCulling, ImmediatelyFast, ModernFix ou Embeddium), avec leurs dépendances et sans doublon. Sur un profil Vanilla, il crée une copie « · Performance » sous Fabric." },
+        { "type": "new", "text": "Mises à jour des mods : « Vérifier les mises à jour » repère les mods qui ont une version plus récente compatible avec ta version de Minecraft et ton loader, les signale d'une étiquette, puis « Tout mettre à jour » les remplace après vérification de chaque fichier téléchargé." },
+        { "type": "new", "text": "Chromebooks : le launcher fonctionne dans l'environnement Linux de ChromeOS, sur processeur Intel, AMD et ARM. La connexion Microsoft passe directement par un code, et le script d'installation ajoute lui-même les paquets nécessaires." },
+        { "type": "new", "text": "Linux ARM (Chromebooks ARM, Raspberry Pi...) : Minecraft 1.19 et plus, avec Java et les bibliothèques ARM téléchargés automatiquement. Seules les versions compatibles sont proposées." },
+        { "type": "improve", "text": "Mac Apple Silicon : les versions antérieures à 1.19 passent automatiquement par Rosetta, avec un message clair si Rosetta n'est pas installé. Installation de Java pour Minecraft fiabilisée sur macOS et Linux." },
+        { "type": "fix", "text": "macOS : les bibliothèques d'OptiFine sont installées dans le dossier du jeu (elles l'étaient à côté)." },
+        { "type": "fix", "text": "Linux : le launcher démarre même sans les bibliothèques audio (la musique est alors désactivée), et les liens et dossiers s'ouvrent correctement." },
+        { "type": "fix", "text": "Si le téléchargement du jeu échoue, le launcher affiche un avertissement et redevient utilisable au lieu de rester bloqué." },
+        { "type": "fix", "text": "« Ouvrir le dossier du jeu » ouvre le bon dossier sur tous les systèmes et affiche son chemin." }
+      ]
+    },
+    {
       "version": "5.1",
       "date": "18/10/2026",
       "entries": [

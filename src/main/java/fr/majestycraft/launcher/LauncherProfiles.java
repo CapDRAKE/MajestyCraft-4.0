@@ -21,6 +21,7 @@ import fr.trxyy.alternative.alternative_api.utils.FontLoader;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
@@ -32,6 +33,7 @@ import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
@@ -502,7 +504,7 @@ public class LauncherProfiles extends IScreen {
         name.setStyle("-fx-text-fill: " + (isActive ? "rgba(255,205,130,0.98)" : "rgba(255,255,255,0.94)") + "; -fx-font-weight: bold;");
 
         String playtime = p.getTotalPlaytimeMs() > 0 ? "   •   " + p.describeTotalPlaytime() + " de jeu" : "";
-        Label detail = new Label(p.describeTarget() + "   •   " + (int) p.getRam() + " GB RAM   •   " + p.describeLastPlayed() + playtime);
+        Label detail = new Label(p.describeTarget() + "   •   " + (int) p.getRam() + " Go de RAM   •   " + p.describeLastPlayed() + playtime);
         detail.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         detail.setStyle("-fx-text-fill: rgba(255,255,255,0.55);");
 
@@ -511,10 +513,18 @@ public class LauncherProfiles extends IScreen {
         actions.setAlignment(Pos.CENTER_LEFT);
         VBox.setMargin(actions, new Insets(4, 0, 0, 0));
 
+        // « Activer » à droite du nom : la rangée du bas garde ses 4 boutons, qui
+        // tiennent en entier (avec 5 boutons, les libellés étaient tronqués).
+        Node header = name;
         if (!isActive) {
             JFXButton activate = smallButton("Activer", true);
+            activate.setPrefHeight(28);
             activate.setOnAction(e -> onActivate(p));
-            actions.getChildren().add(activate);
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            HBox top = new HBox(10, name, spacer, activate);
+            top.setAlignment(Pos.CENTER_LEFT);
+            header = top;
         }
 
         JFXButton duplicate = smallButton("Dupliquer", false);
@@ -532,7 +542,7 @@ public class LauncherProfiles extends IScreen {
 
         actions.getChildren().addAll(duplicate, export, rename, delete);
 
-        texts.getChildren().addAll(name, detail, actions);
+        texts.getChildren().addAll(header, detail, actions);
 
         // Barre de couleur d'identité à gauche de la carte.
         javafx.scene.layout.Region colorBar = new javafx.scene.layout.Region();
@@ -560,6 +570,7 @@ public class LauncherProfiles extends IScreen {
         // Largeur auto (s'ajuste au texte) : avec un espacement HBox uniforme, les
         // écarts restent réguliers sans risque de débordement quand il y a 5 boutons.
         b.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        b.setMinWidth(Region.USE_PREF_SIZE);
         if (primary) UiStyle.primary(b);
         else UiStyle.secondary(b);
         b.setStyle("-fx-padding: 4 12 4 12;");

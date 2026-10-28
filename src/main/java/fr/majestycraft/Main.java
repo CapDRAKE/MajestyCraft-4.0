@@ -79,7 +79,7 @@ public class Main {
     }
 
     /** Version courante du launcher (pour le popup "Quoi de neuf"). */
-    private static final String CURRENT_VERSION = "5.1";
+    private static final String CURRENT_VERSION = "5.2";
 
     /**
      * Affiche une pop-up "Quoi de neuf" une seule fois par version. Montr�e tant
@@ -101,9 +101,9 @@ public class Main {
 
         VBox content = new VBox(8);
         content.getChildren().addAll(
-                new javafx.scene.control.Label("• Connexion Microsoft par le navigateur : plus de code à recopier, le launcher se connecte tout seul."),
-                new javafx.scene.control.Label("• Nouveau design : fond animé, boutons modernes, réglages et listes de mods / shaders / packs repensés."),
-                new javafx.scene.control.Label("• Compte hors ligne : ton identifiant de joueur ne change plus à chaque lancement."),
+                new javafx.scene.control.Label("• Diagnostic de crash : la cause expliquée en français, avec des corrections en un clic."),
+                new javafx.scene.control.Label("• Mods : vérification avant de jouer, mode performance et mises à jour en un clic (onglet Mods › Installés)."),
+                new javafx.scene.control.Label("• Chromebooks et Linux ARM : le launcher fonctionne désormais aussi sur ChromeOS."),
                 new javafx.scene.control.Label("\nLe détail complet est dans l'onglet « Infos » de la barre latérale.")
         );
         content.getChildren().forEach(n -> ((javafx.scene.control.Label) n).setWrapText(true));

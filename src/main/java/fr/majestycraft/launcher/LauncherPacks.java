@@ -324,22 +324,22 @@ public class LauncherPacks extends IScreen {
         this.localPane = new Pane();
         this.localPane.setLayoutX(mainX + 28);
         this.localPane.setLayoutY(mainY + 170);
-        this.localPane.setPrefSize(mainW - 72, 405);
+        this.localPane.setPrefSize(mainW - 72, 388);
         root.getChildren().add(this.localPane);
 
         this.onlinePane = new Pane();
         this.onlinePane.setLayoutX(mainX + 28);
         this.onlinePane.setLayoutY(mainY + 170);
-        this.onlinePane.setPrefSize(mainW - 72, 405);
+        this.onlinePane.setPrefSize(mainW - 72, 388);
         root.getChildren().add(this.onlinePane);
 
         this.localListView = new ListView<>();
-        this.localListView.setPrefSize(mainW - 72, 405);
+        this.localListView.setPrefSize(mainW - 72, 388);
         ListRow.styleList(this.localListView, "Aucun pack de ressources installé.\nAjoute un .zip ou explore le catalogue.");
         this.localPane.getChildren().add(this.localListView);
 
         this.onlineListView = new ListView<>();
-        this.onlineListView.setPrefSize(mainW - 72, 405);
+        this.onlineListView.setPrefSize(mainW - 72, 388);
         ListRow.styleList(this.onlineListView, "Aucun résultat pour le moment.");
         this.onlinePane.getChildren().add(this.onlineListView);
 

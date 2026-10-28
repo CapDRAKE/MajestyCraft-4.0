@@ -941,6 +941,16 @@ public class LauncherSettings extends IScreen {
         return Utils.resolveServerPath(version, modloaderType);
     }
 
+    /** Version jouable sur Linux ARM : 1.19+ (releases, pre-releases, snapshots de 2022 et après). */
+    static boolean isArmCompatibleVersion(String id) {
+        if (id == null) return false;
+        java.util.regex.Matcher snapshot = java.util.regex.Pattern.compile("^(\\d{2})w\\d{2}[a-z]$").matcher(id);
+        if (snapshot.matches()) return Integer.parseInt(snapshot.group(1)) >= 22;
+        java.util.regex.Matcher release = java.util.regex.Pattern.compile("^1\\.(\\d+)").matcher(id);
+        if (release.find()) return Integer.parseInt(release.group(1)) >= 19;
+        return true;
+    }
+
     private void populateVersionListFromMojang(final LauncherPanel pane, final String preferredSelection) {
         this.versionList.getItems().clear();
         this.versionList.getItems().add("Chargement...");
@@ -964,10 +974,19 @@ public class LauncherSettings extends IScreen {
                 }
             }
 
+            // Processeur ARM sous Linux (Chromebooks ARM...) : Minecraft n'y existe qu'à
+            // partir de la 1.19 (natives LWJGL 3.3), les versions antérieures sont masquées.
+            if (fr.trxyy.alternative.alternative_api.updater.LinuxArmSupport.isLinuxArm()) {
+                versions = new ArrayList<>(versions);
+                versions.removeIf(v -> !isArmCompatibleVersion(v));
+            }
             final List<String> finalVersions = versions;
 
             Platform.runLater(() -> {
                 this.versionList.getItems().setAll(finalVersions);
+                if (fr.trxyy.alternative.alternative_api.updater.LinuxArmSupport.isLinuxArm()) {
+                    this.versionList.setTooltip(new javafx.scene.control.Tooltip("Processeur ARM : Minecraft 1.19 ou plus récent uniquement."));
+                }
                 this.versionList.setDisable(false);
 
                 if (preferredSelection != null && finalVersions.contains(preferredSelection)) {
