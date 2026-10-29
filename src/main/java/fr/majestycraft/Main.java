@@ -79,7 +79,7 @@ public class Main {
     }
 
     /** Version courante du launcher (pour le popup "Quoi de neuf"). */
-    private static final String CURRENT_VERSION = "5.2";
+    private static final String CURRENT_VERSION = "5.2.0.1";
 
     /**
      * Affiche une pop-up "Quoi de neuf" une seule fois par version. Montr�e tant
@@ -104,6 +104,8 @@ public class Main {
                 new javafx.scene.control.Label("• Diagnostic de crash : la cause expliquée en français, avec des corrections en un clic."),
                 new javafx.scene.control.Label("• Mods : vérification avant de jouer, mode performance et mises à jour en un clic (onglet Mods › Installés)."),
                 new javafx.scene.control.Label("• Chromebooks et Linux ARM : le launcher fonctionne désormais aussi sur ChromeOS."),
+                new javafx.scene.control.Label("• Anciennes versions (1.5.2 et avant, Beta, Alpha, Classic) : elles fonctionnent de nouveau."),
+                new javafx.scene.control.Label("• Sécurité : ton jeton de connexion n'apparaît plus dans le journal du launcher."),
                 new javafx.scene.control.Label("\nLe détail complet est dans l'onglet « Infos » de la barre latérale.")
         );
         content.getChildren().forEach(n -> ((javafx.scene.control.Label) n).setWrapText(true));

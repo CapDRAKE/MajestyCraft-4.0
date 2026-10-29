@@ -1,6 +1,17 @@
 {
   "versions": [
     {
+      "version": "5.2.0.1",
+      "date": "29/10/2026",
+      "entries": [
+        { "type": "fix", "text": "Les anciennes versions de Minecraft démarrent de nouveau : 1.0 à 1.5.2, Beta, Alpha, Infdev, Classic et les toutes premières versions (rd). Le launcher utilise désormais la classe de démarrage indiquée par Mojang pour chaque version." },
+        { "type": "fix", "text": "Versions antérieures à la 1.7 : sons et textures retrouvés. Les ressources sont placées là où ces versions les cherchent, et les paramètres de session et de ressources sont correctement transmis au jeu." },
+        { "type": "fix", "text": "Versions antérieures à la 1.6 : les packs de textures, les statistiques et les ressources ne sont plus effacés à chaque lancement." },
+        { "type": "fix", "text": "Sécurité : ton jeton de connexion Microsoft n'apparaît plus dans le journal du launcher (ligne de lancement du jeu). Les anciennes versions, qui l'écrivaient dans leur propre journal, ne le reçoivent plus." },
+        { "type": "improve", "text": "Toutes les versions proposées par le launcher ont été testées une à une jusqu'au menu principal, de la 26.3 à la toute première (rd-132211), ainsi que les 50 derniers snapshots." }
+      ]
+    },
+    {
       "version": "5.2",
       "date": "28/10/2026",
       "entries": [
