@@ -2,7 +2,7 @@
   "versions": [
     {
       "version": "5.3",
-      "date": "01/11/2026",
+      "date": "03/11/2026",
       "entries": [
         { "type": "new", "text": "Voyage dans le temps : un bouton de l'accueil ouvre une frise des grandes époques de Minecraft, des toutes premières versions de 2009 (rd-132211, Classic, Infdev, Alpha, Beta) jusqu'à la dernière version. Un clic sur « Jouer » crée le profil de l'époque, ou réutilise celui que tu as déjà." },
         { "type": "new", "text": "Jouer avec un ami : le launcher installe le mod e4mc (gratuit et open source) et t'explique les étapes. Tu ouvres ton monde au réseau local, une adresse s'affiche dans le chat, ton ami la colle dans « Connexion rapide ». Ni serveur, ni redirection de ports, et ton ami n'a besoin d'aucun mod. Minecraft 1.17 et plus ; un profil Vanilla ou OptiFine reçoit une copie « · Entre amis » sous Fabric." },
