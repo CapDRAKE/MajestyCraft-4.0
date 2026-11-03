@@ -50,10 +50,34 @@ CURL=(curl --ssl-reqd --netrc-file "$NETRC" --fail --silent --show-error --conne
 if [ -n "${FTP_CACERT:-}" ]; then CURL+=(--cacert "$FTP_CACERT" --ssl-no-revoke); fi
 BASE="ftp://$FTP_HOST/$FTP_DIR"
 
-liste=$("${CURL[@]}" --list-only "$BASE/bootstrap/") \
-    || erreur "Connexion FTP impossible ou dossier $FTP_DIR/bootstrap/ introuvable : vérifie FTP_HOST, FTP_USER, FTP_PASSWORD et FTP_DIR."
-grep -qx "MajestyCraft.jar" <<< "$(tr -d '\r' <<< "$liste")" \
-    || erreur "$FTP_DIR/bootstrap/ ne contient pas MajestyCraft.jar : FTP_DIR ne désigne pas le bon dossier."
+# Vrai si <dossier>/bootstrap/ contient MajestyCraft.jar (chemin depuis le dossier de connexion,
+# ou absolu s'il commence par /)
+contient_launcher() {
+    local l
+    l=$("${CURL[@]}" --list-only "ftp://$FTP_HOST/$1/bootstrap/" 2>/dev/null) || return 1
+    grep -qx "MajestyCraft.jar" <<< "$(tr -d '\r' <<< "$l")"
+}
+
+if ! contient_launcher "$FTP_DIR"; then
+    # Identifiants ou dossier ? Le dossier de connexion doit au moins être lisible.
+    code=0
+    "${CURL[@]}" --list-only "ftp://$FTP_HOST/" > /dev/null 2> erreur-ftp.txt || code=$?
+    case $code in
+        0) ;;
+        67) erreur "Identifiant ou mot de passe FTP refusé : vérifie FTP_USER et FTP_PASSWORD." ;;
+        *) erreur "Serveur FTP injoignable ou FTP chiffré refusé (vérifie FTP_HOST) : $(cat erreur-ftp.txt)" ;;
+    esac
+    # Connexion OK : on cherche le dossier du launcher aux emplacements habituels
+    for d in . httpdocs public_html www htdocs web majestycraft.com majestycraft.com/httpdocs \
+             majestycraft.com/public_html domains/majestycraft.com/public_html; do
+        for candidat in "$d/minecraft" "$d"; do
+            if contient_launcher "$candidat"; then
+                erreur "Connexion FTP OK, mais FTP_DIR ne désigne pas le bon dossier. Le launcher est dans « ${candidat#./}/bootstrap/ » : mets « ${candidat#./} » dans le secret FTP_DIR, puis relance."
+            fi
+        done
+    done
+    erreur "Connexion FTP OK, mais dossier bootstrap/ introuvable. Dans FileZilla, ouvre le dossier qui contient MajestyCraft.jar et launcher.json : FTP_DIR est le chemin affiché au-dessus (« Site distant »), sans /bootstrap à la fin, par exemple /httpdocs/minecraft."
+fi
 echo "Connexion FTP chiffrée OK : $FTP_DIR/bootstrap/"
 
 # --- 3. Envoi ------------------------------------------------------------------------
