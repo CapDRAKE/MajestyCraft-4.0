@@ -5,13 +5,12 @@
 # télécharge jamais un fichier à moitié envoyé. Le jar passe toujours avant son .json.
 #
 # Variables : FTP_HOST, FTP_USER, FTP_PASSWORD, FTP_DIR (dossier qui contient bootstrap/,
-# relatif à la connexion FTP), SITE (adresse web de ce dossier), BOOTSTRAP et VERSIONS
-# (true/false). FTP_CACERT : certificat à accepter, pour les essais seulement.
+# relatif à la connexion FTP), SITE (adresse web de ce dossier), BOOTSTRAP (true/false).
+# FTP_CACERT : certificat à accepter, pour les essais seulement.
 set -euo pipefail
 
 SITE="${SITE:-https://majestycraft.com/minecraft}"
 BOOTSTRAP="${BOOTSTRAP:-false}"
-VERSIONS="${VERSIONS:-false}"
 CLE="deploy/cle-publique.pem"
 
 erreur() { echo "::error::$*"; exit 1; }
@@ -90,7 +89,7 @@ envoyer() {
     local src=$1 dest=$2 attendu
     "${CURL[@]}" --ftp-create-dirs -T "$src" "$BASE/$dest.envoi" || erreur "Envoi de $dest impossible."
     # Chemins depuis le dossier de connexion (commandes envoyées avant tout changement de dossier)
-    if ! "${CURL[@]}" -o /dev/null -Q "RNFR $FTP_DIR/$dest.envoi" -Q "RNTO $FTP_DIR/$dest" "$BASE/"; then
+    if ! "${CURL[@]}" -o /dev/null -Q "RNFR $FTP_DIR/$dest.envoi" -Q "RNTO $FTP_DIR/$dest" "$BASE/" 2>/dev/null; then
         # Serveur qui refuse de renommer par-dessus un fichier existant : il est supprimé juste avant
         "${CURL[@]}" -o /dev/null -Q "DELE $FTP_DIR/$dest" -Q "RNFR $FTP_DIR/$dest.envoi" -Q "RNTO $FTP_DIR/$dest" "$BASE/" \
             || erreur "Renommage de $dest.envoi en $dest impossible."
@@ -109,12 +108,6 @@ envoyer target/launcher.json bootstrap/launcher.json
 if [ "$BOOTSTRAP" = "true" ]; then
     envoyer deploy/bootstrap/bootstrap.jar bootstrap/bootstrap.jar
     envoyer deploy/bootstrap/bootstrap.json bootstrap/bootstrap.json
-fi
-
-if [ "$VERSIONS" = "true" ]; then
-    while IFS= read -r f; do
-        envoyer "deploy/versions/$f" "$f"
-    done < <(cd deploy/versions && find . -type f -name '*.json' | sed 's#^\./##' | sort)
 fi
 
 echo "Déploiement terminé."

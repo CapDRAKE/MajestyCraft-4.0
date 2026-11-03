@@ -2,7 +2,6 @@ package fr.majestycraft;
 
 import fr.majestycraft.launcher.*;
 import fr.trxyy.alternative.alternative_api.*;
-import fr.trxyy.alternative.alternative_api.maintenance.*;
 import fr.trxyy.alternative.alternative_api.utils.*;
 import fr.trxyy.alternative.alternative_api.utils.config.EnumConfig;
 import fr.trxyy.alternative.alternative_api.utils.file.FileUtil;
@@ -55,9 +54,6 @@ public class App extends AlternativeBase {
     private static final String PARTNER_IP = "91.197.6.34";
     private static final String PARTNER_PORT = "25601";
     private static final String ICON_IMAGE = "launchergifpng.png";
-
-    // Base serveur (SANS slash final pour maîtriser les concat)
-    private static final String GAME_LINK_BASE_URL = "https://majestycraft.com/minecraft";
 
     // Default si aucune config
     private static final String DEFAULT_VERSION_ID = "1.21.11";
@@ -113,7 +109,6 @@ public class App extends AlternativeBase {
     // Valeur par défaut “safe” au boot (on ré-écrase via config ensuite)
     private final GameLinks gameLinks = createDefaultGameLinks();
     private final GameEngine gameEngine = createGameEngine();
-    private final GameMaintenance gameMaintenance = createGameMaintenance();
     private LauncherPanel panel;
 
     private static final GameConnect GAME_CONNECT = createGameConnect();
@@ -157,21 +152,14 @@ public class App extends AlternativeBase {
     }
 
     /**
-     * GameLinks par défaut (avant lecture config)
-     * -> correspond à la structure /<version>/<version>.json
+     * GameLinks par défaut, remplacés dès la lecture de la config (applyGameLinksFromConfigAsync).
      */
     private GameLinks createDefaultGameLinks() {
-        String base = GAME_LINK_BASE_URL + "/" + DEFAULT_VERSION_ID + "/";
-        String jsonName = DEFAULT_VERSION_ID + ".json";
-        return new GameLinks(base, jsonName);
+        return offlineGameLinks(DEFAULT_VERSION_ID);
     }
 
     private GameEngine createGameEngine() {
         return new GameEngine(gameFolder, gameLinks, launcherPreferences, GameStyle.VANILLA_1_19_HIGHER);
-    }
-
-    private GameMaintenance createGameMaintenance() {
-        return new GameMaintenance(Maintenance.USE, gameEngine);
     }
 
     private void createContent() throws IOException {
@@ -189,9 +177,6 @@ public class App extends AlternativeBase {
 
     private void registerGameEngine(Stage primaryStage) {
         gameEngine.reg(primaryStage);
-        if (netIsAvailable()) {
-            gameEngine.reg(gameMaintenance);
-        }
     }
 
     private LauncherBase setupLauncherBase(Stage primaryStage) {
@@ -244,45 +229,28 @@ public class App extends AlternativeBase {
                     return;
                 }
 
-                if (!netIsAvailable()) {
-                    GameLinks fallback = buildServerGameLinks(finalVersion, finalModloaderType);
-                    Platform.runLater(() -> this.gameEngine.reg(fallback));
-                    return;
-                }
-
+                // Vanilla et Forge : fiche de version de Mojang (Forge vient de son propre dépôt)
                 String mojangJsonUrl = resolveMojangVersionJsonUrlStatic(finalVersion);
-                if (mojangJsonUrl == null) {
-                    GameLinks fallback = buildServerGameLinks(finalVersion, finalModloaderType);
-                    Platform.runLater(() -> this.gameEngine.reg(fallback));
-                    return;
-                }
-
-                String serverBaseForVersion = GAME_LINK_BASE_URL + Utils.resolveServerPath(finalVersion, finalModloaderType);
-
-                GameLinks links = new GameLinks(
-                        mojangJsonUrl,
-                        serverBaseForVersion + "ignore.json",
-                        serverBaseForVersion + "delete.json",
-                        serverBaseForVersion + "status.json",
-                        serverBaseForVersion + "files/"
-                );
-
+                GameLinks links = mojangJsonUrl != null ? new GameLinks(mojangJsonUrl) : offlineGameLinks(finalVersion);
                 Platform.runLater(() -> this.gameEngine.reg(links));
 
             } catch (Exception e) {
                 LOGGER.warning("Impossible d'appliquer les GameLinks configurés : " + e.getMessage());
                 if (finalModloaderType != Utils.ModloaderType.OPTIFINE && !isOfficialGeneratedModloader(finalModloaderType)) {
-                    GameLinks fallback = buildServerGameLinks(finalVersion, finalModloaderType);
+                    GameLinks fallback = offlineGameLinks(finalVersion);
                     Platform.runLater(() -> this.gameEngine.reg(fallback));
                 }
             }
         });
     }
 
-    private GameLinks buildServerGameLinks(String version, Utils.ModloaderType modloaderType) {
-        String base = GAME_LINK_BASE_URL + Utils.resolveServerPath(version, modloaderType);
-        String jsonName = version + ".json";
-        return new GameLinks(base, jsonName);
+    /**
+     * Mojang injoignable : la lib ne peut pas joindre cette adresse, passe en hors ligne et
+     * relance la version déjà téléchargée (cache/version.json). Aucun fichier n'est demandé
+     * au serveur MajestyCraft.
+     */
+    public static GameLinks offlineGameLinks(String version) {
+        return new GameLinks("https://piston-meta.mojang.com/v1/packages/hors-ligne/" + version + ".json");
     }
 
     public static String resolveMojangVersionJsonUrlStatic(String versionId) throws IOException {

@@ -76,20 +76,6 @@ public class Utils {
                 || modloaderType == ModloaderType.NEOFORGE;
     }
 
-    public static String resolveServerPath(String version, ModloaderType modloaderType) {
-        String suffix = "/";
-        if (modloaderType == ModloaderType.FORGE) {
-            suffix = "/forge/";
-        } else if (modloaderType == ModloaderType.FABRIC) {
-            suffix = "/fabric/";
-        } else if (modloaderType == ModloaderType.QUILT) {
-            suffix = "/quilt/";
-        } else if (modloaderType == ModloaderType.NEOFORGE) {
-            suffix = "/neoforge/";
-        }
-        return "/" + version + suffix;
-    }
-
     private static GameStyle determineGameStyle(String version, ModloaderType modloaderType) {
         if (modloaderType == ModloaderType.FORGE) {
             if (version != null && version.matches("1\\.(8|9|10\\.2|11\\.2|12\\.2)")) {

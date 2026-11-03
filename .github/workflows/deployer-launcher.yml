@@ -10,10 +10,6 @@ on:
         description: "Mettre aussi en ligne le bootstrap (deploy/bootstrap/)"
         type: boolean
         default: false
-      versions:
-        description: "Mettre aussi en ligne les fichiers de version corrigés (deploy/versions/)"
-        type: boolean
-        default: false
 
 # Jamais deux déploiements en même temps
 concurrency:
@@ -54,5 +50,4 @@ jobs:
           FTP_DIR: ${{ secrets.FTP_DIR }}
           SITE: https://majestycraft.com/minecraft
           BOOTSTRAP: ${{ inputs.bootstrap }}
-          VERSIONS: ${{ inputs.versions }}
         run: bash .github/scripts/deployer.sh

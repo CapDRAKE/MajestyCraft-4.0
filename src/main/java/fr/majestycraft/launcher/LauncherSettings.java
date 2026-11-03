@@ -116,7 +116,6 @@ public class LauncherSettings extends IScreen {
             "https://meta.quiltmc.org/v3/versions/game";
     private static final String NEOFORGE_MAVEN_METADATA_URL =
             "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml";
-    private static final String SERVER_GAME_BASE_URL = "https://majestycraft.com/minecraft";
 
     private final Map<String, String> mojangVersionUrlById = new HashMap<>();
     private final Map<String, String> mojangVersionTypeById = new HashMap<>();
@@ -927,20 +926,6 @@ public class LauncherSettings extends IScreen {
             return App.buildOfficialModloaderGameLinks(version, modloaderType);
         }
 
-        String serverBase = SERVER_GAME_BASE_URL + Utils.resolveServerPath(version, modloaderType);
-
-        if (modloaderType == Utils.ModloaderType.OPTIFINE) {
-            String fullUrl = mojangVersionUrlById.get(version);
-            if ((fullUrl == null || fullUrl.trim().isEmpty()) && App.netIsAvailable()) {
-                fullUrl = App.resolveMojangVersionJsonUrlStatic(version);
-            }
-            if (fullUrl == null || fullUrl.trim().isEmpty()) {
-                throw new IOException("Impossible de rÃ©soudre le JSON Mojang pour OptiFine " + version);
-            }
-            return App.buildOptiFineGameLinksFromResolvedJson(fullUrl, version);
-        }
-
-
         String fullUrl = mojangVersionUrlById.get(version);
         if ((fullUrl == null || fullUrl.trim().isEmpty()) && App.netIsAvailable()) {
             fullUrl = App.resolveMojangVersionJsonUrlStatic(version);
@@ -953,26 +938,11 @@ public class LauncherSettings extends IScreen {
             return App.buildOptiFineGameLinksFromResolvedJson(fullUrl, version);
         }
 
+        // Vanilla et Forge : fiche de version de Mojang ; hors ligne, la version déjà téléchargée
         if (fullUrl == null || fullUrl.trim().isEmpty()) {
-            return new GameLinks(serverBase, version + ".json");
+            return App.offlineGameLinks(version);
         }
-
-        serverBase = serverBase;
-        return new GameLinks(
-                fullUrl,
-                serverBase + "ignore.json",
-                serverBase + "delete.json",
-                serverBase + "status.json",
-                serverBase + "files/"
-        );
-    }
-
-    private String urlModifier() {
-        return Utils.resolveServerPath(versionList.getValue(), getSelectedModloaderFromControls());
-    }
-
-    private String urlModifier(String version, Utils.ModloaderType modloaderType) {
-        return Utils.resolveServerPath(version, modloaderType);
+        return new GameLinks(fullUrl);
     }
 
     /** Version jouable sur Linux ARM : 1.19+ (releases, pre-releases, snapshots de 2022 et après). */

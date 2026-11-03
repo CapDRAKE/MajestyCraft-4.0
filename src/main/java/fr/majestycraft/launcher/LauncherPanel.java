@@ -878,11 +878,6 @@ public class LauncherPanel extends IScreen {
     private void onPlayClicked(Pane root) {
         if (launchInProgress) return;
 
-        if (engine.getGameMaintenance() != null && engine.getGameMaintenance().isAccessBlocked()) {
-            new LauncherAlert("Maintenance", "Le jeu est actuellement en maintenance, réessaie plus tard.");
-            return;
-        }
-
         if (microsoftSessionActive && auth != null && auth.isLogged()) {
             startGame();
             return;
@@ -1137,7 +1132,10 @@ public class LauncherPanel extends IScreen {
         bubble.getStyleClass().add("ml-feature-bubble");
         bubble.setMinSize(30, 30);
         bubble.setMaxSize(30, 30);
-        HBox tile = new HBox(10, bubble, new VBox(2, value, captionLabel));
+        // La colonne de texte prend toute la hauteur de la case : son contenu y est centré
+        VBox text = new VBox(2, value, captionLabel);
+        text.setAlignment(Pos.CENTER_LEFT);
+        HBox tile = new HBox(10, bubble, text);
         tile.setAlignment(Pos.CENTER_LEFT);
         tile.getStyleClass().add("ml-stat");
         tile.setPrefSize(width, 56);
@@ -1982,15 +1980,13 @@ public class LauncherPanel extends IScreen {
         );
         this.autoLoginButton2.setVisible(false);
         this.autoLoginButton2.setOnAction(event -> {
-            if (!engine.getGameMaintenance().isAccessBlocked()) {
-                if (autoLoginTimer != null) autoLoginTimer.cancel();
-                autoLoginLabel.setVisible(false);
-                autoLoginButton.setVisible(false);
-                autoLoginRectangle.setVisible(false);
-                autoLoginButton2.setVisible(false);
-                if (cfgBool(EnumConfig.USE_CONNECT)) engine.reg(App.getGameConnect());
-                checkAutoLogin(root);
-            }
+            if (autoLoginTimer != null) autoLoginTimer.cancel();
+            autoLoginLabel.setVisible(false);
+            autoLoginButton.setVisible(false);
+            autoLoginRectangle.setVisible(false);
+            autoLoginButton2.setVisible(false);
+            if (cfgBool(EnumConfig.USE_CONNECT)) engine.reg(App.getGameConnect());
+            checkAutoLogin(root);
         });
 
         if (this.config.getValue(EnumConfig.AUTOLOGIN).equals(true)) {
@@ -2004,16 +2000,14 @@ public class LauncherPanel extends IScreen {
                     public void run() {
                         elapsed++;
                         if (elapsed % waitTime == 0) {
-                            if (!engine.getGameMaintenance().isAccessBlocked()) {
-                                Platform.runLater(() -> {
-                                    autoLoginTimer.cancel();
-                                    autoLoginLabel.setVisible(false);
-                                    autoLoginButton.setVisible(false);
-                                    autoLoginRectangle.setVisible(false);
-                                    autoLoginButton2.setVisible(false);
-                                    checkAutoLogin(root);
-                                });
-                            }
+                            Platform.runLater(() -> {
+                                autoLoginTimer.cancel();
+                                autoLoginLabel.setVisible(false);
+                                autoLoginButton.setVisible(false);
+                                autoLoginRectangle.setVisible(false);
+                                autoLoginButton2.setVisible(false);
+                                checkAutoLogin(root);
+                            });
                         } else {
                             final int time = (waitTime - (elapsed % waitTime));
                             Platform.runLater(() -> autoLoginLabel.setText(String.format(AUTOLOGIN_COUNTDOWN, time)));
@@ -2335,10 +2329,6 @@ public class LauncherPanel extends IScreen {
 
     public void connectAccountPremiumCO(String username, Pane root) {
         if (loadingView != null) loadingView.setPlayer(username, username);
-    }
-
-    private String urlModifier(String version) {
-        return Utils.resolveServerPath(version, Utils.resolveSelectedModloader(config));
     }
 
     public LauncherConfig getConfig() {
