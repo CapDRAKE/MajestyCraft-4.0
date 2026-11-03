@@ -44,16 +44,22 @@ public final class BootstrapUpdater {
     }
 
     /**
-     * Vérifie en arrière-plan, après le démarrage : le bootstrap a alors fini de lancer le
-     * launcher et son fichier n'est plus utilisé. En cas d'échec, nouvel essai au prochain lancement.
+     * Vérifie en arrière-plan, juste après le démarrage : le bootstrap se ferme 1,5 s après
+     * avoir lancé le launcher, son fichier est alors libre. Si Windows le tient encore, nouvel
+     * essai un peu plus tard ; sinon au prochain lancement.
      */
     public static void checkInBackground() {
         Thread t = new Thread(() -> {
-            try {
-                Thread.sleep(20_000);
-                update(BASE);
-            } catch (Throwable e) {
-                System.err.println("Mise à jour du bootstrap impossible : " + e);
+            for (long attente : new long[] { 3_000, 10_000, 30_000 }) {
+                try {
+                    Thread.sleep(attente);
+                    update(BASE);
+                    return;
+                } catch (InterruptedException e) {
+                    return;
+                } catch (Throwable e) {
+                    System.err.println("Mise à jour du bootstrap impossible pour l'instant : " + e);
+                }
             }
         }, "MajestyLauncher-BootstrapUpdate");
         t.setDaemon(true);
