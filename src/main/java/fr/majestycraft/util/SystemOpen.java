@@ -31,6 +31,13 @@ public final class SystemOpen {
     /** Ouvre l'adresse dans le navigateur. Bloque au plus quelques secondes : à appeler hors du thread JavaFX. */
     public static boolean browse(String url) {
         if (url == null || url.trim().isEmpty()) return false;
+        // Seulement des pages web : une adresse venue d'Internet (actualités, Modrinth...) en
+        // file: ou vers un partage réseau ouvrirait un fichier, voire lancerait un programme.
+        String lower = url.trim().toLowerCase(Locale.ROOT);
+        if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
+            System.err.println("Lien ignoré (seuls http et https sont ouverts) : " + url);
+            return false;
+        }
         if (!WINDOWS && !MAC) {
             return run("xdg-open", url) || run("gio", "open", url);
         }

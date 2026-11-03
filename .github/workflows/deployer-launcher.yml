@@ -1,0 +1,58 @@
+name: Déployer le launcher
+
+# Uniquement à la main : onglet Actions > « Déployer le launcher » > Run workflow.
+# Met en ligne target/MajestyCraft.jar et target/launcher.json (construits et signés par
+# build.ps1, puis poussés) dans minecraft/bootstrap/ sur majestycraft.com.
+on:
+  workflow_dispatch:
+    inputs:
+      bootstrap:
+        description: "Mettre aussi en ligne le bootstrap (deploy/bootstrap/)"
+        type: boolean
+        default: false
+      versions:
+        description: "Mettre aussi en ligne les fichiers de version corrigés (deploy/versions/)"
+        type: boolean
+        default: false
+
+# Jamais deux déploiements en même temps
+concurrency:
+  group: deploiement-launcher
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deployer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Sauvegarder la version en ligne
+        run: |
+          mkdir -p version-en-ligne
+          for f in MajestyCraft.jar launcher.json bootstrap.jar bootstrap.json; do
+            curl -fsSL "https://majestycraft.com/minecraft/bootstrap/$f" -o "version-en-ligne/$f" || rm -f "version-en-ligne/$f"
+          done
+          ls -l version-en-ligne
+
+      - name: Conserver la sauvegarde (90 jours)
+        uses: actions/upload-artifact@v4
+        with:
+          name: version-en-ligne-avant-deploiement
+          path: version-en-ligne/
+          retention-days: 90
+
+      - name: Vérifier les signatures et mettre en ligne
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIR: ${{ secrets.FTP_DIR }}
+          SITE: https://majestycraft.com/minecraft
+          BOOTSTRAP: ${{ inputs.bootstrap }}
+          VERSIONS: ${{ inputs.versions }}
+        run: bash .github/scripts/deployer.sh

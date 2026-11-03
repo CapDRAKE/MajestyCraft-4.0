@@ -2,3 +2,6 @@
 /out/
 /bin/
 /target/
+target/MajestyCraft.jar
+# Journaux de plantage de la JVM : chemins, nom d'utilisateur et variables d'environnement
+hs_err_pid*.log

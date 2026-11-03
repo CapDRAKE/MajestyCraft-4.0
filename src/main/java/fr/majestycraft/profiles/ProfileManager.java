@@ -420,6 +420,10 @@ public final class ProfileManager {
         if (m == null || m.name == null || m.version == null) {
             throw new IOException("Fichier de profil invalide (manifeste manquant).");
         }
+        // La version sert dans des chemins et des adresses : un simple identifiant de version
+        if (!IMPORTED_VERSION.matcher(m.version).matches() || m.version.contains("..")) {
+            throw new IOException("Fichier de profil invalide (version « " + m.version + " »).");
+        }
 
         Utils.ModloaderType loader;
         try {
@@ -430,11 +434,11 @@ public final class ProfileManager {
 
         String name = uniqueName(m.name);
         LauncherProfile p = new LauncherProfile(name, uniqueDirName(name), m.version, loader);
-        p.setRam(m.ram > 0 ? m.ram : 2.0D);
-        p.setGameSize(m.gameSize != null ? m.gameSize : "0");
+        p.setRam(m.ram > 0 && m.ram <= 64 ? m.ram : 2.0D);
+        p.setGameSize(m.gameSize != null && m.gameSize.matches("\\d{1,2}") ? m.gameSize : "0");
         p.setUseVmArguments(m.useVmArguments);
-        p.setVmArguments(m.vmArguments != null ? m.vmArguments : "");
-        p.setColor(m.color != null ? m.color : COLOR_PALETTE[data.profiles.size() % COLOR_PALETTE.length]);
+        p.setVmArguments(m.vmArguments != null ? safeImportedVmArguments(m.vmArguments) : "");
+        p.setColor(m.color != null && m.color.matches("#[0-9a-fA-F]{6}") ? m.color : COLOR_PALETTE[data.profiles.size() % COLOR_PALETTE.length]);
 
         File targetDir = resolveProfileDirectory(p);
         targetDir.mkdirs();
@@ -470,6 +474,35 @@ public final class ProfileManager {
             save();
         }
         return p;
+    }
+
+    /** Identifiant de version importé : « 1.21.1 », « b1.7.3 », « rd-132211 », « c0.0.13a_03 »... */
+    private static final java.util.regex.Pattern IMPORTED_VERSION =
+            java.util.regex.Pattern.compile("[A-Za-z0-9][A-Za-z0-9._ +-]{0,63}");
+
+    /**
+     * Arguments Java autorisés dans un profil partagé : mémoire et réglages du
+     * ramasse-miettes (ceux du mode performance compris). Un argument qui peut lancer du
+     * code (-javaagent, -XX:OnOutOfMemoryError=..., propriétés -D...) est écarté : un profil
+     * reçu d'un inconnu ne doit pas pouvoir exécuter quoi que ce soit à son lancement.
+     */
+    private static final java.util.regex.Pattern SAFE_IMPORTED_VM_ARGUMENT = java.util.regex.Pattern.compile(
+            "-X(mx|ms|mn|ss)\\d+[kKmMgG]?"
+                    + "|-XX:[+-][A-Za-z0-9]+"
+                    + "|-XX:[A-Za-z0-9]+=\\d+(\\.\\d+)?[kKmMgG%]?");
+
+    static String safeImportedVmArguments(String raw) {
+        StringBuilder kept = new StringBuilder();
+        for (String arg : raw.trim().split("\\s+")) {
+            if (arg.isEmpty()) continue;
+            if (SAFE_IMPORTED_VM_ARGUMENT.matcher(arg).matches()) {
+                if (kept.length() > 0) kept.append(' ');
+                kept.append(arg);
+            } else {
+                System.err.println("Profil importé : argument Java écarté « " + arg + " »");
+            }
+        }
+        return kept.toString();
     }
 
     private static byte[] readAll(InputStream in) throws IOException {

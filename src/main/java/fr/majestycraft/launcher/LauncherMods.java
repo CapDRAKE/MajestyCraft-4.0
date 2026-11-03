@@ -47,6 +47,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.embed.swing.SwingFXUtils;
 import javax.imageio.ImageIO;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -1037,96 +1038,12 @@ public class LauncherMods extends IScreen {
 
     // ------------------------------------------------------------------ mode performance
 
+    /** Analyse du PC puis rapport : mémoire, arguments Java, mods et distance de rendu conseillés. */
     private void onPerformanceMode() {
-        LauncherProfile profile = activeProfile();
-        if (profile == null) return;
-        PerformanceMode.Machine machine = PerformanceMode.detectMachine();
-        Utils.ModloaderType loader = profile.getModloaderType();
-        boolean modded = PerformanceMode.supportsMods(loader);
-        int ram = PerformanceMode.recommendedRamGb(machine, modded || loader == Utils.ModloaderType.VANILLA);
-        String ramLine = "Mémoire : " + ram + " Go (actuellement " + (int) Math.round(profile.getRam()) + " Go).";
-        String machineLine = "Machine détectée : " + machine.describe() + ".";
-
-        if (modded) {
-            new MajestyDialog(window(), "MODE PERFORMANCE", "Optimiser « " + profile.getName() + " »",
-                    machineLine + "\n" + ramLine + "\nMods d'optimisation reconnus pour " + loaderName(loader) + " "
-                            + profile.getVersion() + " (rendu, mémoire, entités...), installés depuis Modrinth avec "
-                            + "leurs dépendances. Rien n'est installé en double.")
-                    .cancel("Annuler")
-                    .work("Activer", "primary", progress -> {
-                        PerformanceMode.Result r = PerformanceMode.installMods(modsDir, profile.getVersion(), loader, progress);
-                        applyPerformanceSettings(profile, ram);
-                        return performanceSummary(r, ram);
-                    })
-                    .afterWork(this::loadLocalMods)
-                    .show();
-        } else if (loader == Utils.ModloaderType.VANILLA) {
-            String copyName = profile.getName() + " · Performance";
-            new MajestyDialog(window(), "MODE PERFORMANCE", "Passer par Fabric",
-                    machineLine + "\nLes mods d'optimisation ont besoin de Fabric. Le launcher crée une copie de ce profil "
-                            + "en Fabric (« " + copyName + " »), y installe les mods et l'active. Ton profil actuel n'est pas modifié.\n"
-                            + ramLine)
-                    .cancel("Annuler")
-                    .work("Créer et optimiser", "primary", progress -> {
-                        ProfileManager pm = ProfileManager.get();
-                        LauncherProfile copy = pm.create(copyName, profile.getVersion(), Utils.ModloaderType.FABRIC);
-                        copy.setRam(ram);
-                        pm.update(copy);
-                        File copyMods = new File(pm.resolveProfileDirectory(copy), "mods");
-                        PerformanceMode.Result r = PerformanceMode.installMods(copyMods, profile.getVersion(), Utils.ModloaderType.FABRIC, progress);
-                        java.util.concurrent.CountDownLatch activated = new java.util.concurrent.CountDownLatch(1);
-                        Platform.runLater(() -> {
-                            pm.activate(copy, engineRef);
-                            fr.majestycraft.App.getInstance().applyGameLinksFromConfigAsync();
-                            paneRef.refreshProfilesUI();
-                            activated.countDown();
-                        });
-                        activated.await();
-                        ModActions.setRam(ram, paneRef.getConfig());
-                        return "Profil « " + copyName + " » créé et activé. " + performanceSummary(r, ram);
-                    })
-                    .show();
-        } else {
-            new MajestyDialog(window(), "MODE PERFORMANCE", "OptiFine optimise déjà ce profil",
-                    machineLine + "\nLes mods d'optimisation ne sont pas compatibles avec OptiFine : seule la mémoire est ajustée. "
-                            + "Pour aller plus loin, crée un profil Fabric.\n" + ramLine)
-                    .cancel("Annuler")
-                    .work("Régler la mémoire", "primary", progress -> {
-                        applyPerformanceSettings(profile, ram);
-                        return "Mémoire réglée sur " + ram + " Go.";
-                    })
-                    .show();
-        }
-    }
-
-    /** Mémoire conseillée et arguments JVM obsolètes retirés (profil + configuration). */
-    private void applyPerformanceSettings(LauncherProfile profile, int ram) {
-        ModActions.setRam(ram, paneRef.getConfig());
-        String cleaned = PerformanceMode.cleanVmArguments(profile.getVmArguments());
-        if (!cleaned.equals(profile.getVmArguments() == null ? "" : profile.getVmArguments().trim())) {
-            profile.setVmArguments(cleaned);
-            ProfileManager.get().update(profile);
-            paneRef.getConfig().updateValue("vmarguments", cleaned);
-        }
-    }
-
-    private static String performanceSummary(PerformanceMode.Result r, int ram) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(r.installed.isEmpty() ? "Aucun mod à ajouter." : "Installé : " + String.join(", ", r.installed) + ".");
-        if (!r.alreadyPresent.isEmpty()) sb.append(" Déjà là : ").append(String.join(", ", r.alreadyPresent)).append('.');
-        if (!r.unavailable.isEmpty()) sb.append(" Indisponible pour cette version : ").append(String.join(", ", r.unavailable)).append('.');
-        sb.append(" Mémoire : ").append(ram).append(" Go.");
-        return sb.toString();
-    }
-
-    private static String loaderName(Utils.ModloaderType t) {
-        switch (t) {
-            case FABRIC: return "Fabric";
-            case QUILT: return "Quilt";
-            case FORGE: return "Forge";
-            case NEOFORGE: return "NeoForge";
-            default: return t.name();
-        }
+        PerformanceFlow.start(window(), paneRef, engineRef, performanceButton, () -> {
+            modsDir = resolveModsDir();
+            loadLocalMods();
+        });
     }
 
     private void toggleLocalMod(LocalModItem item) {
@@ -1460,7 +1377,7 @@ public class LauncherMods extends IScreen {
 
                     final String fileUrl = getAsString(chosenFile, "url");
                     final String fileName = getAsString(chosenFile, "filename");
-                    if (fileUrl == null || fileUrl.trim().isEmpty() || fileName == null || fileName.trim().isEmpty()) {
+                    if (fileUrl == null || fileUrl.trim().isEmpty() || !fr.majestycraft.mods.ModrinthApi.isSafeFileName(fileName)) {
                         Platform.runLater(new Runnable() {
                             @Override
                             public void run() {
@@ -1472,6 +1389,7 @@ public class LauncherMods extends IScreen {
 
                     File destination = uniqueDestination(new File(modsDir, fileName));
                     downloadFile(fileUrl, destination);
+                    fr.majestycraft.mods.ModrinthApi.verifyDownload(destination, chosenFile);
 
                     Platform.runLater(new Runnable() {
                         @Override
@@ -1770,7 +1688,8 @@ public class LauncherMods extends IScreen {
                 byte[] bytes = buffer.toByteArray();
                 Image img = new Image(new ByteArrayInputStream(bytes), 52, 52, true, true);
                 if (!img.isError() && img.getWidth() > 1) { remoteImageCache.put(url, img); return img; }
-                BufferedImage bi = ImageIO.read(new ByteArrayInputStream(bytes));
+                // Flux en mémoire : le lecteur WebP lit octet par octet, très lent sur un flux fichier
+                BufferedImage bi = ImageIO.read(new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes)));
                 if (bi != null) {
                     Image fxImg = SwingFXUtils.toFXImage(bi, null);
                     if (fxImg != null && !fxImg.isError() && fxImg.getWidth() > 1) { remoteImageCache.put(url, fxImg); return fxImg; }

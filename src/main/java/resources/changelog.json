@@ -1,6 +1,34 @@
 {
   "versions": [
     {
+      "version": "5.3",
+      "date": "01/11/2026",
+      "entries": [
+        { "type": "new", "text": "Voyage dans le temps : un bouton de l'accueil ouvre une frise des grandes époques de Minecraft, des toutes premières versions de 2009 (rd-132211, Classic, Infdev, Alpha, Beta) jusqu'à la dernière version. Un clic sur « Jouer » crée le profil de l'époque, ou réutilise celui que tu as déjà." },
+        { "type": "new", "text": "Jouer avec un ami : le launcher installe le mod e4mc (gratuit et open source) et t'explique les étapes. Tu ouvres ton monde au réseau local, une adresse s'affiche dans le chat, ton ami la colle dans « Connexion rapide ». Ni serveur, ni redirection de ports, et ton ami n'a besoin d'aucun mod. Minecraft 1.17 et plus ; un profil Vanilla ou OptiFine reçoit une copie « · Entre amis » sous Fabric." },
+        { "type": "new", "text": "Assistant de premier lancement : un nouveau joueur choisit comment il veut jouer (survie fluide et jolie, PvP 1.8.9, dernière version, voyage dans le temps ou réglages manuels) et le launcher prépare le profil adapté à son PC. Les joueurs existants ne le voient pas." },
+        { "type": "new", "text": "Accueil repensé : un message d'accueil à ton nom, les exclusivités du launcher en cartes « À découvrir » (Voyage dans le temps, Jouer avec un ami, Mode performance, Nouveautés) et une carte « Prêt à jouer » centrée sur ton profil, avec sa version, sa mémoire, ton temps de jeu et ta dernière partie." },
+        { "type": "new", "text": "Nouvel écran de chargement : ton skin flotte sous ton pseudo, une rangée de blocs se construit au fil du téléchargement en creusant de l'herbe jusqu'aux diamants, l'étape en cours est écrite en français clair (fini les noms de fichiers illisibles) et des astuces défilent." },
+        { "type": "new", "text": "Mode performance repensé : le launcher analyse ton PC (processeur, mémoire, carte graphique dédiée ou intégrée, système) et te présente la configuration conseillée, point par point, avec la raison de chaque choix. Tu gardes ce que tu veux avant d'appliquer." },
+        { "type": "improve", "text": "Mode performance à portée de clic : bouton éclair à côté du profil sur l'accueil, bouton « Mode performance » dans les Réglages, et toujours dans Mods › Installés." },
+        { "type": "improve", "text": "Mémoire conseillée selon ta RAM, la version de Minecraft et le nombre de mods, en laissant toujours de la place à ton système." },
+        { "type": "improve", "text": "Arguments Java optimisés pour Minecraft (ramasse-miettes G1 réglé pour le jeu), compatibles de Java 8 à Java 25 et ajoutés sans écraser tes propres arguments." },
+        { "type": "improve", "text": "Mods d'optimisation complétés par Dynamic FPS (le jeu ralentit quand sa fenêtre est en arrière-plan) et More Culling sur les cartes graphiques modestes ; distance de rendu réduite seulement sur les petites machines." },
+        { "type": "improve", "text": "Launcher bien plus léger : 12,6 Mo au lieu de 87 Mo. Il embarquait une seconde copie de JavaFX (avec son moteur web) que Java fournit déjà, ainsi que des bibliothèques inutilisées. Téléchargement et mises à jour du launcher nettement plus rapides." },
+        { "type": "improve", "text": "Démarrage et ouverture des écrans plus rapides : la police est chargée une seule fois (le launcher la recopiait plus de 150 fois dans les fichiers temporaires à chaque lancement), le logo n'est plus redécodé à chaque écran et la connexion Internet n'est plus vérifiée deux fois de suite au démarrage." },
+        { "type": "fix", "text": "Sécurité : Minecraft 1.8 à 1.18 (Vanilla et Forge) est protégé contre la faille Log4Shell. Un message piégé dans le chat d'un serveur pouvait faire contacter un serveur pirate par ton jeu, voire y exécuter du code. Le launcher utilise maintenant la configuration corrigée par Mojang et bloque ces messages à chaque lancement." },
+        { "type": "fix", "text": "Sécurité : les icônes de la recherche de mods, packs et shaders sont lues par un décodeur d'images sûr, à la place d'un ancien composant natif touché par une faille connue (CVE-2023-4863). Même affichage." },
+        { "type": "fix", "text": "Sécurité : les mises à jour du launcher sont signées. Le petit programme qui le télécharge se met à jour tout seul (sans rien réinstaller, et il passe de 26 à 9 Mo) et n'installe plus qu'un launcher signé par MajestyCraft : même un site piraté ne pourrait pas diffuser un faux launcher." },
+        { "type": "fix", "text": "Sécurité : ta connexion Microsoft est chiffrée sur ton PC (comme le launcher officiel) ; copiée ailleurs, elle est inutilisable. Sous Linux et macOS, elle est rangée avec les données du launcher et lisible par toi seul." },
+        { "type": "fix", "text": "Sécurité : un profil partagé ne peut plus rien exécuter à son lancement (seuls les réglages de mémoire sont repris de ses arguments Java), les mods, packs et shaders téléchargés sont vérifiés, et seuls les liens web s'ouvrent depuis le launcher." },
+        { "type": "fix", "text": "Nouveau profil : toutes les versions de Minecraft sont proposées, lues chez Mojang comme dans les Réglages (la liste s'arrêtait à la 1.21.11). Avant la 1.8, le profil est en Vanilla." },
+        { "type": "fix", "text": "NeoForge 1.21 : le jeu démarre de nouveau (des bibliothèques ASM en double bloquaient le lancement)." },
+        { "type": "fix", "text": "Quilt : le launcher installe la dernière version stable du loader (et non une ancienne bêta), et Quilted Fabric API à la place de Fabric API, ce qui empêchait le jeu de démarrer." },
+        { "type": "fix", "text": "Mods : les dépendances déclarées dans les fichiers des mods mais absentes de Modrinth sont désormais installées aussi (par exemple Cloth Config pour More Culling)." },
+        { "type": "improve", "text": "Démarrage du jeu : l'option -Xmn n'est plus imposée quand le ramasse-miettes G1 est réglé par le launcher, ce qui laisse G1 dimensionner lui-même sa mémoire pour garder des pauses courtes." }
+      ]
+    },
+    {
       "version": "5.2.0.1",
       "date": "29/10/2026",
       "entries": [

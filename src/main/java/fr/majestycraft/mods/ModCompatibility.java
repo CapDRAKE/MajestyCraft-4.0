@@ -124,7 +124,8 @@ public final class ModCompatibility {
                     wrongVersionHashes.add(e.getKey());
                 }
                 if (flagged.contains(jar)) continue;
-                for (String dep : ModrinthApi.requiredDependencies(v)) {
+                for (String required : ModrinthApi.requiredDependencies(v)) {
+                    String dep = ModrinthApi.forLoader(required, loader);
                     if (!installedProjects.contains(dep)) {
                         missing.computeIfAbsent(dep, k -> new ArrayList<>()).add(jar.displayName);
                     }
@@ -135,7 +136,7 @@ public final class ModCompatibility {
             for (Map.Entry<String, List<String>> e : localMissing.entrySet()) {
                 JsonObject project = ModrinthApi.project(e.getKey());
                 if (project == null) continue; // pas sur Modrinth : rien à proposer d'installer
-                String id = ModrinthApi.str(project, "id");
+                String id = ModrinthApi.forLoader(ModrinthApi.str(project, "id"), loader);
                 if (installedProjects.contains(id)) continue;
                 List<String> by = missing.computeIfAbsent(id, k -> new ArrayList<>());
                 for (String n : e.getValue()) if (!by.contains(n)) by.add(n);

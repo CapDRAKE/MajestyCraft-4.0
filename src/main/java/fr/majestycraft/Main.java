@@ -40,6 +40,8 @@ public class Main {
      */
     public static void main(String[] args) {
         configureLogging();
+        // Jetons Microsoft chiffrés (DPAPI) avant toute reconnexion
+        fr.majestycraft.util.WindowsTokenProtector.install();
         loadConfiguration(new GameEngine(null, null, null, null));
         language = (String) config.getValue(EnumConfig.LANGUAGE);
         if (language == null) language = "Français";
@@ -79,7 +81,7 @@ public class Main {
     }
 
     /** Version courante du launcher (pour le popup "Quoi de neuf"). */
-    private static final String CURRENT_VERSION = "5.2.0.1";
+    public static final String CURRENT_VERSION = "5.3";
 
     /**
      * Affiche une pop-up "Quoi de neuf" une seule fois par version. Montr�e tant
@@ -101,11 +103,12 @@ public class Main {
 
         VBox content = new VBox(8);
         content.getChildren().addAll(
-                new javafx.scene.control.Label("• Diagnostic de crash : la cause expliquée en français, avec des corrections en un clic."),
-                new javafx.scene.control.Label("• Mods : vérification avant de jouer, mode performance et mises à jour en un clic (onglet Mods › Installés)."),
-                new javafx.scene.control.Label("• Chromebooks et Linux ARM : le launcher fonctionne désormais aussi sur ChromeOS."),
-                new javafx.scene.control.Label("• Anciennes versions (1.5.2 et avant, Beta, Alpha, Classic) : elles fonctionnent de nouveau."),
-                new javafx.scene.control.Label("• Sécurité : ton jeton de connexion n'apparaît plus dans le journal du launcher."),
+                new javafx.scene.control.Label("• Accueil repensé : ton profil, ton temps de jeu et les nouveautés du launcher en un coup d'œil."),
+                new javafx.scene.control.Label("• Voyage dans le temps : rejoue chaque grande époque de Minecraft, de 2009 à aujourd'hui, en un clic depuis l'accueil."),
+                new javafx.scene.control.Label("• Jouer avec un ami : ouvre ton monde solo à un ami par internet, sans serveur ni redirection de ports."),
+                new javafx.scene.control.Label("• Mode performance repensé : le launcher analyse ton PC (processeur, mémoire, carte graphique) et te propose la meilleure configuration. Bouton éclair à côté de ton profil."),
+                new javafx.scene.control.Label("• Nouvel écran de chargement : ton skin et une rangée de blocs qui creuse jusqu'aux diamants."),
+                new javafx.scene.control.Label("• NeoForge 1.21 et Quilt démarrent de nouveau correctement."),
                 new javafx.scene.control.Label("\nLe détail complet est dans l'onglet « Infos » de la barre latérale.")
         );
         content.getChildren().forEach(n -> ((javafx.scene.control.Label) n).setWrapText(true));
@@ -121,6 +124,13 @@ public class Main {
      * Affiche la pop-up au d�marrage de l'application
      */
     static void showStartupPopup() {
+        // Nouveau joueur : l'assistant de démarrage remplace les pop-ups habituelles
+        if (App.getInstance() != null && App.getInstance().getPanel() != null
+                && fr.majestycraft.launcher.Onboarding.isNewPlayer()) {
+            Preferences.userNodeForPackage(App.class).put("lastSeenVersion", CURRENT_VERSION);
+            fr.majestycraft.launcher.Onboarding.show(App.getInstance().getPanel());
+            return;
+        }
         showWhatsNewIfUpdated();
 
         Preferences prefs = Preferences.userNodeForPackage(App.class);

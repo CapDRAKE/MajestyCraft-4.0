@@ -139,6 +139,9 @@ public class App extends AlternativeBase {
             LauncherBase launcherBase = setupLauncherBase(primaryStage);
             launcherBase.setIconImage(primaryStage, ICON_IMAGE);
 
+            // Bootstrap installé : remplacé par la version signée publiée, sans réinstallation
+            fr.majestycraft.util.BootstrapUpdater.checkInBackground();
+
             Platform.runLater(Main::showStartupPopup);
         } catch (IOException e) {
             LOGGER.severe("Erreur lors de la création du contenu: " + e.getMessage());
@@ -680,9 +683,16 @@ public class App extends AlternativeBase {
                 || modloaderType == Utils.ModloaderType.NEOFORGE;
     }
 
+    /**
+     * Version du loader : la plus récente des versions stables (champ "stable" chez Fabric,
+     * pas de suffixe -beta... chez Quilt), sinon la plus récente tout court. La liste n'est
+     * pas forcément triée : chez Quilt, 1.20.1 commençait par 0.20.0-beta.9 alors que la
+     * 0.30.2 existe, et les bibliothèques Quilt actuelles ne se chargent plus avec la bêta.
+     */
     private static String resolveLoaderVersionFromMeta(String loaderListJson, boolean preferStable) {
         JsonArray root = JsonParser.parseString(loaderListJson).getAsJsonArray();
-        String fallback = null;
+        String bestStable = null;
+        String bestAny = null;
         for (JsonElement element : root) {
             JsonObject object = element.getAsJsonObject();
             if (object == null || !object.has("loader")) {
@@ -697,17 +707,44 @@ public class App extends AlternativeBase {
             if (version == null || version.trim().isEmpty()) {
                 continue;
             }
-            if (fallback == null) {
-                fallback = version;
+            boolean stable = loader.has("stable") ? loader.get("stable").getAsBoolean() : !version.contains("-");
+            if (bestAny == null || compareLoaderVersions(version, bestAny) > 0) {
+                bestAny = version;
             }
-            if (preferStable && loader.has("stable") && loader.get("stable").getAsBoolean()) {
-                return version;
-            }
-            if (!preferStable) {
-                return version;
+            if (stable && (bestStable == null || compareLoaderVersions(version, bestStable) > 0)) {
+                bestStable = version;
             }
         }
-        return fallback;
+        return bestStable != null ? bestStable : bestAny;
+    }
+
+    /** Compare "0.30.2" / "0.31.0-beta.5" : numéros d'abord, puis une version finale avant ses bêtas. */
+    static int compareLoaderVersions(String a, String b) {
+        String[] pa = a.split("-", 2);
+        String[] pb = b.split("-", 2);
+        int c = compareNumberLists(pa[0], pb[0]);
+        if (c != 0) return c;
+        if (pa.length == 1 || pb.length == 1) return pb.length - pa.length;  // finale > pré-version
+        return compareNumberLists(pa[1].replaceAll("[^0-9.]", ""), pb[1].replaceAll("[^0-9.]", ""));
+    }
+
+    private static int compareNumberLists(String a, String b) {
+        String[] x = a.split("\\.");
+        String[] y = b.split("\\.");
+        for (int i = 0; i < Math.max(x.length, y.length); i++) {
+            int xi = i < x.length && !x[i].isEmpty() ? parseIntSafe(x[i]) : 0;
+            int yi = i < y.length && !y[i].isEmpty() ? parseIntSafe(y[i]) : 0;
+            if (xi != yi) return Integer.compare(xi, yi);
+        }
+        return 0;
+    }
+
+    private static int parseIntSafe(String s) {
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     private static String resolveLatestNeoForgeVersion(String minecraftVersion) throws IOException {
@@ -992,10 +1029,18 @@ public class App extends AlternativeBase {
         return sb.length() == 0 ? null : sb.toString();
     }
 
+    /** Heure de la dernière vérification réussie (voir netIsAvailable). */
+    private static volatile long lastNetCheckOkAt;
+
     /**
-     * Vérifie si la connexion Internet est disponible.
+     * Vérifie si la connexion Internet est disponible. Une réponse positive de moins de
+     * 5 secondes est réutilisée : au démarrage, plusieurs vérifications se suivaient sur
+     * le fil de l'interface. Une réponse négative est toujours revérifiée.
      */
     public static boolean netIsAvailable() {
+        if (System.currentTimeMillis() - lastNetCheckOkAt < 5000) {
+            return true;
+        }
         Future<Boolean> future = NET_CHECK_EXECUTOR.submit(() -> {
             try {
                 URL url = new URL("http://www.google.com");
@@ -1013,7 +1058,9 @@ public class App extends AlternativeBase {
         });
 
         try {
-            return future.get(5, TimeUnit.SECONDS);
+            boolean available = future.get(5, TimeUnit.SECONDS);
+            if (available) lastNetCheckOkAt = System.currentTimeMillis();
+            return available;
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             LOGGER.warning("Erreur lors de la vérification asynchrone de la connexion Internet: " + e.getMessage());
             future.cancel(true);

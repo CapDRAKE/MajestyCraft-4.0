@@ -25,11 +25,14 @@
             <version>1.7.0</version>
         </dependency>
 
-        <!-- JavaFX -->
+        <!-- JavaFX : fourni par le Java qui lance le launcher (Zulu 8 FX installé par le
+             setup, JDK 8 en développement), jamais embarqué dans le jar. Les classes de
+             lib/ext passent avant celles du jar : la copie embarquée ne servait pas. -->
 		<dependency>
     		<groupId>com.oracle</groupId>
     		<artifactId>javafx</artifactId>
     		<version>2.2</version>
+    		<scope>provided</scope>
 		</dependency>
 
         <!-- Discord RPC - installé manuellement dans .m2 -->
@@ -39,11 +42,18 @@
             <version>2.0.1</version>
         </dependency>
 
-        <!-- AnimateFX -->
+        <!-- AnimateFX : sans OpenJFX 17 (Windows et Linux), qu'il tire par défaut. Ses
+             natives (dont 57 Mo de WebKit) n'étaient jamais chargées par JavaFX 8. -->
         <dependency>
             <groupId>io.github.typhon0</groupId>
             <artifactId>AnimateFX</artifactId>
             <version>1.2.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- JFoenix -->
@@ -53,12 +63,14 @@
             <version>8.0.10</version>
         </dependency>
         
-        <!-- Webp-Imageio -->
+        <!-- Lecture des icônes WebP (Modrinth) via ImageIO. Décodeur écrit en Java : l'ancien
+             (org.sejda webp-imageio 0.1.6) embarquait une libwebp native de 2020, touchée par la
+             faille CVE-2023-4863. Rendu identique au pixel près sur les icônes Modrinth. -->
         <dependency>
-    		<groupId>org.sejda.imageio</groupId>
-    		<artifactId>webp-imageio</artifactId>
-    		<version>0.1.6</version>
-		</dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-webp</artifactId>
+            <version>3.15.3</version>
+        </dependency>
 
     </dependencies>
 
@@ -103,6 +115,28 @@
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                                <!-- JNA ne sert qu'à Discord RPC, dont la bibliothèque native n'existe
+                                     que pour Windows, Linux x86-64 et macOS : ailleurs, Discord RPC est
+                                     désactivé dans tous les cas. Natives JNA des autres plateformes retirées. -->
+                                <filter>
+                                    <artifact>com.jagrosh:java-discord-rpc</artifact>
+                                    <excludes>
+                                        <exclude>com/sun/jna/aix-*/**</exclude>
+                                        <exclude>com/sun/jna/sunos-*/**</exclude>
+                                        <exclude>com/sun/jna/linux-ppc*/**</exclude>
+                                        <exclude>com/sun/jna/linux-arm*/**</exclude>
+                                        <exclude>com/sun/jna/linux-aarch64/**</exclude>
+                                        <exclude>com/sun/jna/linux-x86/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <!-- Seul le lecteur WebP sert : les flux d'images de TwelveMonkeys
+                                     remplaceraient ceux de Java pour toutes les images (PNG compris). -->
+                                <filter>
+                                    <artifact>com.twelvemonkeys.imageio:imageio-core</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/services/javax.imageio.spi.ImageInputStreamSpi</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

@@ -66,6 +66,7 @@ public class LauncherSettings extends IScreen {
     private final ToggleSwitch useVMArguments;
 
     private final LauncherTextField vmArguments;
+    private LauncherLabel subTitleLabel;
 
     private ToggleSwitch includeSnapshots;
     private boolean includeSnapshotsEnabled = true;
@@ -246,13 +247,8 @@ public class LauncherSettings extends IScreen {
         titleLabel.setSize(cardW - 110, 34);
         titleLabel.setPosition(cardX + 28, cardY + 22);
 
-        LauncherLabel subTitleLabel = new LauncherLabel(root);
-        fr.majestycraft.profiles.ProfileManager pmForTitle = fr.majestycraft.profiles.ProfileManager.get();
-        String activeProfileName = (pmForTitle != null && pmForTitle.getActive() != null)
-                ? pmForTitle.getActive().getName() : null;
-        subTitleLabel.setText(activeProfileName != null
-                ? "Profil actif : " + activeProfileName + "  •  version, modloader et RAM s'appliquent à ce profil"
-                : "Configuration du jeu et du launcher");
+        this.subTitleLabel = new LauncherLabel(root);
+        subTitleLabel.setText(subtitleForActiveProfile());
         subTitleLabel.getStyleClass().add("ml-hint");
         subTitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         subTitleLabel.setSize(cardW - 110, 18);
@@ -283,6 +279,20 @@ public class LauncherSettings extends IScreen {
         Region launcherSection = createSection(root, rightSection, sectionY, sectionW, sectionH);
         LauncherLabel sectionGame = createSectionTitle(root, "JEU", Icons.PLAY, leftX, sectionY + 16);
         LauncherLabel sectionLauncher = createSectionTitle(root, "LAUNCHER", Icons.SETTINGS, rightX, sectionY + 16);
+
+        // Mode performance : analyse du PC puis réglages conseillés pour le profil actif
+        JFXButton performanceButton = new JFXButton("Mode performance");
+        UiStyle.soft(performanceButton);
+        performanceButton.setGraphic(Icons.stroke(Icons.ZAP, 13));
+        performanceButton.setGraphicTextGap(7);
+        performanceButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
+        performanceButton.setLayoutX(leftX + fieldW - 176);
+        performanceButton.setLayoutY(sectionY + 10);
+        performanceButton.setPrefSize(176, 30);
+        performanceButton.setTooltip(new javafx.scene.control.Tooltip("Mode performance : mémoire, arguments Java et mods conseillés selon ton PC"));
+        performanceButton.setOnAction(e -> PerformanceFlow.start(performanceButton.getScene().getWindow(), pane, engine,
+                performanceButton, this::reloadFromActiveProfile));
+        root.getChildren().add(performanceButton);
 
         /* ===== Version ===== */
         LauncherLabel versionLabel = createFieldLabel(root, LABEL_CHOOSE_VERSION, leftX, sectionY + 50, fieldW);
@@ -710,7 +720,7 @@ public class LauncherSettings extends IScreen {
             animateIn(closeButton, 0, 0, 200);
 
             // Chaque bloc entre d'un seul tenant (fond, titre et contrôles ensemble).
-            Node[] gameBlock = {gameSection, sectionGame, versionLabel, this.versionList, this.includeSnapshots,
+            Node[] gameBlock = {gameSection, sectionGame, performanceButton, versionLabel, this.versionList, this.includeSnapshots,
                     modloaderLabel, useVanilla, useForge, useFabric, useQuilt, useNeoForge, useOptifine,
                     ramLabel, this.memorySliderLabel, this.memorySlider, ramSystemHint,
                     windowsSizeLabel, this.windowsSizeList};
@@ -765,6 +775,30 @@ public class LauncherSettings extends IScreen {
         ParallelTransition pt = new ParallelTransition(ft, tt);
         pt.setDelay(Duration.millis(delayMs));
         pt.play();
+    }
+
+    private static String subtitleForActiveProfile() {
+        fr.majestycraft.profiles.ProfileManager pm = fr.majestycraft.profiles.ProfileManager.get();
+        String activeProfileName = (pm != null && pm.getActive() != null) ? pm.getActive().getName() : null;
+        return activeProfileName != null
+                ? "Profil actif : " + activeProfileName + "  •  version, modloader et RAM s'appliquent à ce profil"
+                : "Configuration du jeu et du launcher";
+    }
+
+    /**
+     * Après le mode performance : les champs reprennent le profil actif (mémoire, arguments,
+     * et modloader si une copie Fabric a été créée), sinon « Valider » écraserait ces réglages.
+     */
+    private void reloadFromActiveProfile() {
+        fr.majestycraft.profiles.ProfileManager pm = fr.majestycraft.profiles.ProfileManager.get();
+        fr.majestycraft.profiles.LauncherProfile active = pm == null ? null : pm.getActive();
+        if (active == null) return;
+        memorySlider.setValue(Math.max(memorySlider.getMin(), Math.min(active.getRam(), memorySlider.getMax())));
+        useVMArguments.setSelected(active.isUseVmArguments());
+        vmArguments.setText(active.getVmArguments() == null ? "" : active.getVmArguments());
+        vmArguments.setDisable(!active.isUseVmArguments());
+        setSelectedModloader(active.getModloaderType());
+        subTitleLabel.setText(subtitleForActiveProfile());
     }
 
     private void closeWithAnimation(Pane root, Stage stage) {
@@ -948,7 +982,9 @@ public class LauncherSettings extends IScreen {
         if (snapshot.matches()) return Integer.parseInt(snapshot.group(1)) >= 22;
         java.util.regex.Matcher release = java.util.regex.Pattern.compile("^1\\.(\\d+)").matcher(id);
         if (release.find()) return Integer.parseInt(release.group(1)) >= 19;
-        return true;
+        // 26.x et après ; Beta, Alpha, Infdev, Classic (b1., a1., inf-, c0., rd-) : non
+        java.util.regex.Matcher modern = java.util.regex.Pattern.compile("^(\\d+)\\.").matcher(id);
+        return modern.find() && Integer.parseInt(modern.group(1)) >= 2;
     }
 
     private void populateVersionListFromMojang(final LauncherPanel pane, final String preferredSelection) {
@@ -1041,6 +1077,44 @@ public class LauncherSettings extends IScreen {
         }
 
         return out;
+    }
+
+    /**
+     * Versions publiées (sans les snapshots), de la plus récente à la plus ancienne, lues
+     * dans le manifeste Mojang ; filtrées sur Linux ARM. Bloquant. Liste intégrée si hors ligne.
+     */
+    static List<String> fetchReleaseVersions() {
+        List<String> out = new ArrayList<>();
+        for (String manifest : new String[]{MOJANG_MANIFEST_PRIMARY, MOJANG_MANIFEST_FALLBACK}) {
+            try {
+                JsonObject root = JsonParser.parseString(App.downloadTextStatic(manifest)).getAsJsonObject();
+                for (JsonElement el : root.getAsJsonArray("versions")) {
+                    JsonObject o = el.getAsJsonObject();
+                    if (!"snapshot".equalsIgnoreCase(o.get("type").getAsString())) out.add(o.get("id").getAsString());
+                }
+                break;
+            } catch (Exception e) {
+                out.clear();
+            }
+        }
+        if (out.isEmpty()) {
+            out.addAll(VANILLA_SUPPORTED_RELEASES);
+            Collections.reverse(out);
+        }
+        if (fr.trxyy.alternative.alternative_api.updater.LinuxArmSupport.isLinuxArm()) {
+            out.removeIf(v -> !isArmCompatibleVersion(v));
+        }
+        return out;
+    }
+
+    /** Avant la 1.8 (1.0 à 1.7.10, Beta, Alpha, Infdev, Classic) : le launcher ne propose que Vanilla. */
+    static boolean isVanillaOnlyVersion(String id) {
+        if (id == null) return false;
+        if (id.startsWith("b1.") || id.startsWith("a1.") || id.startsWith("inf-") || id.startsWith("c0.") || id.startsWith("rd-")) {
+            return true;
+        }
+        java.util.regex.Matcher release = java.util.regex.Pattern.compile("^1\\.(\\d+)").matcher(id);
+        return release.find() && Integer.parseInt(release.group(1)) < 8;
     }
 
     private String downloadText(String urlStr) throws IOException {

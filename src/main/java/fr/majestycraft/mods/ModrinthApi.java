@@ -147,6 +147,22 @@ public final class ModrinthApi {
         return files.size() > 0 ? files.get(0).getAsJsonObject() : null;
     }
 
+    /** Projet Fabric API et son équivalent Quilt (QFAPI / QSL, qui fournit déjà Fabric API). */
+    public static final String FABRIC_API_ID = "P7dR8mSH";
+    public static final String QUILTED_FABRIC_API_ID = "qvIfYCYJ";
+
+    /**
+     * Dépendance à installer pour ce loader : sous Quilt, Fabric API est remplacé par QFAPI
+     * (installer les deux empêche Quilt de démarrer : identifiants de mods en double).
+     */
+    public static String forLoader(String projectIdOrSlug, Utils.ModloaderType loader) {
+        if (loader == Utils.ModloaderType.QUILT
+                && (FABRIC_API_ID.equals(projectIdOrSlug) || "fabric-api".equals(projectIdOrSlug))) {
+            return QUILTED_FABRIC_API_ID;
+        }
+        return projectIdOrSlug;
+    }
+
     /** Identifiants de projets des dépendances obligatoires d'une version. */
     public static List<String> requiredDependencies(JsonObject version) {
         List<String> out = new ArrayList<>();
@@ -182,10 +198,10 @@ public final class ModrinthApi {
     public static File download(JsonObject file, File dir, boolean disabled) throws IOException {
         String url = str(file, "url");
         String name = str(file, "filename");
-        if (url == null || name == null || name.contains("/") || name.contains("\\")) {
+        if (url == null || !isSafeFileName(name)) {
             throw new IOException("Fichier Modrinth invalide");
         }
-        String expected = file.has("hashes") ? str(file.getAsJsonObject("hashes"), "sha1") : null;
+        String expected = expectedSha1(file);
         dir.mkdirs();
         File target = new File(dir, disabled ? name + ".disabled" : name);
         File temp = new File(dir, name + ".part");
@@ -208,6 +224,28 @@ public final class ModrinthApi {
             throw new IOException("Impossible d'enregistrer " + target.getName());
         }
         return target;
+    }
+
+    /** Nom de fichier donné par Modrinth : un simple nom, rien ne peut s'écrire hors du dossier visé. */
+    public static boolean isSafeFileName(String name) {
+        return name != null && !name.trim().isEmpty() && !name.equals(".") && !name.equals("..")
+                && !name.contains("/") && !name.contains("\\") && !name.contains(":");
+    }
+
+    private static String expectedSha1(JsonObject file) {
+        return file.has("hashes") && file.get("hashes").isJsonObject() ? str(file.getAsJsonObject("hashes"), "sha1") : null;
+    }
+
+    /**
+     * Vérifie un fichier téléchargé avec l'empreinte SHA-1 annoncée par Modrinth ; s'il ne
+     * correspond pas (téléchargement abîmé ou modifié en route), il est supprimé.
+     */
+    public static void verifyDownload(File downloaded, JsonObject file) throws IOException {
+        String expected = expectedSha1(file);
+        if (expected != null && !expected.equalsIgnoreCase(sha1(downloaded))) {
+            downloaded.delete();
+            throw new IOException("Fichier corrompu : " + downloaded.getName());
+        }
     }
 
     public static String sha1(File file) throws IOException {

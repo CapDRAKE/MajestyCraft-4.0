@@ -208,10 +208,12 @@ public class LauncherProfiles extends IScreen {
         );
         root.getChildren().add(this.nameField);
 
+        // Liste intégrée le temps de lire celle de Mojang (26.x et suivantes, anciennes versions)
         this.versionCombo = new JFXComboBox<>();
         List<String> versions = new ArrayList<>(LauncherSettings.VANILLA_SUPPORTED_RELEASES);
         java.util.Collections.reverse(versions);
         this.versionCombo.getItems().setAll(versions);
+        loadVersionsAsync();
         this.versionCombo.setPromptText("Version");
         styleSmallCombo(this.versionCombo);
         this.versionCombo.setLayoutX(cardX + 270);
@@ -230,6 +232,7 @@ public class LauncherProfiles extends IScreen {
         this.loaderCombo.setPrefSize(135, 36);
         this.loaderCombo.getSelectionModel().selectFirst();
         root.getChildren().add(this.loaderCombo);
+        this.versionCombo.valueProperty().addListener((obs, old, version) -> refreshLoaderChoices(version));
 
         /* ===== Pastilles de couleur ===== */
         HBox swatchRow = new HBox(9);
@@ -298,6 +301,35 @@ public class LauncherProfiles extends IScreen {
         root.getChildren().add(scroll);
 
         rebuildList();
+    }
+
+    /** Remplace la liste intégrée par les versions publiées par Mojang, en gardant la sélection. */
+    private void loadVersionsAsync() {
+        final String placeholder = versionCombo.getItems().isEmpty() ? null : versionCombo.getItems().get(0);
+        Thread loader = new Thread(() -> {
+            List<String> versions = LauncherSettings.fetchReleaseVersions();
+            Platform.runLater(() -> {
+                // Version choisie par le joueur entre-temps : conservée ; sinon la plus récente
+                String selected = versionCombo.getValue();
+                boolean chosen = selected != null && !selected.equals(placeholder) && versions.contains(selected);
+                versionCombo.getItems().setAll(versions);
+                if (chosen) versionCombo.setValue(selected);
+                else if (!versions.isEmpty()) versionCombo.setValue(versions.get(0));
+            });
+        }, "MajestyLauncher-ProfileVersions");
+        loader.setDaemon(true);
+        loader.start();
+    }
+
+    /** Avant la 1.8, seul Vanilla est proposé. */
+    private void refreshLoaderChoices(String version) {
+        String current = loaderCombo.getValue();
+        List<String> loaders = LauncherSettings.isVanillaOnlyVersion(version)
+                ? java.util.Collections.singletonList("Vanilla")
+                : java.util.Arrays.asList("Vanilla", "Forge", "Fabric", "Quilt", "NeoForge", "OptiFine");
+        if (loaderCombo.getItems().equals(loaders)) return;
+        loaderCombo.getItems().setAll(loaders);
+        loaderCombo.setValue(loaders.contains(current) ? current : "Vanilla");
     }
 
     /* ─────────────────────────── Actions ─────────────────────────── */

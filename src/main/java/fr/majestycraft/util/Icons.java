@@ -60,6 +60,20 @@ public final class Icons {
     public static final String ZAP = "M13 2L3 14h9l-1 8 10-12h-9l1-8z";
     /** Activer / désactiver. */
     public static final String POWER = "M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10";
+    /** Voyage dans le temps. */
+    public static final String CLOCK = "M22 12a10 10 0 1 1-20 0a10 10 0 1 1 20 0z M12 6v6l4 2";
+    /** Jouer avec un ami. */
+    public static final String USERS = "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M13 7a4 4 0 1 1-8 0a4 4 0 1 1 8 0z "
+            + "M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75";
+    /** Assistant : PvP. */
+    public static final String TARGET = "M22 12a10 10 0 1 1-20 0a10 10 0 1 1 20 0z M18 12a6 6 0 1 1-12 0a6 6 0 1 1 12 0z "
+            + "M14 12a2 2 0 1 1-4 0a2 2 0 1 1 4 0z";
+    /** Assistant : dernière version. */
+    public static final String STAR = "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z";
+    /** Assistant : survie. */
+    public static final String COMPASS = "M22 12a10 10 0 1 1-20 0a10 10 0 1 1 20 0z M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z";
+    /** Assistant : réglages à la main. */
+    public static final String SLIDERS = "M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6";
 
     private Icons() {
     }

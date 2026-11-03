@@ -119,4 +119,29 @@ public final class ModActions {
         if (!failed.isEmpty()) sb.append(sb.length() > 0 ? "\n" : "").append("Impossible : ").append(String.join(" ; ", failed)).append('.');
         return sb.toString();
     }
+
+    /**
+     * Après une installation : dépendances obligatoires déclarées dans les fichiers des
+     * mods mais absentes de leur fiche Modrinth (ex. Cloth Config pour More Culling 1.20.1),
+     * installées depuis Modrinth. Deux passes, pour les dépendances de dépendances.
+     * Renvoie les noms installés. Bloquant, demande le réseau.
+     */
+    public static List<String> installMissingDependencies(File modsDir, String mcVersion, Utils.ModloaderType loader,
+                                                          Consumer<String> progress) {
+        List<String> installed = new ArrayList<>();
+        for (int pass = 0; pass < 2; pass++) {
+            boolean added = false;
+            for (ModCompatibility.Issue issue : ModCompatibility.check(modsDir, mcVersion, loader).issues) {
+                if (issue.kind != ModCompatibility.Kind.MISSING_DEPENDENCY || issue.missingProjectId == null) continue;
+                try {
+                    installed.add(installProject(issue.missingProjectId, modsDir, mcVersion, loader, progress));
+                    added = true;
+                } catch (IOException ignored) {
+                    // la vérification avant de jouer le signalera
+                }
+            }
+            if (!added) break;
+        }
+        return installed;
+    }
 }

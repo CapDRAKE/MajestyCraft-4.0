@@ -41,6 +41,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.embed.swing.SwingFXUtils;
 import javax.imageio.ImageIO;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -699,13 +700,14 @@ public class LauncherPacks extends IScreen {
 
                 String fileUrl = getAsString(chosenFile, "url");
                 String fileName = getAsString(chosenFile, "filename");
-                if (fileUrl == null || fileUrl.trim().isEmpty() || fileName == null || fileName.trim().isEmpty()) {
+                if (fileUrl == null || fileUrl.trim().isEmpty() || !fr.majestycraft.mods.ModrinthApi.isSafeFileName(fileName)) {
                     Platform.runLater(() -> showErrorDialog("Erreur", "Impossible de récupérer le fichier du pack."));
                     return;
                 }
 
                 File destination = uniqueDestination(new File(resourcePacksDir, fileName));
                 downloadFile(fileUrl, destination);
+                fr.majestycraft.mods.ModrinthApi.verifyDownload(destination, chosenFile);
 
                 Platform.runLater(() -> {
                     loadResourcePacks();
@@ -902,7 +904,8 @@ public class LauncherPacks extends IScreen {
                 byte[] bytes = buffer.toByteArray();
                 Image img = new Image(new ByteArrayInputStream(bytes), 52, 52, true, true);
                 if (!img.isError() && img.getWidth() > 1) { remoteImageCache.put(url, img); return img; }
-                BufferedImage bi = ImageIO.read(new ByteArrayInputStream(bytes));
+                // Flux en mémoire : le lecteur WebP lit octet par octet, très lent sur un flux fichier
+                BufferedImage bi = ImageIO.read(new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes)));
                 if (bi != null) {
                     Image fxImg = SwingFXUtils.toFXImage(bi, null);
                     if (fxImg != null && !fxImg.isError() && fxImg.getWidth() > 1) { remoteImageCache.put(url, fxImg); return fxImg; }

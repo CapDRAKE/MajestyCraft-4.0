@@ -1,13 +1,11 @@
 package fr.majestycraft.launcher;
 
 import animatefx.animation.FadeIn;
-import animatefx.animation.ZoomInDown;
 import animatefx.animation.ZoomInLeft;
 import animatefx.animation.ZoomOutDown;
 
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXComboBox;
-import com.jfoenix.controls.JFXProgressBar;
 import com.jfoenix.controls.JFXTextField;
 import com.jfoenix.controls.JFXToggleButton;
 
@@ -54,6 +52,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ProgressIndicator;
@@ -74,7 +73,6 @@ import javafx.scene.paint.*;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
@@ -83,7 +81,6 @@ import javafx.stage.StageStyle;
 
 import java.awt.Desktop;
 import java.net.URI;
-import java.text.DecimalFormat;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.prefs.Preferences;
@@ -135,6 +132,8 @@ public class LauncherPanel extends IScreen {
 
     private LauncherButton voteButton;
     private LauncherButton boutiqueButton;
+    private LauncherButton timeTravelButton;
+    private LauncherButton friendButton;
 
     private Rectangle connectionGlow;
     private LauncherRectangle connexionRectangle;
@@ -146,7 +145,16 @@ public class LauncherPanel extends IScreen {
     private JFXButton microsoftInlineButton;
     private JFXComboBox<String> profileCombo;
     private JFXButton manageProfilesButton;
+    private JFXButton performanceButton;
     private LauncherLabel profileCaptionLabel;
+    /** Accueil : cartes « Mode performance » et « Nouveautés », infos du profil actif. */
+    private LauncherButton performanceCard;
+    private LauncherButton newsCard;
+    private LauncherLabel profileMetaLabel;
+    private Label playtimeValue;
+    private Label lastPlayedValue;
+    /** Éléments de l'accueil escamotés eux aussi pendant le chargement du jeu. */
+    private final java.util.List<Node> homeExtras = new java.util.ArrayList<>();
     private Timeline updateTimeline;
     /** true quand une session Microsoft valide est active (JOUER lance avec ce compte). */
     private boolean microsoftSessionActive = false;
@@ -163,15 +171,9 @@ public class LauncherPanel extends IScreen {
     private LauncherButton autoLoginButton2;
     private Timer autoLoginTimer;
 
-    private LauncherRectangle updateRectangle;
-    private LauncherLabel updateLabel;
-    private LauncherLabel currentFileLabel;
-    private LauncherLabel percentageLabel;
-    private LauncherLabel currentStep;
-    private final DecimalFormat decimalFormat = new DecimalFormat(".#");
-    public JFXProgressBar bar;
+    /** Écran de chargement affiché pendant le téléchargement et le lancement du jeu. */
+    private LoadingView loadingView;
 
-    private LauncherImage updateAvatar;
     private LauncherImage avatar;
 
     private static final String ERROR_AUTH_FAILED = Main.bundle.getString("ERROR_AUTH_FAILED");
@@ -190,8 +192,6 @@ public class LauncherPanel extends IScreen {
     private static final String ONLINE_MODE_ALERT = Main.bundle.getString("ONLINE_MODE_ALERT");
     private static final String AUTOLOGIN_START = Main.bundle.getString("AUTOLOGIN_START");
     private static final String AUTOLOGIN_COUNTDOWN = Main.bundle.getString("AUTOLOGIN_COUNTDOWN");
-    private static final String UPDATE_LABEL_TEXT = Main.bundle.getString("UPDATE_LABEL");
-    private static final String UPDATE_STEP_TEXT = Main.bundle.getString("UPDATE_STEP");
     private static final String AUTH_ERROR_TITLE = Main.bundle.getString("AUTH_ERROR_TITLE");
     private static final String CONNECTION_ERROR_MSG = Main.bundle.getString("CONNECTION_ERROR_MSG");
     private static final String AUTH_ERROR_MSG = Main.bundle.getString("AUTH_ERROR_MSG");
@@ -259,12 +259,28 @@ public class LauncherPanel extends IScreen {
     private void computeLayout() {
         setCenterX(engine.getWidth() / 2);
 
-        connW = 430;
-        connH = 430;
-        connX = engine.getWidth() - connW - 85;
-        connY = 168;
+        // Carte « Prêt à jouer » à droite, colonne d'accueil à gauche (HOME_X, HOME_W)
+        connW = 398;
+        connH = 520;
+        connX = engine.getWidth() - connW - 60;
+        connY = 100;
 
-        socialY = engine.getHeight() - 95;
+        socialY = 576;
+    }
+
+    /** Bord gauche et largeur de la colonne d'accueil. */
+    private static final int HOME_X = 128;
+    private static final int HOME_W = 424;
+
+    /** Petit titre de section en capitales ambrées (« À DÉCOUVRIR », « COMPTE »...). */
+    private LauncherLabel sectionLabel(Pane root, String text, double x, double y) {
+        LauncherLabel label = new LauncherLabel(root);
+        label.setText(text);
+        label.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10.5F));
+        label.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,190,90,0.85);");
+        label.setPosition(x, y);
+        label.setSize(200, 16);
+        return label;
     }
 
     private void applyModernCardStyle(LauncherRectangle r, double opacity) {
@@ -375,31 +391,40 @@ public class LauncherPanel extends IScreen {
         animateFromLeft(shadersButton, 420);
 
         animateFromBottom(heroLogo, 90);
-        animateFromBottom(heroTitleLabel, 160);
-        animateFromBottom(heroSubtitleLabel, 220);
-        animateFromBottom(heroTextLine1, 280);
-        animateFromBottom(heroTextLine2, 330);
-        animateFromBottom(voteButton, 380);
-        animateFromBottom(boutiqueButton, 430);
+        animateFromBottom(heroTitleLabel, 140);
+        animateFromBottom(heroSubtitleLabel, 190);
+        animateFromBottom(heroTextLine1, 240);
+        animateFromBottom(timeTravelButton, 280);
+        animateFromBottom(friendButton, 320);
+        animateFromBottom(performanceCard, 360);
+        animateFromBottom(newsCard, 400);
+        animateFromBottom(heroTextLine2, 440);
+        animateFromBottom(voteButton, 470);
+        animateFromBottom(boutiqueButton, 500);
 
+        // La carte « Prêt à jouer » entre d'un bloc, de haut en bas
         animateFromRight(connectionGlow, 90);
         animateFromRight(connexionRectangle, 120);
         animateFromRight(connectionEyebrowLabel, 170);
-        animateFromRight(titleCrack, 210);
-        animateFromRight(connectionSubtitleLabel, 250);
-        animateFromRight(avatarCard, 200);
-        animateFromRight(avatar, 230);
-        animateFromRight(usernameField, 300);
-        animateFromRight(rememberMe, 340);
-        animateFromRight(profileCaptionLabel, 370);
-        animateFromRight(profileCombo, 390);
-        animateFromRight(manageProfilesButton, 410);
-        animateFromRight(playButton, 440);
-        animateFromRight(microsoftInlineButton, 480);
+        animateFromRight(performanceButton, 180);
+        animateFromRight(manageProfilesButton, 190);
+        animateFromRight(profileCombo, 210);
+        animateFromRight(profileMetaLabel, 240);
+        for (Node node : homeExtras) {
+            if (node != profileMetaLabel && !(node instanceof LauncherButton)) animateFromRight(node, 270);
+        }
+        animateFromRight(profileCaptionLabel, 300);
+        animateFromRight(rememberMe, 300);
+        animateFromRight(avatarCard, 320);
+        animateFromRight(avatar, 330);
+        animateFromRight(usernameField, 340);
+        animateFromRight(connectionSubtitleLabel, 360);
+        animateFromRight(microsoftInlineButton, 380);
+        animateFromRight(playButton, 420);
 
-        animateFromBottom(tiktokButton, 470);
-        animateFromBottom(minestratorButton, 520);
-        animateFromBottom(twitterButton, 570);
+        animateFromBottom(tiktokButton, 530);
+        animateFromBottom(minestratorButton, 560);
+        animateFromBottom(twitterButton, 590);
         animateFromBottom(youtubeButton, 620);
     }
 
@@ -407,7 +432,7 @@ public class LauncherPanel extends IScreen {
         if (heroLogo != null) {
             TranslateTransition floatLogo = new TranslateTransition(javafx.util.Duration.seconds(3.2), heroLogo);
             floatLogo.setFromY(0);
-            floatLogo.setToY(10);
+            floatLogo.setToY(5);
             floatLogo.setAutoReverse(true);
             floatLogo.setCycleCount(Animation.INDEFINITE);
 
@@ -1046,6 +1071,7 @@ public class LauncherPanel extends IScreen {
             if (idx >= 0) profileCombo.getSelectionModel().select(idx);
         }
         profileCombo.setOnAction(event -> onProfileComboChanged());
+        refreshProfileInfo(active);
     }
 
     /**
@@ -1081,6 +1107,60 @@ public class LauncherPanel extends IScreen {
         };
     }
 
+    /** Version, loader, mémoire, temps de jeu et dernière partie du profil actif. */
+    private void refreshProfileInfo(LauncherProfile active) {
+        if (profileMetaLabel == null) return;
+        if (active == null) {
+            profileMetaLabel.setText("");
+            playtimeValue.setText("—");
+            lastPlayedValue.setText("—");
+            return;
+        }
+        String ram = (active.getRam() == Math.rint(active.getRam()))
+                ? String.valueOf((int) active.getRam()) : String.valueOf(active.getRam());
+        profileMetaLabel.setText("Minecraft " + active.getVersion() + "  ·  "
+                + LoadingView.loaderName(active.getModloaderType()) + "  ·  " + ram + " Go de mémoire");
+        playtimeValue.setText(active.getTotalPlaytimeMs() > 0 ? active.describeTotalPlaytime() : "0 min");
+        String last = active.describeLastPlayed();
+        lastPlayedValue.setText(last.startsWith("joué ") ? last.substring(5) : "Jamais");
+        refreshGreeting();
+    }
+
+    /** Petite tuile chiffrée de la carte « Prêt à jouer » (temps de jeu, dernière partie). */
+    private static Node statTile(String icon, Label value, String caption, double width) {
+        value.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        value.setStyle("-fx-text-fill: rgba(255,255,255,0.95);");
+        Label captionLabel = new Label(caption);
+        captionLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10.5F));
+        captionLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.48);");
+        StackPane bubble = new StackPane(Icons.stroke(icon, 14));
+        bubble.getStyleClass().add("ml-feature-bubble");
+        bubble.setMinSize(30, 30);
+        bubble.setMaxSize(30, 30);
+        HBox tile = new HBox(10, bubble, new VBox(2, value, captionLabel));
+        tile.setAlignment(Pos.CENTER_LEFT);
+        tile.getStyleClass().add("ml-stat");
+        tile.setPrefSize(width, 56);
+        tile.setMinWidth(width);
+        tile.setMaxWidth(width);
+        return tile;
+    }
+
+    /** « Bonjour / Bon après-midi / Bonsoir », avec le pseudo du joueur quand il est connu. */
+    private void refreshGreeting() {
+        if (heroTitleLabel == null) return;
+        int hour = java.time.LocalTime.now().getHour();
+        String hello = hour >= 5 && hour < 12 ? "Bonjour" : hour >= 12 && hour < 18 ? "Bon après-midi" : "Bonsoir";
+        String name = usernameField != null ? usernameField.getText() : null;
+        if (name == null || name.trim().isEmpty()) name = null;
+        heroTitleLabel.setText(name == null ? hello + " !" : hello + ", " + name.trim());
+
+        ProfileManager pm = ProfileManager.get();
+        LauncherProfile active = pm == null ? null : pm.getActive();
+        boolean played = active != null && active.getLastPlayedAt() > 0;
+        heroSubtitleLabel.setText(played ? "Prêt à reprendre l'aventure ?" : "Prêt pour une nouvelle aventure ?");
+    }
+
     private void onProfileComboChanged() {
         ProfileManager pm = ProfileManager.get();
         if (pm == null) return;
@@ -1095,6 +1175,45 @@ public class LauncherPanel extends IScreen {
 
         pm.activate(selected, engine);
         App.getInstance().applyGameLinksFromConfigAsync();
+        updateDiscordForActiveProfile(false);
+        refreshProfileInfo(selected);
+    }
+
+    /** Fenêtre principale du launcher (parent des fenêtres de dialogue), null hors affichage. */
+    public javafx.stage.Window getStageOrNull() {
+        return engine.getStage();
+    }
+
+    public GameEngine getEngine() {
+        return engine;
+    }
+
+    /** Ouvre « Voyage dans le temps » (les époques de Minecraft). */
+    public void openTimeTravelPanel() {
+        Pane travelRoot = new LauncherPane(engine);
+        Rectangle rect = new Rectangle(1000, 760);
+        rect.setArcHeight(15.0);
+        rect.setArcWidth(15.0);
+        travelRoot.setClip(rect);
+        travelRoot.setStyle("-fx-background-color: transparent;");
+        new LauncherTimeTravel(travelRoot, engine, this);
+
+        Scene scene = new Scene(travelRoot);
+        scene.setFill(Color.TRANSPARENT);
+        if (!scene.getStylesheets().contains("css/design.css")) {
+            scene.getStylesheets().add("css/design.css");
+        }
+
+        Stage stage = new Stage();
+        stage.setResizable(false);
+        stage.initStyle(StageStyle.TRANSPARENT);
+        stage.setTitle("Voyage dans le temps");
+        stage.setWidth(1000);
+        stage.setHeight(760);
+        stage.setScene(scene);
+        stage.showAndWait();
+
+        refreshProfilesUI();
         updateDiscordForActiveProfile(false);
     }
 
@@ -1150,60 +1269,54 @@ public class LauncherPanel extends IScreen {
         this.titleImage.setSize(48, 48);
         this.titleImage.setBounds(18, 10, 48, 48);
 
+        // Colonne de gauche : logo et message d'accueil, puis « À découvrir » et « Communauté »
         this.heroLogo = new LauncherImage(root);
         this.heroLogo.setImage(getResourceLocation().loadImage(engine, "launchergifpng.png"));
-        this.heroLogo.setSize(180, 180);
-        this.heroLogo.setBounds(170, 82, 180, 180);
+        this.heroLogo.setSize(88, 88);
+        this.heroLogo.setBounds(HOME_X, 100, 88, 88);
 
         this.heroTitleLabel = new LauncherLabel(root);
-        this.heroTitleLabel.setText("Rejoins MajestyCraft");
-        this.heroTitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 28F));
+        this.heroTitleLabel.setText("Bienvenue !");
+        this.heroTitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 26F));
         this.heroTitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.96)");
-        this.heroTitleLabel.setPosition(135, 300);
-        this.heroTitleLabel.setSize(320, 40);
+        this.heroTitleLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
+        this.heroTitleLabel.setPosition(HOME_X + 108, 110);
+        this.heroTitleLabel.setSize(HOME_W - 108, 38);
 
         this.heroSubtitleLabel = new LauncherLabel(root);
-        this.heroSubtitleLabel.setText("Launcher nouvelle génération");
-        this.heroSubtitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        this.heroSubtitleLabel.setText("Prêt pour une nouvelle aventure ?");
+        this.heroSubtitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13.5F));
         this.heroSubtitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,176,0,0.95)");
-        this.heroSubtitleLabel.setPosition(138, 344);
-        this.heroSubtitleLabel.setSize(320, 26);
+        this.heroSubtitleLabel.setPosition(HOME_X + 110, 150);
+        this.heroSubtitleLabel.setSize(HOME_W - 110, 24);
 
-        this.heroTextLine1 = new LauncherLabel(root);
-        this.heroTextLine1.setText("Multi-version • Forge • Optifine");
-        this.heroTextLine1.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-        this.heroTextLine1.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.70)");
-        this.heroTextLine1.setPosition(138, 376);
-        this.heroTextLine1.setSize(320, 24);
+        this.heroTextLine1 = sectionLabel(root, "À DÉCOUVRIR", HOME_X + 2, 232);
+        this.heroTextLine2 = sectionLabel(root, "COMMUNAUTÉ", HOME_X + 2, 548);
 
-        this.heroTextLine2 = new LauncherLabel(root);
-        this.heroTextLine2.setText("Choisis ton mode de jeu et lance-toi.");
-        this.heroTextLine2.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 13F));
-        this.heroTextLine2.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.55)");
-        this.heroTextLine2.setPosition(138, 400);
-        this.heroTextLine2.setSize(320, 24);
-
-        LauncherLabel titleLabel = new LauncherLabel(root);
-        titleLabel.setText("MajestyLauncher");
-        titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 17F));
-        titleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.92)");
-        titleLabel.setPosition(engine.getWidth() / 2 - 85, 10);
-        titleLabel.setSize(170, 26);
-        titleLabel.setAlignment(Pos.CENTER);
-
-        LauncherLabel subtitleLabel = new LauncherLabel(root);
-        subtitleLabel.setText("Projet MajestyCraft");
-        subtitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
-        subtitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.42)");
-        subtitleLabel.setPosition(engine.getWidth() / 2 - 85, 31);
-        subtitleLabel.setSize(170, 18);
-        subtitleLabel.setAlignment(Pos.CENTER);
+        // Barre du haut : logotype aligné sur le contenu (« Majesty » + « Launcher » ambré) et
+        // pastille de version, commandes de fenêtre sur la même ligne.
+        Label brandMajesty = new Label("Majesty");
+        brandMajesty.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 17F));
+        brandMajesty.setStyle("-fx-text-fill: rgba(255,255,255,0.95);");
+        Label brandLauncher = new Label("Launcher");
+        brandLauncher.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 17F));
+        brandLauncher.setStyle("-fx-text-fill: #ffb000;");
+        Label versionChip = new Label(Main.CURRENT_VERSION);
+        versionChip.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10.5F));
+        versionChip.getStyleClass().add("ml-badge");
+        HBox brand = new HBox(0, brandMajesty, brandLauncher, versionChip);
+        brand.setAlignment(Pos.CENTER_LEFT);
+        HBox.setMargin(versionChip, new Insets(0, 0, 0, 10));
+        brand.setLayoutX(HOME_X);
+        brand.setLayoutY(20);
+        brand.setMouseTransparent(true);
+        root.getChildren().add(brand);
 
         // Commandes de fenêtre : icônes au trait, fond au survol (rouge pour fermer).
         LauncherButton closeButton = new LauncherButton(root);
         UiStyle.apply(closeButton, "ml-window", "ml-window-close");
         closeButton.setGraphic(Icons.stroke(Icons.CLOSE, 15));
-        closeButton.setPosition(engine.getWidth() - 46, 8);
+        closeButton.setPosition(engine.getWidth() - 50, 17);
         closeButton.setSize(36, 30);
         closeButton.setOnAction(event -> System.exit(0));
         closeButton.setTooltip(new Tooltip("Fermer"));
@@ -1211,7 +1324,7 @@ public class LauncherPanel extends IScreen {
         LauncherButton reduceButton = new LauncherButton(root);
         UiStyle.apply(reduceButton, "ml-window");
         reduceButton.setGraphic(Icons.stroke(Icons.MINUS, 15));
-        reduceButton.setPosition(engine.getWidth() - 86, 8);
+        reduceButton.setPosition(engine.getWidth() - 90, 17);
         reduceButton.setSize(36, 30);
         reduceButton.setOnAction(event -> {
             Stage stage = (Stage) ((LauncherButton) event.getSource()).getScene().getWindow();
@@ -1421,35 +1534,49 @@ public class LauncherPanel extends IScreen {
         this.shadersButton.setTooltip(new Tooltip("Shaders"));
         addSidebarCaption(root, "Shaders", sbX, shadersY, size);
 
-        int quickW = 155;
-        int quickH = 40;
-        int quickGap = 16;
-        int quickY = 468;
+        // « À découvrir » : les exclusivités du launcher en cartes, deux par ligne
+        int cardW = (HOME_W - 12) / 2;
+        int cardH = 126;
+        int gridY = 256;
+        this.timeTravelButton = createFeatureCard(root, HOME_X, gridY, cardW, cardH, Icons.CLOCK,
+                "Voyage dans le temps", "Rejoue chaque époque, de 2009 à aujourd'hui.",
+                this::openTimeTravelPanel);
+        this.friendButton = createFeatureCard(root, HOME_X + cardW + 12, gridY, cardW, cardH, Icons.USERS,
+                "Jouer avec un ami", "Ouvre ton monde à un ami, sans serveur.",
+                () -> FriendPlayFlow.start(engine.getStage(), this, engine));
+        this.performanceCard = createFeatureCard(root, HOME_X, gridY + cardH + 12, cardW, cardH, Icons.ZAP,
+                "Mode performance", "Mémoire, Java et mods réglés pour ton PC.",
+                () -> PerformanceFlow.start(engine.getStage(), this, engine, performanceButton, null));
+        this.newsCard = createFeatureCard(root, HOME_X + cardW + 12, gridY + cardH + 12, cardW, cardH, Icons.STAR,
+                "Nouveautés " + Main.CURRENT_VERSION, "Tout ce qui change dans cette version.",
+                () -> infoButton.fire());
 
+        // « Communauté » : site et Discord, puis les réseaux en pastilles rondes
+        int linkH = 44;
+        int linkW = 110;
         this.voteButton = new LauncherButton(root);
         this.voteButton.setText(BUTTON_SITE);
-        this.voteButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
-        this.voteButton.setPosition(138, quickY);
-        this.voteButton.setSize(quickW, quickH);
+        this.voteButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        this.voteButton.setPosition(HOME_X, socialY);
+        this.voteButton.setSize(linkW, linkH);
         UiStyle.apply(this.voteButton, "ml-secondary");
-        this.voteButton.setGraphic(Icons.stroke(Icons.GLOBE, 17));
-        this.voteButton.setGraphicTextGap(10);
+        this.voteButton.setGraphic(Icons.stroke(Icons.GLOBE, 16));
+        this.voteButton.setGraphicTextGap(9);
         this.voteButton.setOnAction(event -> openLink(SITE_URL));
 
         this.boutiqueButton = new LauncherButton(root);
         this.boutiqueButton.setText(BUTTON_DISCORD);
-        this.boutiqueButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
-        this.boutiqueButton.setPosition(138 + quickW + quickGap, quickY);
-        this.boutiqueButton.setSize(quickW, quickH);
+        this.boutiqueButton.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+        this.boutiqueButton.setPosition(HOME_X + linkW + 8, socialY);
+        this.boutiqueButton.setSize(linkW, linkH);
         UiStyle.apply(this.boutiqueButton, "ml-secondary");
-        this.boutiqueButton.setGraphic(Icons.stroke(Icons.MESSAGE, 17));
-        this.boutiqueButton.setGraphicTextGap(10);
+        this.boutiqueButton.setGraphic(Icons.stroke(Icons.MESSAGE, 16));
+        this.boutiqueButton.setGraphicTextGap(9);
         this.boutiqueButton.setOnAction(event -> openLink(DISCORD_URL));
 
-        // Réseaux : pastilles rondes identiques, alignées sur le texte d'accueil.
-        int socialSize = 46;
-        int socialGap = 14;
-        int socialStartX = 138;
+        int socialSize = 44;
+        int socialGap = 8;
+        int socialStartX = HOME_X + (linkW + 8) * 2 + 8;
         this.tiktokButton = createSocialButton(root, "tiktok.png", "TikTok", INSTAGRAM_URL,
                 socialStartX, socialY, socialSize);
         this.minestratorButton = createSocialButton(root, "minestrator.png", "Minestrator", MINESTRATOR_URL,
@@ -1458,6 +1585,55 @@ public class LauncherPanel extends IScreen {
                 socialStartX + (socialSize + socialGap) * 2, socialY, socialSize);
         this.youtubeButton = createSocialButton(root, "yt_icon.png", "YouTube", YOUTUBE_URL,
                 socialStartX + (socialSize + socialGap) * 3, socialY, socialSize);
+    }
+
+    /**
+     * Carte « À découvrir » : pastille d'icône ambrée, titre et une ligne d'explication.
+     * Au survol, la carte s'éclaire et se soulève légèrement.
+     */
+    private LauncherButton createFeatureCard(Pane root, int x, int y, int w, int h, String icon,
+                                             String title, String description, Runnable action) {
+        StackPane bubble = new StackPane(Icons.stroke(icon, 16));
+        bubble.getStyleClass().add("ml-feature-bubble");
+        bubble.setMinSize(32, 32);
+        bubble.setMaxSize(32, 32);
+
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("ml-feature-title");
+        titleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 14F));
+
+        Label descLabel = new Label(description);
+        descLabel.getStyleClass().add("ml-feature-desc");
+        descLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
+        descLabel.setWrapText(true);
+        descLabel.setPrefWidth(w - 32);
+        descLabel.setMinHeight(Region.USE_PREF_SIZE);
+
+        VBox content = new VBox(10, bubble, new VBox(4, titleLabel, descLabel));
+        content.setPrefWidth(w - 32);
+        content.setMaxWidth(w - 32);
+
+        LauncherButton card = new LauncherButton(root);
+        card.getStyleClass().add("ml-feature");
+        card.setGraphic(content);
+        card.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        card.setAlignment(Pos.TOP_LEFT);
+        card.setPosition(x, y);
+        card.setSize(w, h);
+        card.setTooltip(new Tooltip(description));
+        card.setOnAction(event -> action.run());
+        card.setOnMouseEntered(e -> {
+            TranslateTransition lift = new TranslateTransition(javafx.util.Duration.millis(140), card);
+            lift.setToY(-3);
+            lift.play();
+        });
+        card.setOnMouseExited(e -> {
+            TranslateTransition drop = new TranslateTransition(javafx.util.Duration.millis(140), card);
+            drop.setToY(0);
+            drop.play();
+        });
+        homeExtras.add(card);
+        return card;
     }
 
     /**
@@ -1578,16 +1754,12 @@ public class LauncherPanel extends IScreen {
         applyModernCardStyle(this.connexionRectangle, 0.80);
         this.connexionRectangle.setMouseTransparent(true);
 
-        this.avatarCard = new LauncherRectangle(root, connX + 28, connY + 134, 72, 72);
-        this.avatarCard.setArcWidth(24);
-        this.avatarCard.setArcHeight(24);
-        this.avatarCard.setFill(Color.rgb(255, 255, 255, 0.06));
-        this.avatarCard.setStroke(Color.rgb(255, 255, 255, 0.08));
-        this.avatarCard.setStrokeWidth(1);
-        this.avatarCard.setMouseTransparent(true);
+        // Carte « Prêt à jouer » : le profil d'abord (avec ses chiffres), puis le compte, puis JOUER
+        int padX = connX + 28;
+        int innerW = connW - 56;
 
         this.connectionEyebrowLabel = new LauncherLabel(root);
-        this.connectionEyebrowLabel.setText("ESPACE COMPTE");
+        this.connectionEyebrowLabel.setText("PRÊT À JOUER");
         this.connectionEyebrowLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11F));
         this.connectionEyebrowLabel.setStyle(
                 "-fx-background-color: rgba(255,159,26,0.14);" +
@@ -1595,62 +1767,15 @@ public class LauncherPanel extends IScreen {
                 "-fx-text-fill: rgba(255,207,138,0.95);"
         );
         this.connectionEyebrowLabel.setAlignment(Pos.CENTER);
-        this.connectionEyebrowLabel.setPosition(connX + 28, connY + 26);
-        this.connectionEyebrowLabel.setSize(118, 24);
+        this.connectionEyebrowLabel.setPosition(padX, connY + 28);
+        this.connectionEyebrowLabel.setSize(112, 24);
 
-        this.titleCrack = new LauncherLabel(root);
-        this.titleCrack.setText(LABEL_CONNECTION);
-        this.titleCrack.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 28F));
-        this.titleCrack.setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
-        this.titleCrack.setAlignment(Pos.CENTER_LEFT);
-        this.titleCrack.setPosition(connX + 28, connY + 58);
-        this.titleCrack.setSize(connW - 56, 40);
-
-        this.connectionSubtitleLabel = new LauncherLabel(root);
-        this.connectionSubtitleLabel.setText("Pseudo ou compte Microsoft, choisis ton profil et joue.");
-        this.connectionSubtitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 12F));
-        this.connectionSubtitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.62);");
-        this.connectionSubtitleLabel.setAlignment(Pos.CENTER_LEFT);
-        this.connectionSubtitleLabel.setWrapText(true);
-        this.connectionSubtitleLabel.setPosition(connX + 28, connY + 98);
-        this.connectionSubtitleLabel.setSize(connW - 56, 38);
-
-        this.usernameField = new JFXTextField();
-        this.usernameField.setLayoutX(connX + 118);
-        this.usernameField.setLayoutY(connY + 146);
-        this.usernameField.setPrefWidth(connW - 146);
-        this.usernameField.setPrefHeight(48);
-        this.usernameField.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
-        this.usernameField.setPromptText(INPUT_PSEUDO_OR_EMAIL);
-        this.usernameField.getStyleClass().add("ml-input");
-
-        if (!cfgBool(EnumConfig.USE_MICROSOFT)) {
-            this.usernameField.setText((String) this.config.getValue(EnumConfig.USERNAME));
-        }
-        root.getChildren().add(this.usernameField);
-
-        this.rememberMe = new JFXToggleButton();
-        this.rememberMe.setText(LABEL_REMEMBER_ME);
-        this.rememberMe.setSelected(cfgBool(EnumConfig.REMEMBER_ME));
-        this.rememberMe.getStyleClass().add("jfx-toggle-button");
-        this.rememberMe.setLayoutX(connX + 104);
-        this.rememberMe.setLayoutY(connY + 196);
-        this.rememberMe.setOnAction(event -> config.updateValue("rememberme", rememberMe.isSelected()));
-        root.getChildren().add(this.rememberMe);
-
-        /* ===== Sélecteur de profil ===== */
-        this.profileCaptionLabel = new LauncherLabel(root);
-        this.profileCaptionLabel.setText("PROFIL DE JEU");
-        this.profileCaptionLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 10F));
-        this.profileCaptionLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,207,138,0.85);");
-        this.profileCaptionLabel.setPosition(connX + 30, connY + 244);
-        this.profileCaptionLabel.setSize(200, 16);
-
+        /* ===== Profil ===== */
         this.profileCombo = new JFXComboBox<>();
         this.profileCombo.getStyleClass().add("combo-modern");
-        this.profileCombo.setLayoutX(connX + 28);
-        this.profileCombo.setLayoutY(connY + 262);
-        this.profileCombo.setPrefSize(connW - 106, 38);
+        this.profileCombo.setLayoutX(padX);
+        this.profileCombo.setLayoutY(connY + 66);
+        this.profileCombo.setPrefSize(innerW, 50);
         this.profileCombo.setVisibleRowCount(8);
         this.profileCombo.setStyle(
                 "-fx-background-color: rgba(255,255,255,0.08);" +
@@ -1658,7 +1783,8 @@ public class LauncherPanel extends IScreen {
                 "-fx-border-color: rgba(255,255,255,0.14);" +
                 "-fx-border-radius: 14;" +
                 "-fx-border-width: 1;" +
-                "-fx-font-family: 'Comfortaa';"
+                "-fx-font-family: 'Comfortaa';" +
+                "-fx-font-size: 15px;"
         );
         this.profileCombo.setButtonCell(new javafx.scene.control.ListCell<String>() {
             @Override protected void updateItem(String item, boolean empty) {
@@ -1677,42 +1803,124 @@ public class LauncherPanel extends IScreen {
         this.profileCombo.setOnAction(event -> onProfileComboChanged());
         root.getChildren().add(this.profileCombo);
 
+        // Mode performance et gestion des profils : icônes en haut à droite de la carte
+        this.performanceButton = new JFXButton();
+        this.performanceButton.setLayoutX(connX + connW - 28 - 36 - 8 - 36);
+        this.performanceButton.setLayoutY(connY + 23);
+        this.performanceButton.setPrefSize(36, 34);
+        UiStyle.apply(this.performanceButton, "ml-secondary");
+        this.performanceButton.setGraphic(Icons.stroke(Icons.ZAP, 16));
+        this.performanceButton.setTooltip(new Tooltip("Mode performance : optimiser ce profil pour ton PC"));
+        this.performanceButton.setOnAction(event -> PerformanceFlow.start(engine.getStage(), this, engine, performanceButton, null));
+        root.getChildren().add(this.performanceButton);
+
         this.manageProfilesButton = new JFXButton();
-        this.manageProfilesButton.setLayoutX(connX + connW - 68);
-        this.manageProfilesButton.setLayoutY(connY + 262);
-        this.manageProfilesButton.setPrefSize(40, 38);
+        this.manageProfilesButton.setLayoutX(connX + connW - 28 - 36);
+        this.manageProfilesButton.setLayoutY(connY + 23);
+        this.manageProfilesButton.setPrefSize(36, 34);
         UiStyle.apply(this.manageProfilesButton, "ml-secondary");
-        this.manageProfilesButton.setGraphic(Icons.stroke(Icons.SETTINGS, 18));
+        this.manageProfilesButton.setGraphic(Icons.stroke(Icons.SETTINGS, 16));
         this.manageProfilesButton.setTooltip(new Tooltip("Gérer les profils"));
         this.manageProfilesButton.setOnAction(event -> openProfilesPanel());
         root.getChildren().add(this.manageProfilesButton);
 
+        // Version, loader et mémoire du profil, puis son temps de jeu et sa dernière partie
+        this.profileMetaLabel = new LauncherLabel(root);
+        this.profileMetaLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11.5F));
+        this.profileMetaLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.55);");
+        this.profileMetaLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
+        this.profileMetaLabel.setPosition(padX + 2, connY + 124);
+        this.profileMetaLabel.setSize(innerW - 2, 18);
+        homeExtras.add(this.profileMetaLabel);
+
+        this.playtimeValue = new Label("—");
+        this.lastPlayedValue = new Label("—");
+        HBox stats = new HBox(12,
+                statTile(Icons.CLOCK, this.playtimeValue, "temps de jeu", (innerW - 12) / 2),
+                statTile(Icons.PLAY, this.lastPlayedValue, "dernière partie", (innerW - 12) / 2));
+        stats.setLayoutX(padX);
+        stats.setLayoutY(connY + 154);
+        root.getChildren().add(stats);
+        homeExtras.add(stats);
+
         refreshProfilesUI();
 
-        /* ===== JOUER ===== */
-        this.playButton = new JFXButton("JOUER");
-        this.playButton.setLayoutX(connX + 28);
-        this.playButton.setLayoutY(connY + 314);
-        this.playButton.setPrefWidth(connW - 56);
-        this.playButton.setPrefHeight(52);
-        UiStyle.apply(this.playButton, "ml-primary", "ml-cta");
-        this.playButton.setGraphic(Icons.filled(Icons.PLAY, 16));
-        this.playButton.setGraphicTextGap(12);
-        this.playButton.setOnAction(event -> onPlayClicked(root));
-        root.getChildren().add(this.playButton);
+        /* ===== Compte ===== */
+        Rectangle divider = new Rectangle(padX, connY + 226, innerW, 1);
+        divider.setFill(Color.rgb(255, 255, 255, 0.08));
+        divider.setMouseTransparent(true);
+        root.getChildren().add(divider);
+        homeExtras.add(divider);
+
+        this.profileCaptionLabel = sectionLabel(root, "COMPTE", padX + 2, connY + 244);
+
+        this.rememberMe = new JFXToggleButton();
+        this.rememberMe.setText(LABEL_REMEMBER_ME);
+        this.rememberMe.setSelected(cfgBool(EnumConfig.REMEMBER_ME));
+        this.rememberMe.getStyleClass().add("jfx-toggle-button");
+        this.rememberMe.setLayoutY(connY + 230);
+        // Calé à droite de la ligne « COMPTE » (le contrôle a une marge interne d'environ 10 px)
+        this.rememberMe.layoutXProperty().bind(this.rememberMe.widthProperty().multiply(-1).add(padX + innerW + 10));
+        this.rememberMe.setOnAction(event -> config.updateValue("rememberme", rememberMe.isSelected()));
+        root.getChildren().add(this.rememberMe);
+
+        this.avatarCard = new LauncherRectangle(root, padX, connY + 274, 56, 56);
+        this.avatarCard.setArcWidth(20);
+        this.avatarCard.setArcHeight(20);
+        this.avatarCard.setFill(Color.rgb(255, 255, 255, 0.06));
+        this.avatarCard.setStroke(Color.rgb(255, 255, 255, 0.08));
+        this.avatarCard.setStrokeWidth(1);
+        this.avatarCard.setMouseTransparent(true);
+
+        this.usernameField = new JFXTextField();
+        this.usernameField.setLayoutX(padX + 68);
+        this.usernameField.setLayoutY(connY + 278);
+        this.usernameField.setPrefWidth(innerW - 68);
+        this.usernameField.setPrefHeight(48);
+        this.usernameField.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 15F));
+        this.usernameField.setPromptText(INPUT_PSEUDO_OR_EMAIL);
+        this.usernameField.getStyleClass().add("ml-input");
+
+        if (!cfgBool(EnumConfig.USE_MICROSOFT)) {
+            this.usernameField.setText((String) this.config.getValue(EnumConfig.USERNAME));
+        }
+        this.usernameField.textProperty().addListener((obs, old, text) -> refreshGreeting());
+        root.getChildren().add(this.usernameField);
+        refreshGreeting();
+
+        this.connectionSubtitleLabel = new LauncherLabel(root);
+        this.connectionSubtitleLabel.setText("Pseudo ou compte Microsoft, choisis ton profil et joue.");
+        this.connectionSubtitleLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 11.5F));
+        this.connectionSubtitleLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.62);");
+        this.connectionSubtitleLabel.setAlignment(Pos.CENTER_LEFT);
+        this.connectionSubtitleLabel.setWrapText(true);
+        this.connectionSubtitleLabel.setPosition(padX + 2, connY + 334);
+        this.connectionSubtitleLabel.setSize(innerW - 2, 34);
 
         /* ===== Microsoft (connexion uniquement, ne lance PAS le jeu) ===== */
         this.microsoftInlineButton = new JFXButton("Se connecter avec Microsoft");
-        this.microsoftInlineButton.setLayoutX(connX + 28);
-        this.microsoftInlineButton.setLayoutY(connY + 376);
-        this.microsoftInlineButton.setPrefWidth(connW - 56);
-        this.microsoftInlineButton.setPrefHeight(38);
+        this.microsoftInlineButton.setLayoutX(padX);
+        this.microsoftInlineButton.setLayoutY(connY + 374);
+        this.microsoftInlineButton.setPrefWidth(innerW);
+        this.microsoftInlineButton.setPrefHeight(40);
         UiStyle.apply(this.microsoftInlineButton, "ml-secondary", "ml-strong");
         this.microsoftInlineButton.setGraphic(Icons.microsoftLogo(15));
         this.microsoftInlineButton.setGraphicTextGap(10);
         this.microsoftInlineButton.setContentDisplay(ContentDisplay.LEFT);
         this.microsoftInlineButton.setOnAction(event -> launchMicrosoftFlow(root));
         root.getChildren().add(this.microsoftInlineButton);
+
+        /* ===== JOUER ===== */
+        this.playButton = new JFXButton("JOUER");
+        this.playButton.setLayoutX(padX);
+        this.playButton.setLayoutY(connY + connH - 28 - 60);
+        this.playButton.setPrefWidth(innerW);
+        this.playButton.setPrefHeight(60);
+        UiStyle.apply(this.playButton, "ml-primary", "ml-cta");
+        this.playButton.setGraphic(Icons.filled(Icons.PLAY, 16));
+        this.playButton.setGraphicTextGap(12);
+        this.playButton.setOnAction(event -> onPlayClicked(root));
+        root.getChildren().add(this.playButton);
 
         int autoCardWidth = 620;
         int autoCardX = engine.getWidth() / 2 - autoCardWidth / 2;
@@ -1823,55 +2031,15 @@ public class LauncherPanel extends IScreen {
     }
 
     private void setupUpdateGUI(Pane root) {
-        this.updateRectangle = new LauncherRectangle(root, engine.getWidth() / 2 - 175, engine.getHeight() / 2 - 80, 350, 180);
-        applyModernCardStyle(this.updateRectangle, 0.62);
-        this.updateRectangle.setVisible(false);
+        this.loadingView = new LoadingView();
+        this.loadingView.setLayoutX((engine.getWidth() - LoadingView.W) / 2.0);
+        this.loadingView.setLayoutY((engine.getHeight() - LoadingView.H) / 2.0 + 10);
+        root.getChildren().add(this.loadingView);
+    }
 
-        this.updateLabel = new LauncherLabel(root);
-        this.updateLabel.setText(UPDATE_LABEL_TEXT);
-        this.updateLabel.setAlignment(Pos.CENTER);
-        this.updateLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 22F));
-        this.updateLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: orange;");
-        this.updateLabel.setPosition(engine.getWidth() / 2 - 95, engine.getHeight() / 2 - 75);
-        this.updateLabel.setSize(190, 40);
-        this.updateLabel.setVisible(false);
-
-        this.currentStep = new LauncherLabel(root);
-        this.currentStep.setText(UPDATE_STEP_TEXT);
-        this.currentStep.setFont(Font.font("Verdana", FontPosture.ITALIC, 18F));
-        this.currentStep.setStyle("-fx-background-color: transparent; -fx-text-fill: orange;");
-        this.currentStep.setAlignment(Pos.CENTER);
-        this.currentStep.setPosition(engine.getWidth() / 2 - 160, engine.getHeight() / 2 + 63);
-        this.currentStep.setOpacity(0.4);
-        this.currentStep.setSize(320, 40);
-        this.currentStep.setVisible(false);
-
-        this.currentFileLabel = new LauncherLabel(root);
-        this.currentFileLabel.setText("launchwrapper-12.0.jar");
-        this.currentFileLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 18F));
-        this.currentFileLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: orange;");
-        this.currentFileLabel.setAlignment(Pos.CENTER);
-        this.currentFileLabel.setPosition(engine.getWidth() / 2 - 160, engine.getHeight() / 2 + 5);
-        this.currentFileLabel.setOpacity(0.8);
-        this.currentFileLabel.setSize(320, 40);
-        this.currentFileLabel.setVisible(false);
-
-        this.percentageLabel = new LauncherLabel(root);
-        this.percentageLabel.setText("0%");
-        this.percentageLabel.setFont(FontLoader.loadFont("Comfortaa-Regular.ttf", "Comfortaa", 30F));
-        this.percentageLabel.setStyle("-fx-background-color: transparent; -fx-text-fill: orange;");
-        this.percentageLabel.setAlignment(Pos.CENTER);
-        this.percentageLabel.setPosition(engine.getWidth() / 2 - 50, engine.getHeight() / 2 - 25);
-        this.percentageLabel.setOpacity(0.8);
-        this.percentageLabel.setSize(100, 40);
-        this.percentageLabel.setVisible(false);
-
-        this.bar = new JFXProgressBar();
-        this.bar.setLayoutX(engine.getWidth() / 2 - 125);
-        this.bar.setLayoutY(engine.getHeight() / 2 + 40);
-        this.bar.getStyleClass().add("jfx-progress-bar");
-        this.bar.setVisible(false);
-        root.getChildren().add(this.bar);
+    /** Écran de chargement (rendus hors écran). */
+    LoadingView getLoadingView() {
+        return loadingView;
     }
 
     /** Éléments escamotés pendant la mise à jour, avec leur état d'origine (visible, désactivé). */
@@ -1884,9 +2052,11 @@ public class LauncherPanel extends IScreen {
                 microsoftStateCaption, connectionGlow, connectionEyebrowLabel, connectionSubtitleLabel,
                 heroLogo, heroTitleLabel, heroSubtitleLabel, heroTextLine1, heroTextLine2, titleCrack,
                 usernameField, rememberMe, playButton, microsoftInlineButton, profileCombo, manageProfilesButton,
-                profileCaptionLabel, connexionRectangle, avatarCard, voteButton, boutiqueButton,
+                performanceButton, profileCaptionLabel, connexionRectangle, avatarCard, voteButton, boutiqueButton,
+                timeTravelButton, friendButton,
                 tiktokButton, minestratorButton, twitterButton, youtubeButton, avatar));
         nodes.addAll(sidebarCaptions);
+        nodes.addAll(homeExtras);
         for (javafx.scene.Node node : nodes) {
             if (node != null) hiddenDuringUpdate.put(node, new boolean[]{node.isVisible(), node.isDisable()});
         }
@@ -1914,9 +2084,9 @@ public class LauncherPanel extends IScreen {
             node.setDisable(entry.getValue()[1]);
         }
         hiddenDuringUpdate.clear();
-        for (javafx.scene.Node node : new javafx.scene.Node[]{updateRectangle, updateLabel, currentStep, currentFileLabel, percentageLabel, bar, updateAvatar}) {
-            if (node != null) node.setVisible(false);
-        }
+        if (loadingView != null) loadingView.stop();
+        // Temps de jeu et dernière partie viennent de changer
+        refreshProfilesUI();
         if (reason != null && !reason.trim().isEmpty()) {
             javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
             alert.setTitle("MajestyLauncher");
@@ -1960,12 +2130,14 @@ public class LauncherPanel extends IScreen {
         if (microsoftInlineButton != null) new ZoomOutDown(microsoftInlineButton).setResetOnFinished(false).play();
         if (profileCombo != null) new ZoomOutDown(profileCombo).setResetOnFinished(false).play();
         if (manageProfilesButton != null) new ZoomOutDown(manageProfilesButton).setResetOnFinished(false).play();
+        if (performanceButton != null) new ZoomOutDown(performanceButton).setResetOnFinished(false).play();
         if (profileCaptionLabel != null) new ZoomOutDown(profileCaptionLabel).setResetOnFinished(false).play();
         if (connexionRectangle != null) new ZoomOutDown(connexionRectangle).setResetOnFinished(false).play();
         if (avatarCard != null) new ZoomOutDown(avatarCard).setResetOnFinished(false).play();
 
         if (voteButton != null) new ZoomOutDown(voteButton).setResetOnFinished(false).play();
         if (boutiqueButton != null) new ZoomOutDown(boutiqueButton).setResetOnFinished(false).play();
+        for (Node node : homeExtras) new ZoomOutDown(node).setResetOnFinished(false).play();
 
         if (tiktokButton != null) new ZoomOutDown(tiktokButton).setResetOnFinished(false).play();
         if (minestratorButton != null) new ZoomOutDown(minestratorButton).setResetOnFinished(false).play();
@@ -1983,30 +2155,21 @@ public class LauncherPanel extends IScreen {
         if (microsoftInlineButton != null) microsoftInlineButton.setDisable(true);
         if (profileCombo != null) profileCombo.setDisable(true);
         if (manageProfilesButton != null) manageProfilesButton.setDisable(true);
+        if (performanceButton != null) performanceButton.setDisable(true);
+        for (Node node : homeExtras) node.setDisable(true);
         if (settingsButton != null) settingsButton.setDisable(true);
         if (profilesButton != null) profilesButton.setDisable(true);
         if (connectionSubtitleLabel != null) connectionSubtitleLabel.setVisible(false);
 
-        updateRectangle.setVisible(true);
-        updateLabel.setVisible(true);
-        currentStep.setVisible(true);
-        currentFileLabel.setVisible(true);
-        percentageLabel.setVisible(true);
-        bar.setVisible(true);
-
         if (avatar != null) avatar.setVisible(false);
 
-        new ZoomInDown(updateRectangle).play();
-        new ZoomInDown(updateLabel).play();
-        new ZoomInDown(currentStep).play();
-        new ZoomInDown(currentFileLabel).play();
-        new ZoomInDown(percentageLabel).play();
-        new ZoomInDown(bar).play();
-
-        if (updateAvatar != null) {
-            new ZoomInDown(updateAvatar).play();
-            updateAvatar.setVisible(true);
-        }
+        fr.majestycraft.profiles.ProfileManager pm = fr.majestycraft.profiles.ProfileManager.get();
+        fr.majestycraft.profiles.LauncherProfile active = pm == null ? null : pm.getActive();
+        loadingView.setGame(active != null ? active.getVersion() : String.valueOf(config.getValue(EnumConfig.VERSION)),
+                active != null ? active.getModloaderType() : Utils.resolveSelectedModloader(config),
+                active != null ? active.getName() : null);
+        loadingView.toFront();
+        loadingView.start();
 
         // IMPORTANT:
         // Do NOT override GameLinks here with the MajestyCraft JSON URL.
@@ -2047,21 +2210,17 @@ public class LauncherPanel extends IScreen {
         this.updateTimeline.play();
     }
 
-    private double percent;
-
     public void timelineUpdate(GameEngine engine) {
-        if (engine.getGameUpdater() != null && engine.getGameUpdater().filesToDownload > 0) {
-            this.percent = engine.getGameUpdater().downloadedFiles * 100.0D / engine.getGameUpdater().filesToDownload;
-            this.percentageLabel.setText(decimalFormat.format(percent) + "%");
-        } else {
-            this.percent = 0;
-            this.percentageLabel.setText("0%");
+        GameUpdater updater = engine.getGameUpdater();
+        if (updater != null) {
+            int total = updater.filesToDownload;
+            int done = updater.downloadedFiles;
+            double percent = total > 0 ? done * 100.0D / total : 0;
+            String info = updater.getCurrentInfo();
+            // Téléchargement terminé : la rangée se complète en attendant la fenêtre du jeu
+            if (info != null && info.toLowerCase(java.util.Locale.ROOT).contains("accompli")) percent = 100;
+            loadingView.update(percent, info, updater.getCurrentFile(), done, total);
         }
-        if (engine.getGameUpdater() != null) {
-            this.currentFileLabel.setText(engine.getGameUpdater().getCurrentFile());
-            this.currentStep.setText(engine.getGameUpdater().getCurrentInfo());
-        }
-        this.bar.setProgress(percent / 100.0D);
 
         // Mise à jour terminée alors que la fenêtre est toujours affichée : le jeu n'a pas
         // démarré (erreur) ou s'est fermé sur un crash. On rend la main au joueur.
@@ -2134,31 +2293,48 @@ public class LauncherPanel extends IScreen {
 
 
     public void connectAccountCrack(Pane root) {
-        avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png", true));
-        avatar.setBounds(connX + 34, connY + 140, 60, 60);
+        showAvatar(root, null);
     }
 
     public void connectAccountPremium(String username, Pane root) {
-        avatar = new LauncherImage(root, new Image("https://minotar.net/cube/" + username + ".png", true));
-        avatar.setBounds(connX + 34, connY + 140, 60, 60);
+        showAvatar(root, username);
     }
 
     public void connectAccountPremiumOFF(Pane root) {
-        avatar = new LauncherImage(root, new Image("https://minotar.net/cube/MHF_Steve.png", true));
-        avatar.setBounds(connX + 34, connY + 140, 60, 60);
+        showAvatar(root, null);
     }
 
+    /**
+     * Visage du skin vu de face, calque du chapeau compris (null : Steve). Téléchargé au
+     * double de sa taille d'affichage et réduit sans lissage, il reste net au pixel près ;
+     * coins arrondis assortis à la case qui l'entoure. Toujours la même image, réutilisée.
+     */
+    private void showAvatar(Pane root, String skinName) {
+        String who = skinName == null || skinName.trim().isEmpty() ? "MHF_Steve" : skinName.trim();
+        Image face = new Image("https://minotar.net/helm/" + who + "/96.png", true);
+        if (avatar == null) {
+            avatar = new LauncherImage(root, face);
+            avatar.setSmooth(false);
+            avatar.setBounds(connX + 32, connY + 278, 48, 48);
+            Rectangle clip = new Rectangle(48, 48);
+            clip.setArcWidth(16);
+            clip.setArcHeight(16);
+            avatar.setClip(clip);
+        } else {
+            avatar.setImage(face);
+        }
+        avatar.setVisible(true);
+    }
+
+    /** Hors ligne : skin de Steve sous le pseudo choisi. */
     public void connectAccountCrackCO(Pane root) {
-        updateAvatar = new LauncherImage(root, new Image("https://minotar.net/body/MHF_Steve.png"));
-        updateAvatar.setSize(100, 200);
-        updateAvatar.setBounds(engine.getWidth() / 2 - 280, engine.getHeight() / 2 - 90, 100, 200);
-        updateAvatar.setVisible(false);
+        String name = usernameField != null ? usernameField.getText() : null;
+        if (name == null || name.trim().isEmpty()) name = String.valueOf(config.getValue(EnumConfig.USERNAME));
+        if (loadingView != null) loadingView.setPlayer(name, null);
     }
 
     public void connectAccountPremiumCO(String username, Pane root) {
-        updateAvatar = new LauncherImage(root, new Image("https://minotar.net/body/" + username + ".png"));
-        updateAvatar.setBounds(engine.getWidth() / 2 - 280, engine.getHeight() / 2 - 90, 100, 200);
-        updateAvatar.setVisible(false);
+        if (loadingView != null) loadingView.setPlayer(username, username);
     }
 
     private String urlModifier(String version) {

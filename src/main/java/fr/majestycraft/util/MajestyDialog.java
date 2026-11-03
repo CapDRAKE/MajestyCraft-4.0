@@ -43,6 +43,7 @@ public final class MajestyDialog {
     private final FlowPane actions = new FlowPane(10, 10);
     private final StackPane root;
     private Runnable afterWork;
+    private Work autoWork;
 
     public MajestyDialog(Window owner, String badge, String title, String message) {
         stage.initModality(Modality.APPLICATION_MODAL);
@@ -146,8 +147,15 @@ public final class MajestyDialog {
         return this;
     }
 
+    /** Lance ce travail dès l'ouverture de la fenêtre (sans bouton à cliquer). */
+    public MajestyDialog autoWork(Work work) {
+        this.autoWork = work;
+        return this;
+    }
+
     public void show() {
         stage.show();
+        if (autoWork != null) runWork(autoWork);
     }
 
     public void showAndWait() {
