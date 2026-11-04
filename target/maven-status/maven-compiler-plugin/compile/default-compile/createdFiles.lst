@@ -49,6 +49,7 @@ fr\majestycraft\mods\SystemProbe.class
 fr\majestycraft\launcher\PerformanceFlow.class
 fr\majestycraft\mods\ModCompatibility$1.class
 fr\majestycraft\util\WindowsTokenProtector$Dpapi$Blob.class
+fr\majestycraft\util\WindowsShortcutFixer.class
 fr\majestycraft\launcher\LoadingView$2.class
 fr\majestycraft\mods\CrashDoctor.class
 fr\majestycraft\mods\ModCompatibility$Kind.class

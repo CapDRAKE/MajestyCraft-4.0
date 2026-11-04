@@ -136,6 +136,8 @@ public class App extends AlternativeBase {
 
             // Bootstrap installé : remplacé par la version signée publiée, sans réinstallation
             fr.majestycraft.util.BootstrapUpdater.checkInBackground();
+            // Raccourcis de l'ancien .bat (script VBScript) repointés sur javaw.exe
+            fr.majestycraft.util.WindowsShortcutFixer.repairInBackground();
 
             Platform.runLater(Main::showStartupPopup);
         } catch (IOException e) {
