@@ -212,7 +212,7 @@ public class LauncherPacks extends IScreen {
         styleCard(heroCard, 0.70);
 
         this.heroLogo = new LauncherImage(root);
-        this.heroLogo.setImage(getResourceLocation().loadImage(engine, "launchergifpng.png"));
+        this.heroLogo.setImage(fr.majestycraft.util.ThemeNoel.logo(getResourceLocation().loadImage(engine, "launchergifpng.png")));
         this.heroLogo.setSize(130, 130);
         this.heroLogo.setBounds(heroX + 60, heroY + 36, 130, 130);
 

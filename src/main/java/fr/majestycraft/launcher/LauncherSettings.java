@@ -185,7 +185,7 @@ public class LauncherSettings extends IScreen {
         separator.setFill(Color.rgb(255, 255, 255, 0.08));
 
         this.heroLogo = new LauncherImage(root);
-        this.heroLogo.setImage(getResourceLocation().loadImage(engine, "launchergifpng.png"));
+        this.heroLogo.setImage(fr.majestycraft.util.ThemeNoel.logo(getResourceLocation().loadImage(engine, "launchergifpng.png")));
         this.heroLogo.setSize(150, 150);
         this.heroLogo.setBounds(128, 90, 150, 150);
 

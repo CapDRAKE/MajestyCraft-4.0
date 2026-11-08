@@ -1156,7 +1156,11 @@ public class LauncherPanel extends IScreen {
         ProfileManager pm = ProfileManager.get();
         LauncherProfile active = pm == null ? null : pm.getActive();
         boolean played = active != null && active.getLastPlayedAt() > 0;
-        heroSubtitleLabel.setText(played ? "Prêt à reprendre l'aventure ?" : "Prêt pour une nouvelle aventure ?");
+        if (fr.majestycraft.util.ThemeNoel.actif()) {
+            heroSubtitleLabel.setText(played ? "Joyeuses fêtes ! On reprend l'aventure ?" : "Joyeuses fêtes ! Prêt pour l'aventure ?");
+        } else {
+            heroSubtitleLabel.setText(played ? "Prêt à reprendre l'aventure ?" : "Prêt pour une nouvelle aventure ?");
+        }
     }
 
     private void onProfileComboChanged() {
@@ -1263,13 +1267,13 @@ public class LauncherPanel extends IScreen {
         }
 
         this.titleImage = new LauncherImage(root);
-        this.titleImage.setImage(getResourceLocation().loadImage(engine, "launchergifpng.png"));
+        this.titleImage.setImage(fr.majestycraft.util.ThemeNoel.logo(getResourceLocation().loadImage(engine, "launchergifpng.png")));
         this.titleImage.setSize(48, 48);
         this.titleImage.setBounds(18, 10, 48, 48);
 
         // Colonne de gauche : logo et message d'accueil, puis « À découvrir » et « Communauté »
         this.heroLogo = new LauncherImage(root);
-        this.heroLogo.setImage(getResourceLocation().loadImage(engine, "launchergifpng.png"));
+        this.heroLogo.setImage(fr.majestycraft.util.ThemeNoel.logo(getResourceLocation().loadImage(engine, "launchergifpng.png")));
         this.heroLogo.setSize(88, 88);
         this.heroLogo.setBounds(HOME_X, 100, 88, 88);
 
@@ -1751,6 +1755,16 @@ public class LauncherPanel extends IScreen {
         this.connexionRectangle = new LauncherRectangle(root, connX, connY, connW, connH);
         applyModernCardStyle(this.connexionRectangle, 0.80);
         this.connexionRectangle.setMouseTransparent(true);
+
+        if (fr.majestycraft.util.ThemeNoel.actif()) {
+            // Neige sur le haut de la carte ; homeExtras la masque avec elle au lancement du jeu
+            javafx.scene.image.ImageView neige = fr.majestycraft.util.ThemeNoel.neigeSurCarte(connW, 17);
+            neige.setLayoutX(connX);
+            neige.setLayoutY(connY);
+            neige.setMouseTransparent(true);
+            root.getChildren().add(neige);
+            homeExtras.add(neige);
+        }
 
         // Carte « Prêt à jouer » : le profil d'abord (avec ses chiffres), puis le compte, puis JOUER
         int padX = connX + 28;

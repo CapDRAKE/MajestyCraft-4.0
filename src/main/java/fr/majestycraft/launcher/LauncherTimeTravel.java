@@ -120,7 +120,7 @@ public class LauncherTimeTravel extends IScreen {
         separator.setFill(Color.rgb(255, 255, 255, 0.08));
 
         LauncherImage heroLogo = new LauncherImage(root);
-        heroLogo.setImage(getResourceLocation().loadImage(engine, "launchergifpng.png"));
+        heroLogo.setImage(fr.majestycraft.util.ThemeNoel.logo(getResourceLocation().loadImage(engine, "launchergifpng.png")));
         heroLogo.setSize(150, 150);
         heroLogo.setBounds(128, 90, 150, 150);
 

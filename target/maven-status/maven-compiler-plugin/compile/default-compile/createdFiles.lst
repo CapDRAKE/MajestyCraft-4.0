@@ -27,6 +27,7 @@ fr\majestycraft\launcher\Onboarding.class
 fr\majestycraft\launcher\PerformanceFlow$Analysis.class
 fr\majestycraft\mods\ModrinthApi$NotFoundException.class
 fr\majestycraft\mods\ModrinthApi.class
+fr\majestycraft\util\AmbientBackground$2.class
 fr\majestycraft\util\WindowsTokenProtector$Dpapi$Crypt32.class
 fr\majestycraft\mods\SystemProbe$GpuKind.class
 fr\majestycraft\launcher\LauncherTimeTravel$Era.class
@@ -52,6 +53,7 @@ fr\majestycraft\util\WindowsTokenProtector$Dpapi$Blob.class
 fr\majestycraft\util\WindowsShortcutFixer.class
 fr\majestycraft\launcher\LoadingView$2.class
 fr\majestycraft\mods\CrashDoctor.class
+fr\majestycraft\util\ThemeNoel.class
 fr\majestycraft\mods\ModCompatibility$Kind.class
 fr\majestycraft\util\ListRow.class
 fr\majestycraft\util\WindowsTokenProtector$Dpapi$Kernel32.class

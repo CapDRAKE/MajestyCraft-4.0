@@ -6,11 +6,14 @@ import java.util.Random;
 
 import javafx.animation.Animation;
 import javafx.animation.AnimationTimer;
+import javafx.animation.FadeTransition;
 import javafx.animation.Interpolator;
 import javafx.animation.ParallelTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;
 import javafx.beans.value.ChangeListener;
+import javafx.scene.Group;
+import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Pane;
@@ -31,6 +34,7 @@ import javafx.util.Duration;
  * Fond d'ambiance du launcher, entièrement dessiné en code (aucune image) :
  * dégradé sombre, lueurs aux couleurs du logo qui dérivent lentement, silhouette
  * de terrain en blocs façon Minecraft, braises pixelisées, grain et vignette.
+ * Pendant les fêtes (ThemeNoel) : neige, terrain enneigé, sapins et guirlande.
  *
  * Les animations se mettent en pause quand la fenêtre est masquée (pendant que le
  * jeu tourne, notamment) pour ne rien coûter en performances.
@@ -44,6 +48,10 @@ public final class AmbientBackground extends Pane {
             Color.web("#ffb347"), Color.web("#ff8a00"), Color.web("#ffd27a"), Color.web("#ff6a00")
     };
     private static final int EMBER_COUNT = 24;
+    private static final int SNOW_COUNT = 46;
+    private static final Color[] BULB_COLORS = {
+            Color.web("#ff3b30"), Color.web("#ffc83d"), Color.web("#39d353"), Color.web("#fff4d6")
+    };
 
     private final boolean embers;
     private final List<Animation> animations = new ArrayList<>();
@@ -118,7 +126,8 @@ public final class AmbientBackground extends Pane {
         addTerrain(width, height, 28, 0.05, 0.13, Color.rgb(7, 9, 14, 0.97), Color.rgb(255, 140, 40, 0.28), 13L);
 
         if (embers) {
-            addEmbers(width, height);
+            if (ThemeNoel.actif()) addSnow(width, height);
+            else addEmbers(width, height);
         }
 
         Rectangle grain = new Rectangle(width, height);
@@ -131,6 +140,10 @@ public final class AmbientBackground extends Pane {
                 new Stop(0.65, Color.rgb(0, 0, 0, 0.10)),
                 new Stop(1, Color.rgb(0, 0, 0, 0.55))));
         getChildren().add(vignette);
+
+        if (ThemeNoel.actif()) {
+            addGarland(width);
+        }
 
         if (running) {
             playAnimations();
@@ -175,11 +188,13 @@ public final class AmbientBackground extends Pane {
         List<Double> points = new ArrayList<>();
         points.add(0.0);
         points.add(height);
+        List<Double> tops = new ArrayList<>();
         for (double x = 0; x < width + block; x += block) {
             double roll = random.nextDouble();
             if (roll < 0.30) current = Math.max(minBlocks, current - 1);
             else if (roll > 0.70) current = Math.min(maxBlocks, current + 1);
             double y = height - current * block;
+            tops.add(y);
             points.add(x);
             points.add(y);
             points.add(x + block);
@@ -193,7 +208,9 @@ public final class AmbientBackground extends Pane {
         terrain.setFill(fill);
         getChildren().add(terrain);
 
-        if (rim != null) {
+        if (ThemeNoel.actif()) {
+            addWinter(width, height, block, tops, rim != null, seed);
+        } else if (rim != null) {
             // Liseré lumineux sur le haut des blocs, comme éclairé par les braises.
             Polyline edge = new Polyline();
             edge.getPoints().addAll(points.subList(2, points.size() - 2));
@@ -201,6 +218,134 @@ public final class AmbientBackground extends Pane {
             edge.setStrokeWidth(1.5);
             edge.setFill(null);
             getChildren().add(edge);
+        }
+    }
+
+    /** Noël : sapins debout sur le terrain le plus proche, puis neige posée sur les blocs. */
+    private void addWinter(double width, double height, double block, List<Double> tops, boolean front, long seed) {
+        Random random = new Random(seed * 31);
+        if (front) {
+            double next = 100 + random.nextDouble() * 60;
+            for (int column = 0; column < tops.size(); column++) {
+                double x = column * block;
+                if (x < next) continue;
+                WritableImage tree = ThemeNoel.sapin(2 + random.nextInt(3), random.nextInt(4) == 0, 3);
+                ImageView view = new ImageView(tree);
+                view.setSmooth(false);
+                view.setX(x + (block - tree.getWidth()) / 2);
+                view.setY(tops.get(column) - tree.getHeight() + 4);
+                getChildren().add(view);
+                next = x + 80 + random.nextDouble() * 140;
+            }
+        }
+
+        double highest = height;
+        for (double top : tops) highest = Math.min(highest, top);
+        int imageWidth = (int) Math.ceil(width);
+        int imageHeight = (int) Math.ceil(height - highest);
+        if (imageWidth <= 0 || imageHeight <= 0) return;
+
+        WritableImage snow = new WritableImage(imageWidth, imageHeight);
+        PixelWriter writer = snow.getPixelWriter();
+        Color white = front ? Color.web("#eaf2fb") : Color.rgb(205, 220, 240, 0.30);
+        Color shade = front ? Color.web("#b6c9e0") : Color.rgb(150, 170, 200, 0.20);
+        int cell = 4;
+        for (int column = 0; column < tops.size(); column++) {
+            int top = (int) Math.round(tops.get(column) - highest);
+            int endX = (int) ((column + 1) * block);
+            for (int x = (int) (column * block); x < endX && x < imageWidth; x += cell) {
+                int cells = front ? 2 + random.nextInt(2) : 1 + random.nextInt(2);
+                ThemeNoel.colonneNeige(writer, x, top, cell, cells, imageWidth, imageHeight, white, shade);
+            }
+        }
+        ImageView layer = new ImageView(snow);
+        layer.setSmooth(false);
+        layer.setY(highest);
+        getChildren().add(layer);
+    }
+
+    /** Noël : flocons carrés, comme les particules de Minecraft, à la place des braises. */
+    private void addSnow(double width, double height) {
+        Random random = new Random();
+        Rectangle[] flakes = new Rectangle[SNOW_COUNT];
+        double[] speed = new double[SNOW_COUNT];
+        double[] phase = new double[SNOW_COUNT];
+
+        for (int i = 0; i < SNOW_COUNT; i++) {
+            double s = 2 + random.nextInt(3);
+            flakes[i] = new Rectangle(s, s, Color.WHITE);
+            flakes[i].setX(random.nextDouble() * width);
+            flakes[i].setY(random.nextDouble() * height);
+            flakes[i].setOpacity(0.3 + s * 0.13);
+            speed[i] = 16 + s * 11 + random.nextDouble() * 12;
+            phase[i] = random.nextDouble() * Math.PI * 2;
+            getChildren().add(flakes[i]);
+        }
+
+        embersTimer = new AnimationTimer() {
+            private long last = -1;
+
+            @Override
+            public void handle(long now) {
+                if (last < 0) {
+                    last = now;
+                    return;
+                }
+                double dt = Math.min(0.1, (now - last) / 1_000_000_000.0);
+                last = now;
+                for (int i = 0; i < SNOW_COUNT; i++) {
+                    Rectangle flake = flakes[i];
+                    double y = flake.getY() + speed[i] * dt;
+                    phase[i] += dt * 0.8;
+                    if (y > height) {
+                        // Repart du haut, ailleurs.
+                        y = -6;
+                        flake.setX(random.nextDouble() * width);
+                    }
+                    flake.setY(y);
+                    flake.setTranslateX(Math.sin(phase[i]) * 12);
+                }
+            }
+        };
+    }
+
+    /** Noël : guirlande en haut de la fenêtre, chaque couleur scintille à son rythme. */
+    private void addGarland(double width) {
+        Color wire = Color.web("#1f4a33");
+        Rectangle line = new Rectangle(0, 0, width, 2);
+        line.setFill(wire);
+        getChildren().add(line);
+
+        Group[] groups = new Group[BULB_COLORS.length];
+        for (int i = 0; i < groups.length; i++) {
+            groups[i] = new Group();
+        }
+        double spacing = 46;
+        int index = 0;
+        for (double x = spacing / 2; x < width; x += spacing, index++) {
+            Color color = BULB_COLORS[index % BULB_COLORS.length];
+            double drop = index % 3 == 2 ? 4 : 0;
+            Rectangle socket = new Rectangle(x + 1, 2, 4, 3 + drop);
+            socket.setFill(wire);
+            getChildren().add(socket);
+
+            Circle halo = new Circle(x + 3, 9 + drop, 13);
+            halo.setFill(new RadialGradient(0, 0, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE,
+                    new Stop(0, withAlpha(color, 0.42)),
+                    new Stop(1, Color.TRANSPARENT)));
+            Rectangle bulb = new Rectangle(x, 5 + drop, 6, 9);
+            bulb.setFill(color);
+            groups[index % BULB_COLORS.length].getChildren().addAll(halo, bulb);
+        }
+        for (int i = 0; i < groups.length; i++) {
+            getChildren().add(groups[i]);
+            FadeTransition twinkle = new FadeTransition(Duration.seconds(1.1 + i * 0.27), groups[i]);
+            twinkle.setFromValue(1);
+            twinkle.setToValue(0.35);
+            twinkle.setAutoReverse(true);
+            twinkle.setCycleCount(Animation.INDEFINITE);
+            twinkle.setInterpolator(Interpolator.EASE_BOTH);
+            animations.add(twinkle);
         }
     }
 
